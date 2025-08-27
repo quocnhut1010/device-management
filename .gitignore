@@ -1,0 +1,29 @@
+# ========== BACKEND (ASP.NET Core) ==========
+bin/
+obj/
+*.user
+*.suo
+*.log
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.env
+
+# ========== FRONTEND (React + Node) ==========
+node_modules/
+dist/
+build/
+.env.local
+.env.*.local
+
+# ========== OS / TOOLING ==========
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ========== MISC ==========
+*.bak
+*.tmp
