@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Cấu hình Axios client với baseURL gốc
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5264/api', // Đã bao gồm /api, không lặp lại trong endpoint
+  baseURL: 'http://localhost:5264/api', 
   headers: {
     'Content-Type': 'application/json',
   },

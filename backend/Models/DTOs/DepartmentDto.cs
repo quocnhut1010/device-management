@@ -11,5 +11,8 @@ public class DepartmentDto
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedBy { get; set; }
     public string? DeletedByName { get; set; }
+    public int DeviceCount { get; set; }
+    public int UserCount { get; set; }  
+
 
 }

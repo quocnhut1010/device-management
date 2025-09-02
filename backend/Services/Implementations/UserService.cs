@@ -16,13 +16,14 @@ public class UserService : IUserService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<UserDto>> GetAllAsync()
+    public async Task<IEnumerable<UserDto>> GetAllAsync(bool? isDeleted = null)
     {
-        var users = await _context.Users
+        var query = _context.Users
             .Include(u => u.Department)
-            .Where(u => u.IsDeleted != true)
-            .ToListAsync();
+            .AsQueryable();
 
+        // ✅ Bỏ lọc isDeleted để trả về toàn bộ người dùng
+        var users = await query.ToListAsync();
         return _mapper.Map<IEnumerable<UserDto>>(users);
     }
 
@@ -68,6 +69,12 @@ public class UserService : IUserService
         if (existing is not null)
             throw new Exception("Email already exists.");
 
+        var department = await _context.Departments
+            .FirstOrDefaultAsync(d => d.Id == dto.DepartmentId && d.IsDeleted != false);
+
+        // if (department == null)
+        //     throw new Exception("Phòng ban không hợp lệ hoặc đã bị xoá.");
+
         var user = _mapper.Map<User>(dto);
         user.Id = Guid.NewGuid();
         user.CreatedAt = DateTime.UtcNow;
@@ -79,5 +86,21 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         return _mapper.Map<UserDto>(user);
+    }
+
+
+    public async Task<bool> RestoreAsync(Guid id)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null || user.IsDeleted != true) return false;
+
+        user.IsDeleted = false;
+        user.DeletedAt = null;
+        user.DeletedBy = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

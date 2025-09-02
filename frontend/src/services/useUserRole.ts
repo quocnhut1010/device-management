@@ -1,5 +1,10 @@
-import { getUserFromToken } from './auth';
+import { getUserFromToken, getUserRole } from './auth';
 
-export const useUserRole = () => {
-  return getUserFromToken()?.role ?? 'User';
+const useUserRole = () => {
+  const user = getUserFromToken(); // đã bao gồm cả position
+  const role = getUserRole();
+
+  return { user, role };
 };
+
+export default useUserRole;

@@ -12,4 +12,6 @@ export interface DepartmentDto {
   updatedBy?: string;
   deletedAt?: string;
   deletedBy?: string;
+  deviceCount: number;
+  userCount: number; 
 }

@@ -45,7 +45,8 @@ namespace backend.Services.Implementations
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email!),
-                new Claim(ClaimTypes.Role, user.Role ?? "User")
+                new Claim(ClaimTypes.Role, user.Role ?? "User"),
+                new Claim("position", user.Position ?? "") 
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor

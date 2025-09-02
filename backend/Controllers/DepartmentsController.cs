@@ -18,9 +18,9 @@ namespace backend.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] bool? isDeleted)
         {
-            var result = await _departmentService.GetAllAsync();
+            var result = await _departmentService.GetAllAsync(isDeleted);
             return Ok(result);
         }
 
@@ -62,5 +62,21 @@ namespace backend.Controllers
             var success = await _departmentService.RestoreAsync(id);
             return success ? Ok(new { message = "Khôi phục thành công." }) : NotFound();
         }
+        [HttpGet("my")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetMyDepartment()
+        {
+            var result = await _departmentService.GetAllAsync();
+            return Ok(result);
+        }
+        [HttpGet("summary")]
+        [Authorize(Roles = "Admin,User")]
+        public async Task<IActionResult> GetSummary()
+        {
+            var result = await _departmentService.GetDepartmentSummaryAsync();
+            return Ok(result);
+        }
+
+
     }
 }

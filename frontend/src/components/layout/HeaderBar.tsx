@@ -20,8 +20,6 @@ import {
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Search as SearchIcon,
-  // Brightness4,
-  // Brightness7,
   Settings,
   Logout,
 } from '@mui/icons-material';
@@ -29,7 +27,10 @@ import {
 import { useState } from 'react';
 import { getUserFromToken, logout } from '../../services/auth';
 import { useNavigate } from 'react-router-dom';
-// import { useAppTheme } from '../../contexts/ThemeContext'; // ✅ Context Theme
+import UserProfileDialog from '../user/UserProfileDialog';
+import { getUserProfile, updateUserProfile } from '../../services/userService';
+import { UserDto } from '../../types/UserDto';
+import { useNotification } from '../../hooks/useNotification';
 
 interface HeaderBarProps {
   onMenuClick: () => void;
@@ -37,18 +38,19 @@ interface HeaderBarProps {
 
 const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
   const navigate = useNavigate();
-  const user = getUserFromToken();
+  const user = getUserFromToken(); // lấy từ JWT
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const roleLabel = user?.role === 'Admin' ? 'Quản trị viên' : 'Người dùng';
 
-  // const { mode, toggleMode } = useAppTheme();
+  const { notify } = useNotification();
 
   // Avatar dropdown
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -59,6 +61,20 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
   const openNotif = Boolean(notifAnchor);
   const handleNotifClick = (event: React.MouseEvent<HTMLElement>) => setNotifAnchor(event.currentTarget);
   const handleNotifClose = () => setNotifAnchor(null);
+
+  // Profile dialog
+  const [openProfile, setOpenProfile] = useState(false);
+  const [profile, setProfile] = useState<UserDto | null>(null);
+
+  const handleOpenProfile = async () => {
+    try {
+      const res = await getUserProfile(); // ✅ gọi API lấy thông tin profile của user hiện tại
+      setProfile(res.data);
+      setOpenProfile(true);
+    } catch {
+      notify('Không thể tải thông tin người dùng', 'error');
+    }
+  };
 
   return (
     <AppBar
@@ -120,7 +136,7 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
           </Box>
         )}
 
-        {/* Right: Notification, theme, user */}
+        {/* Right: Notification, user */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Notifications */}
           <Tooltip title="Thông báo">
@@ -135,13 +151,6 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
             <MenuItem disabled>🛠️ Thiết bị đang được sửa</MenuItem>
           </Menu>
 
-          {/* Theme toggle */}
-          {/* <Tooltip title="Đổi giao diện">
-            <IconButton onClick={toggleMode}>
-              {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
-            </IconButton>
-          </Tooltip> */}
-
           {/* Role label */}
           <Typography variant="body2" sx={{ display: { xs: 'none', md: 'block' } }}>
             {roleLabel}
@@ -154,10 +163,11 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
             </IconButton>
           </Tooltip>
 
+          {/* Dropdown Menu */}
           <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
             <MenuItem disabled>{user?.email}</MenuItem>
             <Divider />
-            <MenuItem onClick={() => alert('Cài đặt')}>
+            <MenuItem onClick={handleOpenProfile}>
               <ListItemIcon>
                 <Settings fontSize="small" />
               </ListItemIcon>
@@ -172,6 +182,25 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
           </Menu>
         </Box>
       </Toolbar>
+
+      {/* Profile Dialog */}
+      {profile && (
+        <UserProfileDialog
+          open={openProfile}
+          onClose={() => setOpenProfile(false)}
+          user={profile}
+          onSubmit={(updated) => {
+            if (!user || !profile) return;
+            const payload: UserDto = { ...profile, ...updated } as UserDto;
+            updateUserProfile(payload)
+              .then(() => {
+                notify('Cập nhật thành công', 'success');
+                setOpenProfile(false);
+              })
+              .catch(() => notify('Lỗi khi cập nhật', 'error'));
+          }}
+        />
+      )}
     </AppBar>
   );
 };

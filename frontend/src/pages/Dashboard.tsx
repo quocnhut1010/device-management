@@ -7,8 +7,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import { getUserFromToken } from '../services/auth';
 import { getAllDevices } from '../services/deviceService';
-import { getAllDepartments } from '../services/departmentService';
-import { getAllUsers } from '../services/userService';
+import { getAllDepartments, getAllDepartmentsData } from '../services/departmentService';
+import { getAllUsersData } from '../services/userService';
 import { getAllAssignments } from '../services/assignmentService';
 
 const Dashboard = () => {
@@ -26,25 +26,45 @@ const Dashboard = () => {
       setEmail(user.email);
       setRole(user.role);
     }
+ const fetchData = async () => {
+    try {
+      const res = await getAllDepartments(); // ✅ Đúng: dùng từ departmentService
+      console.log('Dashboard - Tổng phòng ban:', res.data.length);
+      setDepartmentCount(res.data.length);
+    } catch (error) {
+      console.error('Lỗi khi load dashboard:', error); // lỗi đang ở đây
+    }
+  };
+    const fetchUserCount = async () => {
+      try {
+        const users = await getAllUsersData(true); // users là UserDto[]
+        console.log('Dashboard - Tổng user:', users.length);
+        setUserCount(users.length);
+      } catch (error) {
+        console.error('Lỗi khi load tổng user:', error);
+      }
+    };
 
+
+  fetchData();
+  fetchUserCount();
     setLoading(true);
     Promise.all([
       getAllDevices(),
-      getAllDepartments(),
-      getAllUsers(),
-      getAllAssignments()
+      getAllDepartmentsData(true), // 👈 lấy cả phòng ban đã xoá
+      getAllUsersData(true),
+      getAllAssignments(),
     ])
       .then(([devices, departments, users, assignments]) => {
-        setDeviceCount(devices?.length || 0);
-        setDepartmentCount(departments?.length || 0);
-        setUserCount(users?.length || 0);
+        setDeviceCount(devices.length);
+        setDepartmentCount(departments.length);
+        setUserCount(users.length);
 
-        // Thiết bị đang sử dụng là các assignment đang active
-        const activeAssignments = assignments?.filter(
+        const activeAssignments = assignments.filter(
           (a: any) =>
-            a.status === 'Active' || a.status === 'Đang sử dụng' // hoặc điều kiện tùy backend
+            a.status === 'Active' || a.status === 'Đang sử dụng'
         );
-        setActiveAssignmentCount(activeAssignments?.length || 0);
+        setActiveAssignmentCount(activeAssignments.length);
       })
       .catch((err) => {
         console.error('Lỗi khi load dashboard:', err);
@@ -107,7 +127,6 @@ const Dashboard = () => {
               Vai trò: {role === 'Admin' ? 'Quản trị viên (Admin)' : 'Người dùng (User)'}
             </Typography>
           </Box>
-          
         </>
       )}
     </Box>

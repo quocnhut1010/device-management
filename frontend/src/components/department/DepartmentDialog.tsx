@@ -4,8 +4,8 @@ import {
   TextField, Button, Stack
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { DepartmentDto } from '../../types/DepartmentDto';
 import {
-  type DepartmentDto,
   createDepartment,
   updateDepartment,
 } from '../../services/departmentService';
