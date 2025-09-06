@@ -143,7 +143,8 @@ const DepartmentPage = () => {
           setSelected(item);
           setOpenDialog(true);
         }}
-        role={role} // ✅ truyền role xuống bảng
+        role={role || ''} // ✅ truyền role xuống bảng, xử lý null case
+        position={user?.position || ''} // ✅ truyền position xuống bảng
       />
 
       {role === 'Admin' && (

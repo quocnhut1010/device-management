@@ -67,6 +67,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 
+builder.Services.AddScoped<IDeviceTypeService, DeviceTypeService>();
+
 
 
 builder.Services.AddHttpContextAccessor();

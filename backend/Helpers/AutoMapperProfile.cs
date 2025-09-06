@@ -43,7 +43,18 @@ namespace backend.Helpers
             CreateMap<DeviceModel, DeviceModelDto>().ReverseMap();
 
             // Supplier
-            CreateMap<Supplier, SupplierDto>().ReverseMap();
+            CreateMap<Supplier, SupplierDto>()
+                .ForMember(dest => dest.DeviceCount,
+                    opt => opt.MapFrom(src => src.Devices != null
+                        ? src.Devices.Count(d => !d.IsDeleted.GetValueOrDefault())
+                        : 0))
+                .ReverseMap();
+            CreateMap<SupplierDto, Supplier>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.DeletedBy, opt => opt.Ignore());
 
             // Department <-> DepartmentDto
             CreateMap<Department, DepartmentDto>()
@@ -52,6 +63,10 @@ namespace backend.Helpers
                 .ForMember(dest => dest.UserCount,
                     opt => opt.MapFrom(src => src.Users != null ? src.Users.Count(u => !u.IsDeleted.GetValueOrDefault()) : 0))
                 .ReverseMap();
+                
+            // DeviceTypes
+            CreateMap<DeviceType, DeviceTypeDto>().ReverseMap();
+
         }
     }
 }

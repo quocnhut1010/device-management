@@ -3,13 +3,12 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Stack
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { DepartmentDto } from '../../types/DepartmentDto';
-import {
-  createDepartment,
-  updateDepartment,
-} from '../../services/departmentService';
+import { createDepartment, updateDepartment } from '../../services/departmentService';
 import { useNotification } from '../../hooks/useNotification';
+import { useForm } from 'react-hook-form';
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -18,75 +17,110 @@ interface Props {
 }
 
 const DepartmentDialog = ({ open, onClose, refresh, selected }: Props) => {
-  const [formData, setFormData] = useState({
-    departmentName: '',
-    departmentCode: '',
-    location: '',
+  const { notify } = useNotification();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      departmentName: '',
+      departmentCode: '',
+      location: '',
+    },
   });
-const { notify } = useNotification();
+
+  // Load dữ liệu khi sửa
   useEffect(() => {
     if (selected) {
-      setFormData({
-        departmentName: selected.departmentName,
-        departmentCode: selected.departmentCode || '',
-        location: selected.location || '',
-      });
+      setValue('departmentName', selected.departmentName);
+      setValue('departmentCode', selected.departmentCode || '');
+      setValue('location', selected.location || '');
     } else {
-      setFormData({
-        departmentName: '',
-        departmentCode: '',
-        location: '',
-      });
+      reset();
     }
-  }, [selected]);
+  }, [selected, setValue, reset]);
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: any) => {
     try {
       if (selected) {
-        await updateDepartment(selected.id, formData);
+        await updateDepartment(selected.id, data);
         notify('Cập nhật phòng ban thành công', 'success');
       } else {
-        await createDepartment(formData);
+        await createDepartment(data);
         notify('Tạo mới phòng ban thành công', 'success');
       }
       refresh();
-      onClose();
+      handleClose();
     } catch (err) {
       console.error('Lỗi lưu phòng ban:', err);
+      notify('Đã xảy ra lỗi khi lưu phòng ban', 'error');
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    reset(); // reset form khi đóng
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog open={open} onClose={handleClose} fullWidth>
       <DialogTitle>{selected ? 'Cập nhật' : 'Thêm mới'} phòng ban</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} mt={1}>
-          <TextField
-            label="Tên phòng ban"
-            fullWidth
-            value={formData.departmentName}
-            onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
-          />
-          <TextField
-            label="Mã phòng ban"
-            fullWidth
-            value={formData.departmentCode}
-            onChange={(e) => setFormData({ ...formData, departmentCode: e.target.value })}
-          />
-          <TextField
-            label="Vị trí"
-            fullWidth
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          />
-        </Stack>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label="Tên phòng ban *"
+              fullWidth
+              {...register('departmentName', {
+                required: 'Tên phòng ban không được để trống',
+                maxLength: {
+                  value: 100,
+                  message: 'Tên phòng ban không vượt quá 100 ký tự',
+                },
+              })}
+              error={!!errors.departmentName}
+              helperText={errors.departmentName?.message}
+            />
+
+            <TextField
+              label="Mã phòng ban"
+              fullWidth
+              {...register('departmentCode', {
+                maxLength: {
+                  value: 50,
+                  message: 'Mã phòng ban không vượt quá 50 ký tự',
+                },
+              })}
+              error={!!errors.departmentCode}
+              helperText={errors.departmentCode?.message}
+            />
+
+            <TextField
+              label="Vị trí"
+              fullWidth
+              {...register('location', {
+                maxLength: {
+                  value: 100,
+                  message: 'Vị trí không vượt quá 100 ký tự',
+                },
+              })}
+              error={!!errors.location}
+              helperText={errors.location?.message}
+            />
+          </Stack>
+
+          <DialogActions sx={{ mt: 2 }}>
+            <Button onClick={handleClose}>Hủy</Button>
+            <Button type="submit" variant="contained">
+              {selected ? 'Cập nhật' : 'Thêm'}
+            </Button>
+          </DialogActions>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
-        <Button onClick={handleSubmit} variant="contained">
-          {selected ? 'Cập nhật' : 'Thêm'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };

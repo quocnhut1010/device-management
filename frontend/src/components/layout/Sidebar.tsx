@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.tsx
 import {
   Box,
   Drawer,
@@ -11,10 +12,13 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  Collapse,
 } from '@mui/material';
 import {
   ChevronLeft,
   ChevronRight,
+  ExpandLess,
+  ExpandMore,
 } from '@mui/icons-material';
 
 import { useState } from 'react';
@@ -53,66 +57,20 @@ const Sidebar = ({}: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [open, setOpen] = useState(!isMobile);
   const [collapsed, setCollapsed] = useState(false);
-  const [] = useState<Record<string, boolean>>({});
+  const [openSubmenu, setOpenSubmenu] = useState(false);
+
   const user = getUserFromToken();
   const role = user?.role ?? 'User';
 
+  const isActive = (path: string) => location.pathname === path;
 
-const menuConfig = [
-  {
-    label: 'Bảng điều khiển',
-    items: [{ label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' }],
-  },
-  {
-    label: 'Quản lý thiết bị',
-    items: [
-      { label: 'Danh sách thiết bị', icon: <DevicesIcon />, path: '/devices' },
-      ...(role === 'Admin'
-        ? [
-            { label: 'Mẫu thiết bị', icon: <MemoryIcon />, path: '/device-models' },
-            { label: 'Loại thiết bị', icon: <CategoryIcon />, path: '/device-types' },
-            { label: 'Nhà cung cấp', icon: <BusinessIcon />, path: '/suppliers' },
-          ]
-        : []),
-    ],
-  },
-  {
-    label: 'Cơ cấu tổ chức',
-    items: [
-      { label: 'Phòng ban', icon: <ApartmentIcon />, path: '/departments' }, // Cho cả Admin và User
-    ],
-  },
-  {
-    label: 'Vận hành & Lịch sử',
-    items: [
-      { label: 'Cấp phát', icon: <AssignmentIcon />, path: '/assignments' },
-      { label: 'Sửa chữa', icon: <BuildIcon />, path: '/repairs' },
-      { label: 'Báo cáo sự cố', icon: <ReportProblemIcon />, path: '/incidents' },
-      ...(role === 'Admin'
-        ? [
-            { label: 'Thay thế', icon: <SwapHorizIcon />, path: '/replacements' },
-            { label: 'Thanh lý', icon: <DeleteSweepIcon />, path: '/liquidations' },
-            { label: 'Lịch sử thiết bị', icon: <HistoryIcon />, path: '/device-histories' },
-          ]
-        : []),
-    ],
-  },
-  ...(role === 'Admin'
-    ? [
-        {
-          label: 'Người dùng & Hệ thống',
-          items: [
-            { label: 'Người dùng', icon: <PeopleIcon />, path: '/users' },
-            { label: 'Thông báo', icon: <NotificationsIcon />, path: '/notifications' },
-            { label: 'Xuất báo cáo', icon: <FileDownloadIcon />, path: '/report-exports' },
-          ],
-        },
-      ]
-    : []),
-];
-
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    if (isMobile) setOpen(false);
+  };
 
   return (
     <Drawer
@@ -155,72 +113,203 @@ const menuConfig = [
       </Box>
       <Divider />
 
-      {/* Menu rendering */}
       <List disablePadding>
-        {menuConfig.map((section) => (
-          <Box key={section.label}>
-            {!collapsed && (
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, px: 2, pt: 2, pb: 0.5, color: 'text.secondary' }}
-              >
-                {section.label}
-              </Typography>
-            )}
+        {/* Dashboard */}
+        <SidebarSection label="Bảng điều khiển" collapsed={collapsed} />
+        <SidebarItem
+          label="Dashboard"
+          icon={<DashboardIcon />}
+          path="/dashboard"
+          active={isActive('/dashboard')}
+          collapsed={collapsed}
+          onClick={() => handleNavigate('/dashboard')}
+        />
 
-            {section.items.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Tooltip
-                  title={collapsed ? item.label : ''}
-                  placement="right"
-                  key={item.label}
-                  arrow
-                >
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    selected={isActive}
-                    sx={{
-                      px: collapsed ? 1.5 : 2.5,
-                      py: 1.2,
-                      my: 0.5,
-                      borderRadius: 2,
-                      mx: 1,
-                      bgcolor: isActive ? 'primary.light' : 'transparent',
-                      '&:hover': {
-                        bgcolor: 'primary.lighter',
-                        transform: 'translateX(3px)',
-                      },
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        mr: collapsed ? 0 : 1.5,
-                        color: isActive ? 'primary.main' : 'text.secondary',
-                      }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                    {!collapsed && (
-                      <ListItemText
-                        primary={item.label}
-                        primaryTypographyProps={{
-                          fontWeight: isActive ? 600 : 400,
-                          color: isActive ? 'primary.main' : 'text.primary',
-                        }}
-                      />
-                    )}
-                  </ListItemButton>
-                </Tooltip>
-              );
-            })}
-          </Box>
-        ))}
+        {/* Quản lý thiết bị */}
+        <SidebarSection label="Quản lý thiết bị" collapsed={collapsed} />
+        <SidebarItem
+          label="Danh sách thiết bị"
+          icon={<DevicesIcon />}
+          path="/devices"
+          active={isActive('/devices')}
+          collapsed={collapsed}
+          onClick={() => handleNavigate('/devices')}
+        />
+
+        {/* Danh mục thiết bị (Submenu toggle) */}
+        {role === 'Admin' && (
+          <>
+            <Tooltip title={collapsed ? 'Danh mục thiết bị' : ''} placement="right" arrow>
+              <ListItemButton
+                onClick={() => setOpenSubmenu(!openSubmenu)}
+                sx={{
+                  px: collapsed ? 1.5 : 2.5,
+                  py: 1.2,
+                  mx: 1,
+                  borderRadius: 2,
+                  '&:hover': {
+                    bgcolor: 'primary.lighter',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 0, mr: collapsed ? 0 : 1.5 }}>
+                  <CategoryIcon color="primary" />
+                </ListItemIcon>
+                {!collapsed && (
+                  <ListItemText primary="Danh mục thiết bị" primaryTypographyProps={{ fontWeight: 500 }} />
+                )}
+                {!collapsed && (openSubmenu ? <ExpandLess /> : <ExpandMore />)}
+              </ListItemButton>
+            </Tooltip>
+
+            <Collapse in={openSubmenu && !collapsed} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                <SidebarItem
+                  label="Mẫu thiết bị"
+                  icon={<MemoryIcon />}
+                  path="/device-models"
+                  active={isActive('/device-models')}
+                  collapsed={collapsed}
+                  nested
+                  onClick={() => handleNavigate('/device-models')}
+                />
+                <SidebarItem
+                  label="Loại thiết bị"
+                  icon={<CategoryIcon />}
+                  path="/device-types"
+                  active={isActive('/device-types')}
+                  collapsed={collapsed}
+                  nested
+                  onClick={() => handleNavigate('/device-types')}
+                />
+                <SidebarItem
+                  label="Nhà cung cấp"
+                  icon={<BusinessIcon />}
+                  path="/suppliers"
+                  active={isActive('/suppliers')}
+                  collapsed={collapsed}
+                  nested
+                  onClick={() => handleNavigate('/suppliers')}
+                />
+              </List>
+            </Collapse>
+          </>
+        )}
+
+        {/* Cơ cấu tổ chức */}
+        <SidebarSection label="Cơ cấu tổ chức" collapsed={collapsed} />
+        <SidebarItem
+          label="Phòng ban"
+          icon={<ApartmentIcon />}
+          path="/departments"
+          active={isActive('/departments')}
+          collapsed={collapsed}
+          onClick={() => handleNavigate('/departments')}
+        />
+
+        {/* Vận hành & Lịch sử */}
+        <SidebarSection label="Vận hành & Lịch sử" collapsed={collapsed} />
+        <SidebarItem label="Cấp phát" icon={<AssignmentIcon />} path="/assignments" active={isActive('/assignments')} collapsed={collapsed} onClick={() => handleNavigate('/assignments')} />
+        <SidebarItem label="Sửa chữa" icon={<BuildIcon />} path="/repairs" active={isActive('/repairs')} collapsed={collapsed} onClick={() => handleNavigate('/repairs')} />
+        <SidebarItem label="Báo cáo sự cố" icon={<ReportProblemIcon />} path="/incidents" active={isActive('/incidents')} collapsed={collapsed} onClick={() => handleNavigate('/incidents')} />
+
+        {role === 'Admin' && (
+          <>
+            <SidebarItem label="Thay thế" icon={<SwapHorizIcon />} path="/replacements" active={isActive('/replacements')} collapsed={collapsed} onClick={() => handleNavigate('/replacements')} />
+            <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidations" active={isActive('/liquidations')} collapsed={collapsed} onClick={() => handleNavigate('/liquidations')} />
+            <SidebarItem label="Lịch sử thiết bị" icon={<HistoryIcon />} path="/device-histories" active={isActive('/device-histories')} collapsed={collapsed} onClick={() => handleNavigate('/device-histories')} />
+          </>
+        )}
+
+        {/* Người dùng & Hệ thống */}
+        {role === 'Admin' && (
+          <>
+            <SidebarSection label="Người dùng & Hệ thống" collapsed={collapsed} />
+            <SidebarItem label="Người dùng" icon={<PeopleIcon />} path="/users" active={isActive('/users')} collapsed={collapsed} onClick={() => handleNavigate('/users')} />
+            <SidebarItem label="Thông báo" icon={<NotificationsIcon />} path="/notifications" active={isActive('/notifications')} collapsed={collapsed} onClick={() => handleNavigate('/notifications')} />
+            <SidebarItem label="Xuất báo cáo" icon={<FileDownloadIcon />} path="/report-exports" active={isActive('/report-exports')} collapsed={collapsed} onClick={() => handleNavigate('/report-exports')} />
+          </>
+        )}
       </List>
     </Drawer>
   );
 };
+
+// Component phụ: SidebarItem
+const SidebarItem = ({
+  label,
+  icon,
+  path,
+  active,
+  collapsed,
+  nested = false,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  path: string;
+  active: boolean;
+  collapsed: boolean;
+  nested?: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <Tooltip title={collapsed ? label : ''} placement="right" arrow>
+      <ListItemButton
+        onClick={onClick}
+        selected={active}
+        sx={{
+          pl: collapsed ? 1.5 : nested ? 5 : 2.5,
+          py: 1.1,
+          mx: 1,
+          borderRadius: 2,
+          bgcolor: active ? 'primary.light' : 'transparent',
+          '&:hover': {
+            bgcolor: 'primary.lighter',
+            transform: 'translateX(3px)',
+          },
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: 0,
+            mr: collapsed ? 0 : 1.5,
+            color: active ? 'primary.main' : 'text.secondary',
+          }}
+        >
+          {icon}
+        </ListItemIcon>
+        {!collapsed && (
+          <ListItemText
+            primary={label}
+            primaryTypographyProps={{
+              fontWeight: active ? 600 : 400,
+              color: active ? 'primary.main' : 'text.primary',
+            }}
+          />
+        )}
+      </ListItemButton>
+    </Tooltip>
+  );
+};
+
+// Component phụ: group label
+const SidebarSection = ({
+  label,
+  collapsed,
+}: {
+  label: string;
+  collapsed: boolean;
+}) => (
+  !collapsed && (
+    <Typography
+      variant="caption"
+      sx={{ fontWeight: 600, px: 2, pt: 2, pb: 0.5, color: 'text.secondary' }}
+    >
+      {label}
+    </Typography>
+  )
+);
 
 export default Sidebar;

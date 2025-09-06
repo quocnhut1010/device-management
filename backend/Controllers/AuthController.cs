@@ -18,6 +18,12 @@ namespace backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            
+            if (loginDto == null)
+                return BadRequest("Dữ liệu đăng nhập không hợp lệ.");
+
             var token = await _authService.AuthenticateAsync(loginDto);
             if (token == null)
                 return Unauthorized("Email hoặc mật khẩu không đúng.");

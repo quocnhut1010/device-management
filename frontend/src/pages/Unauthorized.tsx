@@ -1,34 +1,55 @@
 // src/pages/Unauthorized.tsx
-import { Box, Typography, Button } from '@mui/material';
-import ErrorIcon from '@mui/icons-material/ErrorOutline';
+import { Button, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { isAuthenticated } from '../services/auth';
 
 const Unauthorized = () => {
   const navigate = useNavigate();
+  const loggedIn = isAuthenticated();
 
   return (
     <Box
       sx={{
-        height: '100vh',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        bgcolor: '#f9f9f9',
-        px: 2,
+        p: 3,
       }}
     >
-      <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
       <Typography variant="h4" color="error" gutterBottom>
-        Không thể truy cập
+        ❌ Không thể truy cập
       </Typography>
-      <Typography variant="body1" mb={3}>
-        Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.
-      </Typography>
-      <Button variant="contained" onClick={() => navigate('/login')}>
-        QUAY LẠI TRANG ĐĂNG NHẬP
-      </Button>
+
+      {loggedIn ? (
+        <>
+          <Typography variant="body1" mb={3}>
+            Bạn không có quyền truy cập trang này.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate(-1)} // quay lại trang trước
+          >
+            Quay lại
+          </Button>
+        </>
+      ) : (
+        <>
+          <Typography variant="body1" mb={3}>
+            Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/login')}
+          >
+            Quay lại trang đăng nhập
+          </Button>
+        </>
+      )}
     </Box>
   );
 };

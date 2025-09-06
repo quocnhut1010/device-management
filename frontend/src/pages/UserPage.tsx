@@ -46,9 +46,9 @@ const UserPage = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [potisionFilter, setPotisionFilter] = useState('');
-  const uniqueRoles = Array.from(new Set(users.map((u) => u.role)));
-  const uniqueDepartments = Array.from(new Set(users.map((u) => u.departmentName))).filter(Boolean);
-  const uniquePotisions = Array.from(new Set(users.map((u) => u.position)));
+  const uniqueRoles = Array.from(new Set(users.map((u) => u.role))).filter(Boolean);
+  const uniqueDepartments = Array.from(new Set(users.map((u) => u.departmentName))).filter(Boolean) as string[];
+  const uniquePotisions = Array.from(new Set(users.map((u) => u.position))).filter(Boolean) as string[];
   const filteredUsers = users.filter((user) => {
   const matchSearch =
       user.fullName.toLowerCase().includes(search.toLowerCase()) ||

@@ -4,6 +4,8 @@ using backend.Models.DTOs;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace backend.Services.Implementations
 {
@@ -11,36 +13,57 @@ namespace backend.Services.Implementations
     {
         private readonly DeviceManagementDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SupplierService(DeviceManagementDbContext context, IMapper mapper)
+        public SupplierService(
+            DeviceManagementDbContext context,
+            IMapper mapper,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IEnumerable<SupplierDto>> GetAllAsync()
+        private Guid? GetCurrentUserId()
         {
-            var suppliers = await _context.Suppliers
-                .Where(s => s.IsDeleted != true)
-                .ToListAsync();
+            var userIdStr = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return userIdStr != null ? Guid.Parse(userIdStr) : null;
+        }
 
+       public async Task<IEnumerable<SupplierDto>> GetAllAsync(bool? isDeleted = null)
+        {
+            var query = _context.Suppliers
+                .Include(s => s.Devices) // ✅ load danh sách thiết bị
+                .AsQueryable();
+
+            if (isDeleted != null)
+                query = query.Where(s => s.IsDeleted == isDeleted);
+
+            var suppliers = await query.ToListAsync();
             return _mapper.Map<IEnumerable<SupplierDto>>(suppliers);
         }
 
         public async Task<SupplierDto?> GetByIdAsync(Guid id)
         {
-            var supplier = await _context.Suppliers.FindAsync(id);
+            var supplier = await _context.Suppliers
+                .Include(s => s.Devices) // ✅ load thiết bị
+                .FirstOrDefaultAsync(s => s.Id == id);
+
             if (supplier is null || supplier.IsDeleted == true) return null;
 
             return _mapper.Map<SupplierDto>(supplier);
         }
 
+
         public async Task<SupplierDto> CreateAsync(SupplierDto dto)
         {
             var entity = _mapper.Map<Supplier>(dto);
             entity.Id = Guid.NewGuid();
+
             _context.Suppliers.Add(entity);
             await _context.SaveChangesAsync();
+
             return _mapper.Map<SupplierDto>(entity);
         }
 
@@ -51,6 +74,8 @@ namespace backend.Services.Implementations
 
             _mapper.Map(dto, supplier);
             supplier.UpdatedAt = DateTime.UtcNow;
+            supplier.UpdatedBy = GetCurrentUserId();
+
             _context.Suppliers.Update(supplier);
             await _context.SaveChangesAsync();
 
@@ -64,9 +89,27 @@ namespace backend.Services.Implementations
 
             supplier.IsDeleted = true;
             supplier.DeletedAt = DateTime.UtcNow;
+            supplier.DeletedBy = GetCurrentUserId();
+
+            _context.Suppliers.Update(supplier);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        public async Task<bool> RestoreAsync(Guid id)
+        {
+            var supplier = await _context.Suppliers.FindAsync(id);
+            if (supplier is null || supplier.IsDeleted != true)
+                return false;
+
+            supplier.IsDeleted = false;
+            supplier.DeletedAt = null;
+            supplier.DeletedBy = null;
+
             _context.Suppliers.Update(supplier);
             await _context.SaveChangesAsync();
             return true;
         }
+
     }
 }

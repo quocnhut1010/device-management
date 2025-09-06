@@ -51,7 +51,15 @@ public partial class DeviceManagementDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Server=DESKTOP-GL89FUU\\SQLEXPRESS;Database=DeviceManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
+    {
+        // Connection string đã được cấu hình trong Program.cs thông qua DI
+        // Không cần hardcode connection string ở đây
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Chỉ sử dụng default connection nếu chưa được cấu hình
+            // Trong production, connection string sẽ được inject từ appsettings.json
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

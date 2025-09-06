@@ -31,8 +31,14 @@ public class UsersController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update(Guid id, UserDto dto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UserDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+            
+        if (dto == null)
+            return BadRequest("Dữ liệu người dùng không hợp lệ.");
+
         var result = await _userService.UpdateAsync(id, dto);
         return result is null ? NotFound() : Ok(result);
     }
@@ -47,8 +53,14 @@ public class UsersController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create(RegisterUserDto dto)
+    public async Task<IActionResult> Create([FromBody] RegisterUserDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+            
+        if (dto == null)
+            return BadRequest("Dữ liệu tạo người dùng không hợp lệ.");
+            
         try
         {
             var result = await _userService.CreateAsync(dto);
@@ -86,8 +98,14 @@ public class UsersController : ControllerBase
 
     [HttpPut("profile")]
     [Authorize]
-    public async Task<IActionResult> UpdateProfile(UserDto dto)
+    public async Task<IActionResult> UpdateProfile([FromBody] UserDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+            
+        if (dto == null)
+            return BadRequest("Dữ liệu cập nhật profile không hợp lệ.");
+            
         // Get current user ID from token
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))

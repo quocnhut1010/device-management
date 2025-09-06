@@ -18,11 +18,12 @@ namespace backend.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] bool? isDeleted)
         {
-            var result = await _supplierService.GetAllAsync();
+            var result = await _supplierService.GetAllAsync(isDeleted);
             return Ok(result);
         }
+
 
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,User")]
@@ -34,16 +35,22 @@ namespace backend.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(SupplierDto dto)
+        public async Task<IActionResult> Create([FromBody] SupplierDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var result = await _supplierService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(Guid id, SupplierDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] SupplierDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var result = await _supplierService.UpdateAsync(id, dto);
             return result == null ? NotFound() : Ok(result);
         }
@@ -54,6 +61,13 @@ namespace backend.Controllers
         {
             var success = await _supplierService.DeleteAsync(id);
             return success ? NoContent() : NotFound();
+        }
+        [HttpPut("{id}/restore")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Restore(Guid id)
+        {
+            var success = await _supplierService.RestoreAsync(id);
+            return success ? Ok(new { message = "Khôi phục thành công." }) : NotFound();
         }
     }
 }

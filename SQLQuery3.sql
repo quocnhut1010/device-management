@@ -299,3 +299,4 @@ INSERT INTO Users (
 );
 select * from Departments
 select * from Users
+select * from Suppliers
