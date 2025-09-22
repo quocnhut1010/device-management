@@ -1,6 +1,13 @@
 # ========== BACKEND (ASP.NET Core) ==========
-bin/
-obj/
+# .NET build folders
+**/bin/
+**/obj/
+
+# User secrets (nếu dùng)
+**/secrets.json
+
+# VSCode
+.vscode/
 *.user
 *.suo
 *.log
