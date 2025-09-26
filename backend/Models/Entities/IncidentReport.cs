@@ -27,6 +27,9 @@ public partial class IncidentReport
     public Guid? RejectedBy { get; set; }
 
     public string? RejectedReason { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+
 
     public DateTime? RejectedAt { get; set; }
 

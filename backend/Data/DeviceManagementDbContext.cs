@@ -137,6 +137,32 @@ public partial class DeviceManagementDbContext : DbContext
             entity.Property(e => e.AssignedDate).HasColumnType("date");
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.ReturnedDate).HasColumnType("date");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+
+            entity.Property(e => e.IsDeleted).HasDefaultValueSql("((0))");
+
+            // Quan hệ khóa ngoại mới
+            entity.HasOne(d => d.AssignedByUser)
+                .WithMany() // Không cần navigation ngược
+                .HasForeignKey(d => d.AssignedByUserId)
+                .HasConstraintName("FK_DeviceAssignments_AssignedByUser");
+
+            entity.HasOne(d => d.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_DeviceAssignments_CreatedBy");
+
+            entity.HasOne(d => d.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.UpdatedBy)
+                .HasConstraintName("FK_DeviceAssignments_UpdatedBy");
+
+            entity.HasOne(d => d.DeletedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.DeletedBy)
+                .HasConstraintName("FK_DeviceAssignments_DeletedBy");
 
             entity.HasOne(d => d.AssignedToDepartment).WithMany(p => p.DeviceAssignments)
                 .HasForeignKey(d => d.AssignedToDepartmentId)
@@ -237,6 +263,8 @@ public partial class DeviceManagementDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.ReportType).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(255);
 
             entity.HasOne(d => d.Device).WithMany(p => p.IncidentReports)
                 .HasForeignKey(d => d.DeviceId)
@@ -296,6 +324,9 @@ public partial class DeviceManagementDbContext : DbContext
             entity.Property(e => e.RejectedReason).HasMaxLength(500);
             entity.Property(e => e.RepairCompany).HasMaxLength(255);
             entity.Property(e => e.RepairDate).HasColumnType("date");
+            entity.Property(e => e.StartDate).HasColumnType("date");
+            entity.Property(e => e.EndDate).HasColumnType("date");
+
 
             entity.HasOne(d => d.Device).WithMany(p => p.Repairs)
                 .HasForeignKey(d => d.DeviceId)

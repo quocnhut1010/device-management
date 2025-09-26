@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import RestoreIcon from '@mui/icons-material/Restore';
 import { DepartmentDto } from '../../types/DepartmentDto';
 import { deleteDepartment, restoreDepartment } from '../../services/departmentService';
-import { useNotification } from '../../hooks/useNotification';
+import  useNotification  from '../../hooks/useNotification';
 import useUserRole from '../../services/useUserRole';
 import axios from 'axios';
 
@@ -27,23 +27,30 @@ const DepartmentTable = ({ data, refresh, onEdit, position }: Props) => {
   const isManager = role === 'User' && position === 'Trưởng phòng';
   const showUserCount = isAdmin || isManager;
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc muốn xoá phòng ban này?')) {
-      try {
-        await deleteDepartment(id);
-        notify('Đã xoá phòng ban', 'success');
-        refresh();
-      } catch (error: any) {
-        if (axios.isAxiosError(error)) {
-          const message =
-            error.response?.data || 'Không thể xoá phòng ban đang chứa thiết bị';
-          notify(message, 'error');
-        } else {
-          notify('Lỗi không xác định khi xoá phòng ban', 'error');
-        }
+const handleDelete = async (id: string) => {
+  if (!confirm('Bạn có chắc muốn xoá phòng ban này?')) return;
+
+  try {
+    await deleteDepartment(id);
+    notify('✅ Đã xoá phòng ban', 'success');
+    refresh();
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        error.response?.data?.message || 'Không thể xoá phòng ban đang chứa thiết bị hoặc nhân viên';
+
+      // ✅ Nếu là lỗi nghiệp vụ → cảnh báo
+      if (message.includes('Không thể xoá')) {
+        notify(message, 'warning');
+      } else {
+        notify(message, 'error');
       }
+    } else {
+      notify('Lỗi không xác định khi xoá phòng ban', 'error');
     }
-  };
+  }
+};
+
 
   const handleRestore = async (id: string) => {
     if (confirm('Bạn có chắc muốn khôi phục phòng ban này?')) {

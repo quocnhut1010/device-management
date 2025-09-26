@@ -1,10 +1,14 @@
 using AutoMapper;
 using backend.Data;
+using backend.Models.DTOs;
 using backend.Models.Entities;
+using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-public class UserService : IUserService
+namespace backend.Services.Implementations
+{
+    public class UserService : IUserService
 {
     private readonly DeviceManagementDbContext _context;
     private readonly IMapper _mapper;
@@ -89,18 +93,29 @@ public class UserService : IUserService
     }
 
 
-    public async Task<bool> RestoreAsync(Guid id)
-    {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-        if (user == null || user.IsDeleted != true) return false;
+        public async Task<bool> RestoreAsync(Guid id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null || user.IsDeleted != true) return false;
 
-        user.IsDeleted = false;
-        user.DeletedAt = null;
-        user.DeletedBy = null;
-        user.UpdatedAt = DateTime.UtcNow;
+            user.IsDeleted = false;
+            user.DeletedAt = null;
+            user.DeletedBy = null;
+            user.UpdatedAt = DateTime.UtcNow;
 
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
-        return true;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IEnumerable<UserDto>> GetByDepartmentAsync(Guid departmentId)
+        {
+            var users = await _context.Users
+                .Include(u => u.Department)
+                .Where(u => u.DepartmentId == departmentId && u.IsDeleted != true)
+                .ToListAsync();
+            
+            return _mapper.Map<IEnumerable<UserDto>>(users);
+        }
     }
 }

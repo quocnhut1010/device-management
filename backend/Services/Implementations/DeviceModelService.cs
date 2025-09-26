@@ -1,10 +1,13 @@
-// Services/Implementations/DeviceModelService.cs
 using AutoMapper;
 using backend.Data;
+using backend.Models.DTOs;
 using backend.Models.Entities;
+using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-public class DeviceModelService : IDeviceModelService
+namespace backend.Services.Implementations
+{
+    public class DeviceModelService : IDeviceModelService
 {
     private readonly DeviceManagementDbContext _context;
 
@@ -58,7 +61,19 @@ public class DeviceModelService : IDeviceModelService
     }
 
 
-public async Task<bool> DeleteAsync(Guid id)
+        public async Task<IEnumerable<DeviceModelDto>> GetAllAsync(bool includeDeleted)
+        {
+            var query = _context.DeviceModels.AsQueryable();
+            if (!includeDeleted)
+            {
+                query = query.Where(x => x.IsDeleted != true);
+            }
+            
+            var models = await query.ToListAsync();
+            return _mapper.Map<IEnumerable<DeviceModelDto>>(models);
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
         {
             var model = await _context.DeviceModels.FindAsync(id);
             if (model == null || model.IsDeleted == true) return false;
@@ -71,4 +86,18 @@ public async Task<bool> DeleteAsync(Guid id)
             return true;
         }
 
+        public async Task<bool> RestoreAsync(Guid id)
+        {
+            var model = await _context.DeviceModels.FindAsync(id);
+            if (model == null || model.IsDeleted != true) return false;
+
+            model.IsDeleted = false;
+            model.DeletedAt = null;
+            model.UpdatedAt = DateTime.UtcNow;
+            _context.DeviceModels.Update(model);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+    }
 }

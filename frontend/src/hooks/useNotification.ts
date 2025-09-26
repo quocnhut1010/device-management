@@ -1,16 +1,17 @@
-// src/hooks/useNotification.ts
-import { useSnackbar, type VariantType } from 'notistack';
+import { useSnackbar, VariantType } from 'notistack';
 
-export const useNotification = () => {
+const useNotification = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const notify = (message: string, variant: VariantType = 'default') => {
-    enqueueSnackbar(message, {
-      variant,
-      anchorOrigin: { vertical: 'top', horizontal: 'right' },
-      autoHideDuration: 3000,
-    });
+    enqueueSnackbar(message, { variant });
   };
 
-  return { notify };
+  const showSuccess = (message: string) => notify(message, 'success');
+  const showError = (message: string) => notify(message, 'error');
+  const showWarning = (message: string) => notify(message, 'warning');
+
+  return { notify, showSuccess, showError, showWarning };
 };
+
+export default useNotification;

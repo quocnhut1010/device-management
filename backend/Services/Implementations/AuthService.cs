@@ -61,5 +61,26 @@ namespace backend.Services.Implementations
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
+        public string? GetCurrentUserPosition(ClaimsPrincipal user)
+        {
+            return user.FindFirst("position")?.Value;
+        }
+
+        public Guid? GetCurrentUserId(ClaimsPrincipal user)
+        {
+            var userIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdStr, out var userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
+        public bool IsAdmin(ClaimsPrincipal user)
+        {
+            var role = user.FindFirst(ClaimTypes.Role)?.Value;
+            return role == "Admin";
+        }
     }
 }

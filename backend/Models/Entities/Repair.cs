@@ -13,6 +13,8 @@ public partial class Repair
     public Guid? DeviceId { get; set; }
 
     public Guid? IncidentReportId { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
     public DateTime? RepairDate { get; set; }
 
@@ -31,6 +33,13 @@ public partial class Repair
     public string? RejectedReason { get; set; }
 
     public DateTime? RejectedAt { get; set; }
+       // ✅ Người được giao sửa chữa
+    public Guid? AssignedToTechnicianId { get; set; }
+    public virtual User? AssignedToTechnician { get; set; }
+
+    // ✅ Người duyệt hoàn tất sửa chữa (temporarily commented out until DB schema is updated)
+    // public Guid? ApprovedBy { get; set; }
+    // public DateTime? ApprovedAt { get; set; }
 
     public virtual Device? Device { get; set; }
 

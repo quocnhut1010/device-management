@@ -1,5 +1,6 @@
 # ========== BACKEND (ASP.NET Core) ==========
 # .NET build folders
+
 **/bin/
 **/obj/
 

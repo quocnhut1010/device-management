@@ -6,7 +6,7 @@ import {
 import { useEffect } from 'react';
 import { DepartmentDto } from '../../types/DepartmentDto';
 import { createDepartment, updateDepartment } from '../../services/departmentService';
-import { useNotification } from '../../hooks/useNotification';
+import  useNotification  from '../../hooks/useNotification';
 import { useForm } from 'react-hook-form';
 
 interface Props {

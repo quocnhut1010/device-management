@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -69,6 +69,9 @@ builder.Services.AddScoped<IDeviceService, DeviceService>();
 
 builder.Services.AddScoped<IDeviceTypeService, DeviceTypeService>();
 
+builder.Services.AddScoped<IDeviceAssignmentService, DeviceAssignmentService>();
+
+
 
 
 builder.Services.AddHttpContextAccessor();
@@ -76,6 +79,10 @@ builder.Services.AddHttpContextAccessor();
 // DbContext
 builder.Services.AddDbContext<DeviceManagementDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add missing service registrations
+builder.Services.AddScoped<IIncidentReportService, IncidentReportService>();
+builder.Services.AddScoped<IRepairService, RepairService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -111,5 +118,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.UseStaticFiles();
+
 
 app.Run();

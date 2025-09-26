@@ -297,6 +297,65 @@ INSERT INTO Users (
     1,
     0
 );
+
+
+-- Thêm thông tin người cấp phát (ai là người thao tác gán)
+ALTER TABLE DeviceAssignments
+ADD AssignedByUserId UNIQUEIDENTIFIER;
+
+ALTER TABLE DeviceAssignments
+ADD FOREIGN KEY (AssignedByUserId) REFERENCES Users(Id);
+
+-- Thêm các trường audit (thời điểm và người thao tác)
+ALTER TABLE DeviceAssignments
+ADD CreatedAt DATETIME DEFAULT GETDATE(),
+    CreatedBy UNIQUEIDENTIFIER,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy UNIQUEIDENTIFIER NULL;
+
+-- Thêm trường soft-delete
+ALTER TABLE DeviceAssignments
+ADD IsDeleted BIT DEFAULT 0,
+    DeletedAt DATETIME NULL,
+    DeletedBy UNIQUEIDENTIFIER NULL;
+
+-- Ràng buộc khóa ngoại cho các trường mới (nếu cần tra cứu người thao tác)
+ALTER TABLE DeviceAssignments
+ADD FOREIGN KEY (CreatedBy) REFERENCES Users(Id),
+    FOREIGN KEY (UpdatedBy) REFERENCES Users(Id),
+    FOREIGN KEY (DeletedBy) REFERENCES Users(Id);
+
+
+
+ALTER TABLE Repairs
+ADD AssignedToTechnicianId UNIQUEIDENTIFIER NULL;
+
+ALTER TABLE Repairs
+ADD CONSTRAINT FK_Repairs_Users_AssignedToTechnician
+    FOREIGN KEY (AssignedToTechnicianId) REFERENCES Users(Id);
+
+ALTER TABLE Repairs
+ALTER COLUMN RepairDate DATETIME;
+
+ALTER TABLE Repairs
+ADD StartDate DATETIME NULL,
+    EndDate DATETIME NULL;
+
+
+-- Run in SQL Server Management Studio:
+ALTER TABLE IncidentReports 
+ADD UpdatedAt DATETIME2 NULL,
+    UpdatedBy NVARCHAR(450) NULL;
+
 select * from Departments
 select * from Users
 select * from Suppliers
+select * from Devices
+select * from IncidentReports
+select * from DeviceAssignments
+select * from DeviceHistories
+
+select * from Repairs
+select * from RepairImages
+
+select ReturnedDate from DeviceAssignments 

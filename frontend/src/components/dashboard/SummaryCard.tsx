@@ -7,9 +7,10 @@ interface SummaryCardProps {
   count: number;
   icon: ReactNode;
   color?: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error';
+  subtitle?: string; // Phần trăm hoặc thông tin bổ sung
 }
 
-const SummaryCard = ({ title, count, icon, color = 'primary' }: SummaryCardProps) => {
+const SummaryCard = ({ title, count, icon, color = 'primary', subtitle }: SummaryCardProps) => {
   return (
     <Paper
       elevation={3}
@@ -41,6 +42,11 @@ const SummaryCard = ({ title, count, icon, color = 'primary' }: SummaryCardProps
         <Typography variant="body2" color="text.secondary">
           {title}
         </Typography>
+        {subtitle && (
+          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+            {subtitle}
+          </Typography>
+        )}
       </Box>
     </Paper>
   );

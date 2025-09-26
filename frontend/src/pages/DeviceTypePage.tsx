@@ -55,17 +55,23 @@ const DeviceTypePage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const confirm = window.confirm('Bạn có chắc muốn xoá loại thiết bị này?');
-    if (!confirm) return;
+  const confirm = window.confirm('Bạn có chắc muốn xoá loại thiết bị này?');
+  if (!confirm) return;
 
-    try {
-      await deleteDeviceType(id);
-      toast.success('Đã xoá loại thiết bị!');
-      fetchDeviceTypes();
-    } catch (err) {
+  try {
+    await deleteDeviceType(id);
+    toast.success('Đã xoá loại thiết bị!');
+    fetchDeviceTypes();
+  } catch (err: any) {
+    if (err?.response?.data?.message?.includes('Không thể xoá loại thiết bị')) {
+      // ❗ Lỗi nghiệp vụ từ backend → cảnh báo
+      toast.warning(err.response.data.message);
+    } else {
       toast.error('❌ Xoá thất bại. Vui lòng thử lại!');
     }
-  };
+  }
+};
+
 
   const handleSubmit = async (data: Partial<DeviceTypeDto>) => {
     try {
@@ -89,7 +95,6 @@ const DeviceTypePage = () => {
       setLoading(false);
     }
   };
-
   return (
     <Container sx={{ mt: 4 }}>
       {/* Tiêu đề + nút thêm */}

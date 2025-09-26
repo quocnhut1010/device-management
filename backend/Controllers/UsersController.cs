@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using backend.Services.Interfaces;
+using backend.Models.DTOs;
 
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
+namespace backend.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
 
@@ -18,6 +22,14 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] bool? isDeleted)
     {
         var result = await _userService.GetAllAsync(isDeleted);
+        return Ok(result);
+    }
+
+    [HttpGet("department/{departmentId}")]
+    [Authorize] // Allow both Admin and User
+    public async Task<IActionResult> GetByDepartment(Guid departmentId)
+    {
+        var result = await _userService.GetByDepartmentAsync(departmentId);
         return Ok(result);
     }
 
@@ -121,5 +133,6 @@ public class UsersController : ControllerBase
 
         var result = await _userService.UpdateAsync(userId, dto);
         return result is null ? NotFound() : Ok(result);
+    }
     }
 }

@@ -7,3 +7,6 @@ export const createSupplier = (data: SupplierDto) => axios.post('/suppliers', da
 export const updateSupplier = (id: string, data: SupplierDto) => axios.put(`/suppliers/${id}`, data);
 export const deleteSupplier = (id: string) => axios.delete(`/suppliers/${id}`);
 export const restoreSupplier = (id: string) => axios.put(`/suppliers/${id}/restore`);
+export const getActiveSuppliers = () => {
+  return axios.get('/suppliers?isDeleted=false'); // ✅ chỉ lấy supplier chưa xoá mềm
+};

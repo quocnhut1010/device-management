@@ -30,7 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import UserProfileDialog from '../user/UserProfileDialog';
 import { getUserProfile, updateUserProfile } from '../../services/userService';
 import { UserDto } from '../../types/UserDto';
-import { useNotification } from '../../hooks/useNotification';
+import  useNotification  from '../../hooks/useNotification';
 
 interface HeaderBarProps {
   onMenuClick: () => void;

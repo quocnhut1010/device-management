@@ -17,7 +17,7 @@ import { DepartmentDto } from '../types/DepartmentDto';
 
 // Nếu dùng axiosInstance.get<...>()
 export const getAllDepartments = async (isDeleted?: boolean) => {
-  const res = await axios.get<DepartmentDto[]>("/Departments", {
+  const res = await axios.get<DepartmentDto[]>("/departments", {
     params: isDeleted !== undefined ? { isDeleted } : {},
   });
   return res;
@@ -30,19 +30,19 @@ export const getMyDepartment = () =>
 // Trả về toàn bộ, cả đã xoá nếu cần
 export const getAllDepartmentsData = async (includeDeleted: boolean = false) => {
   const response = await axios.get<DepartmentDto[]>(
-    `/Departments${includeDeleted ? '' : '?isDeleted=false'}`
+    `/departments${includeDeleted ? '' : '?isDeleted=false'}`
   );
   return response.data;
 };
 
 
-export const getDepartmentById = (id: string) => axios.get<DepartmentDto>(`/Departments/${id}`);
-export const createDepartment = (data: Partial<DepartmentDto>) => axios.post<DepartmentDto>('/Departments', data);
-export const updateDepartment = (id: string, data: Partial<DepartmentDto>) => axios.put<DepartmentDto>(`/Departments/${id}`, data);
-export const deleteDepartment = (id: string) => axios.delete(`/Departments/${id}`);
-export const restoreDepartment = (id: string) =>axios.put(`/Departments/${id}/restore`);
+export const getDepartmentById = (id: string) => axios.get<DepartmentDto>(`/departments/${id}`);
+export const createDepartment = (data: Partial<DepartmentDto>) => axios.post<DepartmentDto>('/departments', data);
+export const updateDepartment = (id: string, data: Partial<DepartmentDto>) => axios.put<DepartmentDto>(`/departments/${id}`, data);
+export const deleteDepartment = (id: string) => axios.delete(`/departments/${id}`);
+export const restoreDepartment = (id: string) =>axios.put(`/departments/${id}/restore`);
 export const fetchDepartments = async (isDeleted?: boolean) => {
-  const response = await axios.get<DepartmentDto[]>("/Departments", {
+  const response = await axios.get<DepartmentDto[]>("/departments", {
     params: isDeleted !== undefined ? { isDeleted } : {},
   });
   return response.data;

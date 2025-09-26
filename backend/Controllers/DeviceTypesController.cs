@@ -55,7 +55,15 @@ public class DeviceTypesController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var success = await _service.DeleteAsync(id);
-        return success ? Ok() : NotFound();
+        try
+        {
+            var success = await _service.DeleteAsync(id);
+            return success ? Ok() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
+
 }

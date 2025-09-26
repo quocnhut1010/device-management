@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Typography, Box, CircularProgress } from '@mui/material';
+import { Typography, Box, CircularProgress, Button, IconButton } from '@mui/material';
 import DevicesIcon from '@mui/icons-material/Devices';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import { getUserFromToken } from '../services/auth';
-import { getAllDevices } from '../services/deviceService';
-import { getAllDepartments, getAllDepartmentsData } from '../services/departmentService';
+import { getAllDevices, getMyDevices, getManagedDevices } from '../services/deviceService';
+import { getAllDepartmentsData } from '../services/departmentService';
 import { getAllUsersData } from '../services/userService';
 import { getAllAssignments } from '../services/assignmentService';
 
@@ -16,69 +17,162 @@ const Dashboard = () => {
   const [deviceCount, setDeviceCount] = useState(0);
   const [departmentCount, setDepartmentCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
-  const [activeAssignmentCount, setActiveAssignmentCount] = useState(0);
+  const [activeDeviceCount, setActiveDeviceCount] = useState(0);
   const [role, setRole] = useState<string | null>(null);
+  const [position, setPosition] = useState<string | null>(null);
   const [email, setEmail] = useState('');
+  const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setHasToken(false);
+      setLoading(false);
+      return;
+    }
+    setHasToken(true);
+    
     const user = getUserFromToken();
     if (user) {
       setEmail(user.email);
       setRole(user.role);
+      setPosition(user.position || null);
     }
- const fetchData = async () => {
-    try {
-      const res = await getAllDepartments(); // ✅ Đúng: dùng từ departmentService
-      console.log('Dashboard - Tổng phòng ban:', res.data.length);
-      setDepartmentCount(res.data.length);
-    } catch (error) {
-      console.error('Lỗi khi load dashboard:', error); // lỗi đang ở đây
-    }
-  };
-    const fetchUserCount = async () => {
+
+    const fetchDashboardData = async () => {
+      console.log('=== Bắt đầu fetch dashboard data ===');
+      
+      // Kiểm tra token trước khi gọi API
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Không có token, không thể gọi API');
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
       try {
-        const users = await getAllUsersData(true); // users là UserDto[]
-        console.log('Dashboard - Tổng user:', users.length);
+        console.log('1. Gọi API thiết bị theo role/position...');
+        let devices: any[] = [];
+        
+        // Gọi API phù hợp theo role và position
+        const user = getUserFromToken();
+        if (user?.role === 'Admin') {
+          console.log('Admin - Gọi getAllDevices');
+          devices = await getAllDevices();
+        } else if (user?.position === 'Trưởng phòng') {
+          console.log('Trưởng phòng - Gọi getManagedDevices');
+          devices = await getManagedDevices();
+        } else {
+          console.log('Nhân viên - Gọi getMyDevices');
+          devices = await getMyDevices();
+        }
+        console.log('1. devices response:', devices);
+
+        // Chỉ Admin mới có thể xem tất cả departments và users
+        let departments: any[] = [];
+        let users: any[] = [];
+        
+        if (user?.role === 'Admin') {
+          console.log('2. Admin - Gọi API getAllDepartmentsData...');
+          departments = await getAllDepartmentsData(false);
+          console.log('2. getAllDepartmentsData response:', departments);
+
+          console.log('3. Admin - Gọi API getAllUsersData...');
+          users = await getAllUsersData(false);
+          console.log('3. getAllUsersData response:', users);
+        } else {
+          console.log('2-3. User/Trưởng phòng - Bỏ qua departments và users statistics');
+        }
+
+        console.log('4. Gọi API getAllAssignments... (bỏ qua vì chưa có backend)');
+        // const assignments = await getAllAssignments();
+        const assignments = []; // Mock empty array
+        console.log('4. getAllAssignments response:', assignments);
+
+        // Tổng thiết bị
+        console.log('Dashboard - Tổng thiết bị:', devices.length);
+        setDeviceCount(devices.length);
+
+        // Thiết bị đang sử dụng
+        console.log('Tất cả thiết bị:', devices);
+        const devicesInUse = devices.filter(
+          (device: any) => {
+            console.log(`Device ${device.deviceCode} status:`, device.status);
+            return device.status === 'Đang sử dụng' ||
+                   device.status === 'InUse' ||
+                   device.status === 'In Use';
+          }
+        );
+        console.log('Dashboard - Thiết bị đang sử dụng:', devicesInUse.length, devicesInUse);
+        setActiveDeviceCount(devicesInUse.length);
+
+        // Tổng phòng ban
+        console.log('Dashboard - Tổng phòng ban:', departments.length);
+        setDepartmentCount(departments.length);
+
+        // Tổng người dùng
+        console.log('Dashboard - Tổng người dùng:', users.length);
         setUserCount(users.length);
-      } catch (error) {
-        console.error('Lỗi khi load tổng user:', error);
+
+      } catch (error: any) {
+        console.error('=== Lỗi khi load dashboard ===');
+        console.error('Chi tiết lỗi:', error);
+        
+        // Xử lý lỗi 401 (Unauthorized)
+        if (error?.response?.status === 401) {
+          console.error('Token hết hạn hoặc không hợp lệ, chuyển hướng về trang login');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Set giá trị mặc định khi có lỗi
+        setDeviceCount(0);
+        setActiveDeviceCount(0);
+        setDepartmentCount(0);
+        setUserCount(0);
+      } finally {
+        console.log('=== Kết thúc fetch dashboard data ===');
+        setLoading(false);
       }
     };
 
-
-  fetchData();
-  fetchUserCount();
-    setLoading(true);
-    Promise.all([
-      getAllDevices(),
-      getAllDepartmentsData(true), // 👈 lấy cả phòng ban đã xoá
-      getAllUsersData(true),
-      getAllAssignments(),
-    ])
-      .then(([devices, departments, users, assignments]) => {
-        setDeviceCount(devices.length);
-        setDepartmentCount(departments.length);
-        setUserCount(users.length);
-
-        const activeAssignments = assignments.filter(
-          (a: any) =>
-            a.status === 'Active' || a.status === 'Đang sử dụng'
-        );
-        setActiveAssignmentCount(activeAssignments.length);
-      })
-      .catch((err) => {
-        console.error('Lỗi khi load dashboard:', err);
-      })
-      .finally(() => setLoading(false));
+    fetchDashboardData();
   }, []);
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Bảng điều khiển
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          Hi, Welcome back 👋
+        </Typography>
+        <IconButton 
+          onClick={() => window.location.reload()} 
+          disabled={loading}
+          sx={{ ml: 2 }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Box>
 
-      {loading ? (
+      {!hasToken ? (
+        <Box sx={{ textAlign: 'center', my: 5 }}>
+          <Typography variant="h6" color="error">
+            Bạn cần đăng nhập để xem dữ liệu dashboard
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, mb: 2 }}>
+            Token trong localStorage: {localStorage.getItem('token') ? 'Có' : 'Không có'}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => window.location.href = '/login'}
+            sx={{ mt: 2 }}
+          >
+            Đăng nhập
+          </Button>
+        </Box>
+      ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           <CircularProgress />
         </Box>
@@ -94,26 +188,40 @@ const Dashboard = () => {
             }}
           >
             <SummaryCard
-              title="Tổng thiết bị"
+              title={
+                role === 'Admin' 
+                  ? 'Tổng thiết bị' 
+                  : position === 'Trưởng phòng' 
+                    ? 'Thiết bị phòng ban' 
+                    : 'Thiết bị của tôi'
+              }
               count={deviceCount}
               icon={<DevicesIcon />}
               color="primary"
             />
-            <SummaryCard
-              title="Phòng ban"
-              count={departmentCount}
-              icon={<ApartmentIcon />}
-              color="info"
-            />
-            <SummaryCard
-              title="Người dùng"
-              count={userCount}
-              icon={<PeopleIcon />}
-              color="success"
-            />
+            
+            {/* Chỉ hiển thị cho Admin */}
+            {role === 'Admin' && (
+              <>
+                <SummaryCard
+                  title="Phòng ban"
+                  count={departmentCount}
+                  icon={<ApartmentIcon />}
+                  color="info"
+                />
+                <SummaryCard
+                  title="Người dùng"
+                  count={userCount}
+                  icon={<PeopleIcon />}
+                  color="success"
+                />
+              </>
+            )}
+            
             <SummaryCard
               title="Thiết bị đang sử dụng"
-              count={activeAssignmentCount}
+              count={activeDeviceCount}
+              subtitle={deviceCount > 0 ? `${Math.round((activeDeviceCount / deviceCount) * 100)}% tổng số` : '0%'}
               icon={<AssignmentIcon />}
               color="warning"
             />
@@ -126,9 +234,26 @@ const Dashboard = () => {
             <Typography>
               Vai trò: {role === 'Admin' ? 'Quản trị viên (Admin)' : 'Người dùng (User)'}
             </Typography>
+            {position && (
+              <Typography>
+                Chức vụ: {position}
+              </Typography>
+            )}
           </Box>
         </>
       )}
+      
+      {/* Debug Info */}
+      {/* <Box sx={{ mt: 4, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+        <Typography variant="h6">Debug Info</Typography>
+        <Typography variant="body2">Has Token: {hasToken ? 'Yes' : 'No'}</Typography>
+        <Typography variant="body2">Loading: {loading ? 'Yes' : 'No'}</Typography>
+        <Typography variant="body2">Device Count: {deviceCount}</Typography>
+        <Typography variant="body2">Active Device Count: {activeDeviceCount}</Typography>
+        <Typography variant="body2">Department Count: {departmentCount}</Typography>
+        <Typography variant="body2">User Count: {userCount}</Typography>
+        <Typography variant="body2">Token Preview: {localStorage.getItem('token')?.substring(0, 50)}...</Typography>
+      </Box> */}
     </Box>
   );
 };

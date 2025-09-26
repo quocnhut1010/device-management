@@ -1,4 +1,5 @@
 using AutoMapper;
+using backend.Models.Dtos.IncidentReports;
 using backend.Models.DTOs;
 using backend.Models.Entities;
 
@@ -13,34 +14,48 @@ namespace backend.Helpers
                 .ForMember(dest => dest.DepartmentName,
                     opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null));
 
-            // map ngược lại từ UserDto -> User (dùng cho Update)
             CreateMap<UserDto, User>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore())              // không override Id
-                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())    // không cho sửa password
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeletedBy, opt => opt.Ignore());
 
-            // RegisterUserDto -> User (dùng cho Create)
             CreateMap<RegisterUserDto, User>();
 
-            // Device -> DeviceDto
+            // ✅ Device → DeviceDto
             CreateMap<Device, DeviceDto>()
                 .ForMember(dest => dest.ModelName,
                     opt => opt.MapFrom(src => src.Model != null ? src.Model.ModelName : null))
+                .ForMember(dest => dest.DeviceTypeName,
+                    opt => opt.MapFrom(src => src.Model != null && src.Model.DeviceType != null ? src.Model.DeviceType.TypeName : null))
                 .ForMember(dest => dest.DepartmentName,
                     opt => opt.MapFrom(src => src.CurrentDepartment != null ? src.CurrentDepartment.DepartmentName : null))
                 .ForMember(dest => dest.CurrentUserName,
-                    opt => opt.MapFrom(src => src.CurrentUser != null ? src.CurrentUser.FullName : null));
+                    opt => opt.MapFrom(src => src.CurrentUser != null ? src.CurrentUser.FullName : null))
+                .ForMember(dest => dest.SupplierName,
+                    opt => opt.MapFrom(src => src.Supplier != null ? src.Supplier.SupplierName : null));
 
-            // IncidentReport
-            CreateMap<CreateIncidentReportDto, IncidentReport>();
+            // Device Create/Update
+            CreateMap<CreateDeviceDto, Device>();
+
+            CreateMap<UpdateDeviceDto, Device>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+
 
             // Repair
             CreateMap<RepairRequestDto, Repair>();
 
             // DeviceModel
-            CreateMap<DeviceModel, DeviceModelDto>().ReverseMap();
+            CreateMap<DeviceModel, DeviceModelDto>()
+                .ForMember(dest => dest.TypeName,
+                    opt => opt.MapFrom(src => src.DeviceType != null ? src.DeviceType.TypeName : null))
+                .ReverseMap();
 
             // Supplier
             CreateMap<Supplier, SupplierDto>()
@@ -49,23 +64,72 @@ namespace backend.Helpers
                         ? src.Devices.Count(d => !d.IsDeleted.GetValueOrDefault())
                         : 0))
                 .ReverseMap();
-            CreateMap<SupplierDto, Supplier>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
-            .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.DeletedBy, opt => opt.Ignore());
 
-            // Department <-> DepartmentDto
+            CreateMap<SupplierDto, Supplier>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore());
+
+            // Department
             CreateMap<Department, DepartmentDto>()
                 .ForMember(dest => dest.DeviceCount,
                     opt => opt.MapFrom(src => src.Devices != null ? src.Devices.Count(d => !d.IsDeleted.GetValueOrDefault()) : 0))
                 .ForMember(dest => dest.UserCount,
                     opt => opt.MapFrom(src => src.Users != null ? src.Users.Count(u => !u.IsDeleted.GetValueOrDefault()) : 0))
                 .ReverseMap();
-                
-            // DeviceTypes
+
+            // DeviceType
             CreateMap<DeviceType, DeviceTypeDto>().ReverseMap();
+
+            // DeviceAssignment → DeviceAssignmentDto
+            CreateMap<DeviceAssignment, DeviceAssignmentDto>()
+                .ForMember(dest => dest.DeviceCode, opt => opt.MapFrom(src => src.Device!.DeviceCode))
+                .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device!.DeviceName))
+                .ForMember(dest => dest.AssignedToUserName, opt => opt.MapFrom(src => src.AssignedToUser!.FullName))
+                .ForMember(dest => dest.AssignedToDepartmentName, opt => opt.MapFrom(src => src.AssignedToDepartment!.DepartmentName))
+                .ForMember(dest => dest.AssignedByUserName, opt => opt.MapFrom(src => src.AssignedByUser!.FullName));
+
+            // CreateDeviceAssignmentDto → DeviceAssignment
+            CreateMap<CreateDeviceAssignmentDto, DeviceAssignment>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore());
+
+            // IncidentReport
+            CreateMap<CreateIncidentReportDto, IncidentReport>();
+            
+            // IncidentReport → IncidentReportDto (with nested objects)
+            CreateMap<IncidentReport, IncidentReportDto>()
+                .ForMember(dest => dest.Device, opt => opt.MapFrom(src => src.Device))
+                .ForMember(dest => dest.ReportedByUser, opt => opt.MapFrom(src => src.ReportedByUser));
+                
+            // Device → IncidentDeviceDto (simplified for incident reports)
+            CreateMap<Device, backend.Models.Dtos.IncidentReports.IncidentDeviceDto>();
+            
+            // User → IncidentUserDto (simplified for incident reports)
+            CreateMap<User, backend.Models.Dtos.IncidentReports.IncidentUserDto>();
+
+            // IncidentReportDto → Entity: Không cần ánh xạ ngược
+
+            // UpdateIncidentReportDto → IncidentReport
+            CreateMap<UpdateIncidentReportDto, IncidentReport>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore()) // tránh ghi đè Id
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore());
+
+           CreateMap<Repair, RepairDto>()
+            .ForMember(dest => dest.DeviceCode, opt => opt.MapFrom(src => src.Device.DeviceCode))
+            .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.DeviceName))
+            .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src => src.AssignedToTechnicianId ?? Guid.Empty))
+            .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedToTechnician.FullName))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
         }
     }

@@ -11,4 +11,6 @@ public class DeviceModelDto
     public Guid? UpdatedBy { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedBy { get; set; }
+    public string? TypeName { get; set; } // Thêm dòng này
+
 }

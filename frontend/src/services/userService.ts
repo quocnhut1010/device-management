@@ -18,4 +18,10 @@ export const getAllUsersData = async (includeDeleted: boolean = true) => {
   return res.data; // ✅ trả về mảng luôn
 };
 
+// Lấy danh sách nhân viên theo phòng ban (đang hoạt động và chưa bị xóa)
+export const getUsersByDepartment = async (departmentId: string): Promise<UserDto[]> => {
+  const res = await axiosInstance.get<UserDto[]>(`/users/department/${departmentId}`);
+  return res.data;
+};
+
 

@@ -1,58 +1,83 @@
-// src/services/deviceService.ts
-import axiosClient from './axios';
-import type { Device } from '../types/device'; // optional: nếu có định nghĩa type
+import axios from './axios';
+import { DeviceDto, CreateDeviceDto, UpdateDeviceDto, PaginatedResult } from '../types/device';
 
-// Lấy tất cả thiết bị
-export const getAllDevices = async (): Promise<Device[]> => {
-  try {
-    const response = await axiosClient.get('/Devices');
-    return response.data;
-  } catch (error) {
-    console.error('❌ Lỗi khi lấy danh sách thiết bị:', error);
-    return []; // Trả về mảng rỗng để tránh crash UI
-  }
+// Lấy danh sách thiết bị có phân trang
+// deviceService.ts
+export const getPagedDevices = async ({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}): Promise<PaginatedResult<DeviceDto>> => {
+  const response = await axios.get(`/device/paged?page=${page + 1}&pageSize=${pageSize}`);
+  // Map backend response structure to frontend expected structure
+  return {
+    items: response.data.devices || [],
+    totalCount: response.data.total || 0
+  };
 };
 
-// Lấy thiết bị theo ID
-export const getDeviceById = async (id: string): Promise<Device | null> => {
-  try {
-    const response = await axiosClient.get(`/Devices/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('❌ Lỗi khi lấy thiết bị theo ID:', error);
-    return null;
-  }
+
+// Lấy toàn bộ thiết bị chưa bị xoá
+export const getAllDevices = async (): Promise<DeviceDto[]> => {
+  const res = await axios.get('/device');
+  return res.data;
 };
 
-// Thêm mới thiết bị
-export const createDevice = async (device: Device): Promise<boolean> => {
-  try {
-    await axiosClient.post('/Devices', device);
-    return true;
-  } catch (error) {
-    console.error('❌ Lỗi khi tạo thiết bị:', error);
-    return false;
-  }
+// Lấy danh sách thiết bị đã xoá mềm
+export const getDeletedDevices = async (): Promise<DeviceDto[]> => {
+  const res = await axios.get('/device/deleted');
+  return res.data;
+};
+
+// Khôi phục thiết bị đã xoá
+export const restoreDevice = async (id: string): Promise<void> => {
+  await axios.put(`/device/restore/${id}`);
+};
+
+// Lấy chi tiết thiết bị theo ID
+export const getDeviceById = async (id: string): Promise<DeviceDto> => {
+  const res = await axios.get(`/device/${id}`);
+  return res.data;
+};
+
+// Tạo thiết bị mới
+export const createDevice = async (device: CreateDeviceDto): Promise<void> => {
+  await axios.post('/device', device);
 };
 
 // Cập nhật thiết bị
-export const updateDevice = async (id: string, device: Device): Promise<boolean> => {
-  try {
-    await axiosClient.put(`/Devices/${id}`, device);
-    return true;
-  } catch (error) {
-    console.error('❌ Lỗi khi cập nhật thiết bị:', error);
-    return false;
-  }
+export const updateDevice = async (id: string, device: UpdateDeviceDto): Promise<void> => {
+  await axios.put(`/device/${id}`, device);
 };
 
-// Xóa thiết bị
-export const deleteDevice = async (id: string): Promise<boolean> => {
-  try {
-    await axiosClient.delete(`/Devices/${id}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Lỗi khi xóa thiết bị:', error);
-    return false;
-  }
+// Xoá mềm thiết bị
+export const deleteDevice = async (id: string): Promise<void> => {
+  await axios.delete(`/device/${id}`);
+};
+export const createDeviceWithImage = async (formData: FormData) => {
+  const res = await axios.post('/device', formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const updateDeviceWithImage = async (id: string, formData: FormData) => {
+  const res = await axios.put(`/device/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+// Lấy danh sách thiết bị của tôi (cho Nhân viên)
+export const getMyDevices = async (): Promise<DeviceDto[]> => {
+  const res = await axios.get('/device/my');
+  return res.data;
+};
+
+// Lấy danh sách thiết bị của phòng ban quản lý (cho Trưởng phòng)
+export const getManagedDevices = async (): Promise<DeviceDto[]> => {
+  const res = await axios.get('/device/managed');
+  return res.data;
 };

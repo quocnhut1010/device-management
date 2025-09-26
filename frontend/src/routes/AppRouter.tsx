@@ -16,6 +16,11 @@ import SupplierPage from '../pages/SupplierPage';
 import PrivateRoute from '../components/auth/PrivateRoute';
 import AppLayout from '../components/layout/AppLayout';
 import DeviceTypePage from '../pages/DeviceTypePage';
+import DeviceModelPage from '../pages/DeviceModelPage';
+import DeviceAssignmentPage from '../pages/DeviceAssignmentPage';
+import DepartmentDevicesPage from '../pages/DepartmentDevicesPage';
+import IncidentReportPage from '../pages/IncidentReportPage';
+import RepairManagementPage from '../pages/RepairManagementPage';
 
 const AppRoutes = () => {
   return (
@@ -74,6 +79,46 @@ const AppRoutes = () => {
               element={
                 <PrivateRoute allowedRoles={['Admin']}>
                   <DeviceTypePage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/device-models"
+              element={
+                <PrivateRoute allowedRoles={['Admin']}>
+                  <DeviceModelPage />
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/assignments"
+              element={
+                <PrivateRoute allowedRoles={['Admin']}>
+                  <DeviceAssignmentPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/department-devices"
+              element={
+                <PrivateRoute allowedRoles={['User']} allowedPositions={['Trưởng phòng']}>
+                  <DepartmentDevicesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="incidents"
+              element={
+                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                  <IncidentReportPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="repairs"
+              element={
+                <PrivateRoute allowedRoles={['Admin']} allowedPositions={['Kỹ thuật viên']} requireBoth={false}>
+                  <RepairManagementPage />
                 </PrivateRoute>
               }
             />

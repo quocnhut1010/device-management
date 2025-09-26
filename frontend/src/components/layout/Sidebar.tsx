@@ -41,6 +41,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import PeopleIcon from '@mui/icons-material/People';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import GroupWorkIcon from '@mui/icons-material/GroupWork';
 
 const drawerWidth = 240;
 const collapsedWidth = 72;
@@ -64,6 +65,7 @@ const Sidebar = ({}: SidebarProps) => {
 
   const user = getUserFromToken();
   const role = user?.role ?? 'User';
+  const position = user?.position;
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -210,8 +212,25 @@ const Sidebar = ({}: SidebarProps) => {
         {/* Vận hành & Lịch sử */}
         <SidebarSection label="Vận hành & Lịch sử" collapsed={collapsed} />
         <SidebarItem label="Cấp phát" icon={<AssignmentIcon />} path="/assignments" active={isActive('/assignments')} collapsed={collapsed} onClick={() => handleNavigate('/assignments')} />
-        <SidebarItem label="Sửa chữa" icon={<BuildIcon />} path="/repairs" active={isActive('/repairs')} collapsed={collapsed} onClick={() => handleNavigate('/repairs')} />
+        
+        {/* Trưởng phòng: Xem thiết bị của phòng ban */}
+        {/* {position === 'Trưởng phòng' && (
+          <SidebarItem 
+            label="Thiết bị phòng ban" 
+            icon={<GroupWorkIcon />} 
+            path="/department-devices" 
+            active={isActive('/department-devices')} 
+            collapsed={collapsed} 
+            onClick={() => handleNavigate('/department-devices')} 
+          />
+        )} */}
+        {/* Báo cáo sự cố - Tất cả user đã login */}
         <SidebarItem label="Báo cáo sự cố" icon={<ReportProblemIcon />} path="/incidents" active={isActive('/incidents')} collapsed={collapsed} onClick={() => handleNavigate('/incidents')} />
+        
+        {/* Sửa chữa - Admin hoặc Kỹ thuật viên */}
+        {(role === 'Admin' || position === 'Kỹ thuật viên') && (
+          <SidebarItem label="Sửa chữa" icon={<BuildIcon />} path="/repairs" active={isActive('/repairs')} collapsed={collapsed} onClick={() => handleNavigate('/repairs')} />
+        )}
 
         {role === 'Admin' && (
           <>
