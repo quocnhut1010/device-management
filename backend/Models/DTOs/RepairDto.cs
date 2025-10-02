@@ -1,3 +1,5 @@
+using backend.Models;
+
 public class RepairDto
 {
     public Guid Id { get; set; }
@@ -13,7 +15,7 @@ public class RepairDto
     public DateTime? RepairDate { get; set; }
 
     public string? Description { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public int Status { get; set; }
     public string StatusText { get; set; } = string.Empty;
 
     public string? RepairCompany { get; set; }
@@ -23,6 +25,7 @@ public class RepairDto
 
     public DateTime? RejectedAt { get; set; }
     public string? RejectedReason { get; set; }
-    public List<string> ImageUrls { get; set; } = new();
+     public List<RepairImageDto> RepairImages { get; set; } = new();
+
 
 }

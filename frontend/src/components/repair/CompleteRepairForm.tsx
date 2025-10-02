@@ -37,6 +37,8 @@ export default function CompleteRepairForm({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+
 
   React.useEffect(() => {
     if (open && repair) {
@@ -64,7 +66,10 @@ export default function CompleteRepairForm({
     try {
       setLoading(true);
       setError('');
-
+      if (imageFiles.length > 0) {
+        const uploadedUrls = await repairService.uploadRepairImages(repair.id, imageFiles);
+        formData.imageUrls = uploadedUrls;
+      }
       await repairService.completeRepair(repair.id, formData);
       onSuccess();
       onClose();
@@ -174,16 +179,65 @@ export default function CompleteRepairForm({
 
             {/* URL hình ảnh */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="URL hình ảnh sau sửa chữa (tùy chọn)"
-                multiline
-                rows={3}
-                value={formData.imageUrls?.join('\n') || ''}
-                onChange={(e) => handleImageUrlChange(e.target.value)}
-                placeholder="Nhập từng URL trên một dòng&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                helperText="Mỗi URL một dòng. Hình ảnh minh chứng công việc đã hoàn thành."
-              />
+              <Typography variant="subtitle2" gutterBottom>
+                Ảnh sau sửa chữa (chọn nhiều):
+              </Typography>
+              <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                if (e.target.files) {
+                  setImageFiles(Array.from(e.target.files));
+                  e.target.value = ""; // reset input sau khi chọn
+                }
+              }}
+            />
+              {imageFiles.length > 0 && (
+              <Box mt={2}>
+                <Typography variant="subtitle2">Ảnh đang chọn:</Typography>
+                <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
+                  {imageFiles.map((file, index) => (
+                    <Box
+                      key={index}
+                      position="relative"
+                      width={100}
+                      height={100}
+                      border="1px solid #ccc"
+                      borderRadius={1}
+                      overflow="hidden"
+                    >
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`preview-${index}`}
+                        width="100%"
+                        height="100%"
+                        style={{ objectFit: 'cover' }}
+                      />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="error"
+                        onClick={() =>
+                          setImageFiles(prev => prev.filter((_, i) => i !== index))
+                        }
+                        sx={{
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          minWidth: 24,
+                          height: 24,
+                          padding: 0,
+                          fontSize: 12
+                        }}
+                      >
+                        ✕
+                      </Button>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
             </Grid>
 
             {/* Hiển thị thông tin báo cáo gốc */}

@@ -22,7 +22,8 @@ import {
   Check as CompleteIcon,
   CheckCircle as ConfirmIcon,
   Close as RejectIcon,
-  RemoveCircle as NotNeededIcon
+  RemoveCircle as NotNeededIcon,
+  Assignment as AssignIcon
 } from '@mui/icons-material';
 import {
   Repair,
@@ -32,8 +33,10 @@ import {
   RepairStatus
 } from '../../services/repairService';
 import { getUserFromToken } from '../../services/auth';
+import AssignTechnicianDialog from './AssignTechnicianDialog';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { formatDateVN } from '../../utils/dateUtils';
 
 interface RepairListProps {
   showMyRepairs?: boolean;
@@ -43,6 +46,8 @@ interface RepairListProps {
   onConfirmCompletion: (repairId: string) => void;
   onRejectRepair: (repairId: string) => void;
   onMarkNotNeeded: (repairId: string) => void;
+  onAssignTechnician?: (repair: Repair) => void;
+  onRejectOrNotNeeded?: (repair: Repair) => void;
   refreshTrigger?: number;
 }
 
@@ -54,6 +59,8 @@ export default function RepairList({
   onConfirmCompletion,
   onRejectRepair,
   onMarkNotNeeded,
+  onAssignTechnician,
+  onRejectOrNotNeeded,
   refreshTrigger
 }: RepairListProps) {
   const [repairs, setRepairs] = useState<Repair[]>([]);
@@ -67,6 +74,7 @@ export default function RepairList({
   useEffect(() => {
     loadRepairs();
   }, [showMyRepairs, refreshTrigger]);
+
 
   const loadRepairs = async () => {
     try {
@@ -82,21 +90,21 @@ export default function RepairList({
 
       setRepairs(data);
     } catch (error: any) {
-      console.error('Lỗi khi tải danh sách lệnh sửa chữa:', error);
       setError('Không thể tải danh sách lệnh sửa chữa');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: vi });
-    } catch {
-      return dateString;
-    }
-  };
+ const formatDate = (dateString?: string, withTime = true) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString); // parse ISO "2025-09-27T14:35:00"
+    return format(date, withTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy', { locale: vi });
+  } catch {
+    return dateString;
+  }
+};
 
   const formatCurrency = (amount?: number) => {
     if (!amount) return 'N/A';
@@ -114,7 +122,7 @@ export default function RepairList({
   const canComplete = (repair: Repair): boolean => {
     return isTechnician && 
            repair.status === RepairStatus.DangSua &&
-           repair.assignedToTechnicianId === currentUser?.nameid;
+           repair.technicianId === currentUser?.nameid;
   };
 
   const canConfirm = (repair: Repair): boolean => {
@@ -124,14 +132,26 @@ export default function RepairList({
   const canReject = (repair: Repair): boolean => {
     return isTechnician && 
            repair.status === RepairStatus.ChoThucHien &&
-           (repair.assignedToTechnicianId === currentUser?.nameid || !repair.assignedToTechnicianId);
+           (repair.technicianId === currentUser?.nameid || !repair.technicianId);
   };
 
   const canMarkNotNeeded = (repair: Repair): boolean => {
     return isTechnician && 
            repair.status === RepairStatus.DangSua &&
-           repair.assignedToTechnicianId === currentUser?.nameid;
+           repair.technicianId === currentUser?.nameid;
   };
+
+  const canAssignTechnician = (repair: Repair): boolean => {
+    return isAdmin && repair.status === RepairStatus.ChoThucHien;
+  };
+
+const canRejectOrNotNeeded = (repair: Repair): boolean => {
+  return isTechnician &&
+         (repair.status === RepairStatus.ChoThucHien || repair.status === RepairStatus.DangSua) &&
+         repair.technicianId === currentUser?.nameid; // ✅ sửa lại đúng tên trường
+};
+
+
 
   if (loading) {
     return (
@@ -197,15 +217,10 @@ export default function RepairList({
 
                   {!showMyRepairs && (
                     <TableCell>
-                      {repair.assignedToTechnician ? (
-                        <Box>
-                          <Typography variant="body2">
-                            {repair.assignedToTechnician.fullName}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {repair.assignedToTechnician.email}
-                          </Typography>
-                        </Box>
+                      {repair.technicianName ? (
+                        <Typography variant="body2">
+                          {repair.technicianName}
+                        </Typography>
                       ) : (
                         <Typography variant="body2" color="textSecondary" fontStyle="italic">
                           Chưa phân công
@@ -220,11 +235,15 @@ export default function RepairList({
 
                   <TableCell>
                     <Typography variant="body2">
-                      Bắt đầu: {formatDate(repair.startDate)}
+                      Bầt đầu: {repair.startDate ? formatDateVN(repair.startDate, true) : '---'}
                     </Typography>
-                    {repair.endDate && (
+                    {repair.endDate ? (
                       <Typography variant="body2">
-                        Kết thúc: {formatDate(repair.endDate)}
+                        Kết thúc: {formatDateVN(repair.endDate, true)}
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="textSecondary">
+                        Chưa hoàn thành
                       </Typography>
                     )}
                   </TableCell>
@@ -248,6 +267,19 @@ export default function RepairList({
                           <ViewIcon />
                         </IconButton>
                       </Tooltip>
+
+                      {/* Phân công kỹ thuật viên */}
+                      {canAssignTechnician(repair) && onAssignTechnician && (
+                        <Tooltip title="Phân công kỹ thuật viên">
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => onAssignTechnician(repair)}
+                          >
+                            <AssignIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
 
                       {/* Chấp nhận lệnh sửa */}
                       {canAccept(repair) && (
@@ -287,29 +319,35 @@ export default function RepairList({
                           </IconButton>
                         </Tooltip>
                       )}
+            {/* {isTechnician && repair.status === 0 && (
+              <>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => onRejectRepair?.(repair.id)}
+                >
+                  Từ chối
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => onMarkNotNeeded?.(repair.id)}
+                >
+                  Không cần sửa
+                </Button>
+              </>
+            )} */}
+            
 
-                      {/* Từ chối lệnh sửa */}
-                      {canReject(repair) && (
-                        <Tooltip title="Từ chối lệnh sửa">
+                      {/* Nút mới: Chọn từ chối hoặc không cần sửa */}
+                      {canRejectOrNotNeeded(repair) && onRejectOrNotNeeded && (
+                        <Tooltip title="Từ chối hoặc không cần sửa">
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => onRejectRepair(repair.id)}
+                            onClick={() => onRejectOrNotNeeded(repair)}
                           >
                             <RejectIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-
-                      {/* Đánh dấu không cần sửa */}
-                      {canMarkNotNeeded(repair) && (
-                        <Tooltip title="Không cần sửa">
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => onMarkNotNeeded(repair.id)}
-                          >
-                            <NotNeededIcon />
                           </IconButton>
                         </Tooltip>
                       )}

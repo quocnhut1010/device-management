@@ -1,5 +1,6 @@
-import axios from './axios';
+import api from './axios';
 
+// ========== INTERFACES ==========
 export interface Repair {
   id: string;
   deviceId: string;
@@ -17,7 +18,8 @@ export interface Repair {
   rejectedBy?: string;
   rejectedReason?: string;
   rejectedAt?: string;
-  assignedToTechnicianId?: string;
+  technicianId?: string;
+  technicianName?: string;
   approvedBy?: string;
   approvedAt?: string;
   device?: {
@@ -30,11 +32,6 @@ export interface Repair {
     reportType: string;
     description: string;
   };
-  assignedToTechnician?: {
-    id: string;
-    fullName: string;
-    email: string;
-  };
   repairImages?: RepairImage[];
 }
 
@@ -42,6 +39,7 @@ export interface RepairImage {
   id: string;
   repairId: string;
   imageUrl: string;
+  description?: string;
 }
 
 export interface RepairRequestDto {
@@ -60,16 +58,33 @@ export interface NotNeededRepairDto {
   note: string;
 }
 
-// Status constants
-export const RepairStatus = {
-  ChoThucHien: 0,       // Chờ thực hiện
-  DangSua: 1,           // Đang sửa
-  ChoDuyetHoanTat: 2,   // Chờ duyệt hoàn tất
-  DaHoanTat: 3,         // Đã hoàn tất
-  TuChoi: 4,            // Từ chối
-  KhongCanSua: 5        // Không cần sửa
-} as const;
+export interface RejectOrNotNeededDto {
+  status: number;
+  reason: string;
+}
 
+export interface AssignTechnicianDto {
+  technicianId: string;
+  note?: string;
+}
+
+export interface TechnicianUser {
+  id: string;
+  fullName: string;
+  email: string;
+  position: string;
+  departmentName?: string;
+}
+
+// ========== STATUS ==========
+export const RepairStatus = {
+  ChoThucHien: 0,
+  DangSua: 1,
+  ChoDuyetHoanTat: 2,
+  DaHoanTat: 3,
+  TuChoi: 4,
+  KhongCanSua: 5,
+} as const;
 export const getRepairStatusText = (status: number): string => {
   switch (status) {
     case RepairStatus.ChoThucHien: return 'Chờ thực hiện';
@@ -94,51 +109,84 @@ export const getRepairStatusColor = (status: number): string => {
   }
 };
 
-class RepairService {
-  private readonly baseUrl = '/repair';
+// ========== API METHODS ==========
 
-  // Admin xem tất cả lệnh sửa chữa
-  async getAllRepairs(): Promise<Repair[]> {
-    const response = await axios.get(this.baseUrl);
-    return response.data;
-  }
+// Lấy toàn bộ sửa chữa
+const getAllRepairs = async (): Promise<Repair[]> => {
+  const res = await api.get('/repair');
+  return res.data;
+};
 
-  // Kỹ thuật viên xem lệnh sửa của mình
-  async getMyRepairs(): Promise<Repair[]> {
-    const response = await axios.get(`${this.baseUrl}/mine`);
-    return response.data;
-  }
+// Lấy danh sách sửa chữa của chính kỹ thuật viên
+const getMyRepairs = async (): Promise<Repair[]> => {
+  const res = await api.get('/repair/mine');
+  return res.data;
+};
 
-  // Xem chi tiết một lệnh sửa chữa
-  async getRepairById(id: string): Promise<Repair> {
-    const response = await axios.get(`${this.baseUrl}/${id}`);
-    return response.data;
-  }
+// Hoàn tất sửa chữa (kỹ thuật viên)
+const completeRepair = async (repairId: string, data: RepairRequestDto) => {
+  return await api.post(`/repair/${repairId}/complete`, data);
+};
 
-  // Kỹ thuật viên chấp nhận lệnh sửa
-  async acceptRepair(repairId: string): Promise<void> {
-    await axios.post(`${this.baseUrl}/${repairId}/accept`);
-  }
+// Upload hình ảnh sau sửa chữa (kỹ thuật viên)
+const uploadRepairImages = async (repairId: string, files: File[]): Promise<string[]> => {
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
 
-  // Kỹ thuật viên hoàn thành sửa chữa
-  async completeRepair(repairId: string, data: RepairRequestDto): Promise<void> {
-    await axios.post(`${this.baseUrl}/${repairId}/complete`, data);
-  }
+  const res = await api.post(`/repair/${repairId}/upload-images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 
-  // Admin xác nhận hoàn tất
-  async confirmCompletion(repairId: string): Promise<void> {
-    await axios.post(`${this.baseUrl}/${repairId}/confirm-completion`);
-  }
+  return res.data.imageUrls;
+};
 
-  // Kỹ thuật viên từ chối lệnh sửa
-  async rejectRepair(repairId: string, data: RejectRepairDto): Promise<void> {
-    await axios.post(`${this.baseUrl}/${repairId}/reject`, data);
-  }
+// Từ chối sửa chữa
+const rejectRepair = async (repairId: string, data: RejectRepairDto) => {
+  return await api.post(`/repair/${repairId}/reject`, data);
+};
 
-  // Kỹ thuật viên đánh dấu "không cần sửa"
-  async markAsNotNeeded(repairId: string, data: NotNeededRepairDto): Promise<void> {
-    await axios.post(`${this.baseUrl}/${repairId}/not-needed`, data);
-  }
-}
+// Đánh dấu không cần sửa
+const markAsNotNeeded = async (repairId: string, data: NotNeededRepairDto) => {
+  return await api.post(`/repair/${repairId}/not-needed`, data);
+};
 
-export const repairService = new RepairService();
+// Từ chối hoặc không cần sửa (gộp)
+const rejectOrMarkNotNeeded = async (repairId: string, data: RejectOrNotNeededDto) => {
+  return await api.post(`/repair/${repairId}/reject-or-not-needed`, data);
+};
+
+// Gán kỹ thuật viên
+const assignTechnician = async (repairId: string, data: AssignTechnicianDto) => {
+  return await api.post(`/repair/${repairId}/assign`, data);
+};
+
+// Kỹ thuật viên chấp nhận tiếp nhận sửa chữa
+const acceptRepair = async (repairId: string) => {
+  return await api.post(`/repair/${repairId}/accept`);
+};
+
+// Admin xác nhận hoàn tất sửa chữa
+const confirmCompletion = async (repairId: string) => {
+  return await api.post(`/repair/${repairId}/confirm-completion`);
+};
+
+// Lấy danh sách kỹ thuật viên khả dụng
+const getAvailableTechnicians = async (): Promise<TechnicianUser[]> => {
+  const res = await api.get('/repair/technicians');
+  return res.data;
+};
+
+// ========== EXPORT ==========
+export const repairService = {
+  getAllRepairs,
+  getMyRepairs,
+  completeRepair,
+  uploadRepairImages,
+  rejectRepair,
+  markAsNotNeeded,
+  rejectOrMarkNotNeeded,
+  assignTechnician,
+  acceptRepair,
+  confirmCompletion,
+  getAvailableTechnicians,
+};

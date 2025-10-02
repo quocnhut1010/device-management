@@ -1,4 +1,5 @@
 using AutoMapper;
+using backend.Models;
 using backend.Models.Dtos.IncidentReports;
 using backend.Models.DTOs;
 using backend.Models.Entities;
@@ -104,15 +105,15 @@ namespace backend.Helpers
 
             // IncidentReport
             CreateMap<CreateIncidentReportDto, IncidentReport>();
-            
+
             // IncidentReport → IncidentReportDto (with nested objects)
             CreateMap<IncidentReport, IncidentReportDto>()
                 .ForMember(dest => dest.Device, opt => opt.MapFrom(src => src.Device))
                 .ForMember(dest => dest.ReportedByUser, opt => opt.MapFrom(src => src.ReportedByUser));
-                
+
             // Device → IncidentDeviceDto (simplified for incident reports)
             CreateMap<Device, backend.Models.Dtos.IncidentReports.IncidentDeviceDto>();
-            
+
             // User → IncidentUserDto (simplified for incident reports)
             CreateMap<User, backend.Models.Dtos.IncidentReports.IncidentUserDto>();
 
@@ -123,13 +124,17 @@ namespace backend.Helpers
                 .ForMember(dest => dest.Id, opt => opt.Ignore()) // tránh ghi đè Id
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore());
+            CreateMap<RepairImage, RepairImageDto>(); // ánh xạ từng ảnh
 
-           CreateMap<Repair, RepairDto>()
-            .ForMember(dest => dest.DeviceCode, opt => opt.MapFrom(src => src.Device.DeviceCode))
-            .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.DeviceName))
-            .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src => src.AssignedToTechnicianId ?? Guid.Empty))
-            .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedToTechnician.FullName))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            CreateMap<Repair, RepairDto>()
+             .ForMember(dest => dest.DeviceCode, opt => opt.MapFrom(src => src.Device.DeviceCode))
+             .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.DeviceName))
+             .ForMember(dest => dest.TechnicianId, opt => opt.MapFrom(src => src.AssignedToTechnicianId ?? Guid.Empty))
+             .ForMember(dest => dest.TechnicianName, opt => opt.MapFrom(src => src.AssignedToTechnician != null ? src.AssignedToTechnician.FullName : null))
+             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+             .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
+             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate))
+             .ForMember(dest => dest.RepairImages, opt => opt.MapFrom(src => src.RepairImages));
 
         }
     }

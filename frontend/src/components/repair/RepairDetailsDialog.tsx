@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,6 +13,7 @@ import {
   Avatar
 } from '@mui/material';
 import { Repair, getRepairStatusText, getRepairStatusColor } from '../../services/repairService';
+import { formatDateVN } from '../../utils/dateUtils';
 
 interface RepairDetailsDialogProps {
   open: boolean;
@@ -24,7 +25,6 @@ export default function RepairDetailsDialog({ open, onClose, repair }: RepairDet
   if (!repair) return null;
 
   const {
-    assignedToTechnician,
     startDate,
     endDate,
     repairCompany,
@@ -38,11 +38,16 @@ export default function RepairDetailsDialog({ open, onClose, repair }: RepairDet
 
   const formatDate = (dateStr?: string) =>
     dateStr ? new Date(dateStr).toLocaleString('vi-VN') : '---';
+  
 
   const formatCurrency = (amount?: number) =>
     typeof amount === 'number'
       ? amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
       : '---';
+  useEffect(() => {
+  console.log('🖼️ repair:', repair);
+}, [repair]);
+
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -80,18 +85,18 @@ export default function RepairDetailsDialog({ open, onClose, repair }: RepairDet
           </Grid>
           <Grid item xs={6}>
             <Typography variant="body2">
-              <strong>Kỹ thuật viên:</strong> {assignedToTechnician || '---'}
+              <strong>Kỹ thuật viên:</strong> {repair.technicianName || '---'}
             </Typography>
           </Grid>
 
           <Grid item xs={6}>
             <Typography variant="body2">
-              <strong>Bắt đầu:</strong> {formatDate(startDate)}
+              <strong>Bắt đầu:</strong> {formatDateVN(repair.startDate, true)}
             </Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography variant="body2">
-              <strong>Kết thúc:</strong> {formatDate(endDate)}
+              <strong>Kết thúc:</strong> {formatDateVN(repair.endDate, true)}
             </Typography>
           </Grid>
 
@@ -137,22 +142,30 @@ export default function RepairDetailsDialog({ open, onClose, repair }: RepairDet
         )}
 
         {/* Ảnh sau sửa chữa */}
-        {repairImages.length > 0 && (
+        {repair.repairImages && repair.repairImages.length > 0 && (
           <>
-            <Typography variant="h6">Ảnh sau sửa chữa</Typography>
+            <Typography variant="h6" gutterBottom>Ảnh sau sửa chữa</Typography>
             <Box display="flex" gap={2} flexWrap="wrap" mt={1}>
-              {repairImages.map((url, idx) => (
-                <Avatar
-                  key={idx}
-                  variant="rounded"
-                  src={url}
-                  alt={`repair-image-${idx}`}
-                  sx={{ width: 100, height: 100 }}
-                />
+              {repair.repairImages.map((img, idx) => (
+                <Box
+                  key={img.id || idx}
+                  border="1px solid #ccc"
+                  borderRadius={1}
+                  overflow="hidden"
+                >
+                  <img
+                    src={`${import.meta.env.VITE_API_BASE_URL}${img.imageUrl}`}
+                    alt={`repair-img-${idx}`}
+                    width={120}
+                    height={120}
+                    style={{ objectFit: 'cover', borderRadius: 4 }}
+                  />
+                </Box>
               ))}
             </Box>
           </>
         )}
+
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Đóng</Button>

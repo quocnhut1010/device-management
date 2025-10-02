@@ -7,9 +7,15 @@ namespace backend.Services.Interfaces
         Task<RepairDto?> GetByIdAsync(Guid id);
         Task<IEnumerable<RepairDto>> GetAllAsync();
         Task<IEnumerable<RepairDto>> GetMyRepairsAsync(Guid technicianId);
+        
+        // Lấy danh sách kỹ thuật viên để phân công
+        Task<IEnumerable<UserDto>> GetAvailableTechniciansAsync();
 
         // Admin tạo repair từ incident report (được gọi từ IncidentReportService)
         Task<RepairDto> CreateRepairFromIncidentAsync(Guid incidentReportId, Guid adminId);
+
+        // Admin phân công kỹ thuật viên cho lệnh sửa chữa
+        Task<bool> AssignTechnicianAsync(Guid repairId, Guid technicianId, Guid adminId, string? note = null);
 
         // Kỹ thuật viên chấp nhận lệnh sửa chữa
         Task<bool> AcceptRepairAsync(Guid repairId, Guid technicianId);
@@ -25,5 +31,8 @@ namespace backend.Services.Interfaces
         
         // Kỹ thuật viên đánh dấu "không cần sửa"
         Task<bool> MarkAsNotNeededAsync(Guid repairId, string note, Guid technicianId);
+        
+        // Kỹ thuật viên chọn từ chối hoặc không cần sửa (thống nhất)
+        Task<bool> RejectOrMarkNotNeededAsync(Guid repairId, RejectOrNotNeededDto dto, Guid technicianId);
     }
 }

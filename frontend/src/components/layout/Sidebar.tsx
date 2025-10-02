@@ -211,8 +211,17 @@ const Sidebar = ({}: SidebarProps) => {
 
         {/* Vận hành & Lịch sử */}
         <SidebarSection label="Vận hành & Lịch sử" collapsed={collapsed} />
-        <SidebarItem label="Cấp phát" icon={<AssignmentIcon />} path="/assignments" active={isActive('/assignments')} collapsed={collapsed} onClick={() => handleNavigate('/assignments')} />
-        
+        {role === 'Admin' && (
+          <SidebarItem
+            label="Cấp phát"
+            icon={<AssignmentIcon />}
+            path="/assignments"
+            active={isActive('/assignments')}
+            collapsed={collapsed}
+            onClick={() => handleNavigate('/assignments')}
+          />
+        )}
+
         {/* Trưởng phòng: Xem thiết bị của phòng ban */}
         {/* {position === 'Trưởng phòng' && (
           <SidebarItem 

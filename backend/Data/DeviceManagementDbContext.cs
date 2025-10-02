@@ -324,8 +324,8 @@ public partial class DeviceManagementDbContext : DbContext
             entity.Property(e => e.RejectedReason).HasMaxLength(500);
             entity.Property(e => e.RepairCompany).HasMaxLength(255);
             entity.Property(e => e.RepairDate).HasColumnType("date");
-            entity.Property(e => e.StartDate).HasColumnType("date");
-            entity.Property(e => e.EndDate).HasColumnType("date");
+            entity.Property(e => e.StartDate).HasColumnType("datetime");
+            entity.Property(e => e.EndDate).HasColumnType("datetime");
 
 
             entity.HasOne(d => d.Device).WithMany(p => p.Repairs)

@@ -20,6 +20,8 @@ import RepairList from '../components/repair/RepairList';
 import CompleteRepairForm from '../components/repair/CompleteRepairForm';
 import { RejectRepairDialog, NotNeededDialog } from '../components/repair/RepairActionDialogs';
 import RepairDetailsDialog from '../components/repair/RepairDetailsDialog';
+import AssignTechnicianDialog from '../components/repair/AssignTechnicianDialog';
+import RejectOrNotNeededDialog from '../components/repair/RejectOrNotNeededDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -52,6 +54,8 @@ export default function RepairManagementPage() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedRepairId, setSelectedRepairId] = useState<string>('');
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [assignTechnicianOpen, setAssignTechnicianOpen] = useState(false);
+  const [rejectOrNotNeededOpen, setRejectOrNotNeededOpen] = useState(false);
 
   const currentUser = getUserFromToken();
   const isAdmin = currentUser?.role === 'Admin';
@@ -111,6 +115,16 @@ export default function RepairManagementPage() {
     setNotNeededDialogOpen(true);
   };
 
+  const handleAssignTechnician = (repair: Repair) => {
+    setSelectedRepair(repair);
+    setAssignTechnicianOpen(true);
+  };
+
+  const handleRejectOrNotNeeded = (repair: Repair) => {
+    setSelectedRepair(repair);
+    setRejectOrNotNeededOpen(true);
+  };
+
   const canViewAllRepairs = isAdmin;
 
   return (
@@ -154,6 +168,7 @@ export default function RepairManagementPage() {
                 onConfirmCompletion={handleConfirmCompletion}
                 onRejectRepair={handleRejectRepair}
                 onMarkNotNeeded={handleMarkNotNeeded}
+                onRejectOrNotNeeded={handleRejectOrNotNeeded}
                 refreshTrigger={refreshTrigger}
               />
             </TabPanel>
@@ -169,6 +184,8 @@ export default function RepairManagementPage() {
                 onConfirmCompletion={handleConfirmCompletion}
                 onRejectRepair={handleRejectRepair}
                 onMarkNotNeeded={handleMarkNotNeeded}
+                onAssignTechnician={handleAssignTechnician}
+                onRejectOrNotNeeded={handleRejectOrNotNeeded}
                 refreshTrigger={refreshTrigger}
               />
             </TabPanel>
@@ -215,7 +232,7 @@ export default function RepairManagementPage() {
         <DialogContent>
           <Typography>
             Bạn có chắc chắn muốn xác nhận rằng việc sửa chữa đã hoàn tất? 
-            Thiết bị sẽ được đánh dấu là sẵn sàng sử dụng.
+            Thiết bị sẽ được đánh dấu là sẵn sàng sử dụng và không thể hoàn tác sau khi xác nhận?
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -237,6 +254,27 @@ export default function RepairManagementPage() {
         repair={selectedRepair}
       />
 
+      {/* Assign Technician Dialog */}
+      <AssignTechnicianDialog
+        open={assignTechnicianOpen}
+        onClose={() => setAssignTechnicianOpen(false)}
+        onSuccess={() => {
+          showSnackbar('Đã phân công kỹ thuật viên thành công', 'success');
+          handleRefresh();
+        }}
+        repair={selectedRepair}
+      />
+
+      {/* Reject Or Not Needed Dialog */}
+      <RejectOrNotNeededDialog
+        open={rejectOrNotNeededOpen}
+        onClose={() => setRejectOrNotNeededOpen(false)}
+        onSuccess={() => {
+          showSnackbar('Đã thực hiện thành công', 'success');
+          handleRefresh();
+        }}
+        repair={selectedRepair}
+      />
 
       {/* Snackbar */}
       <Snackbar

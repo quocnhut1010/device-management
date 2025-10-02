@@ -3,18 +3,25 @@
  */
 import { formatInTimeZone } from 'date-fns-tz';
 import { vi } from 'date-fns/locale';
-
+import { format } from 'date-fns';
 /**
  * Format ngày/thời gian theo giờ Việt Nam
  * @param value string | Date
  * @param withTime có hiển thị HH:mm không
+ * @param value Chuỗi ngày hoặc Date object
+ * @param withTime Có hiển thị giờ không (mặc định true)
+ * @returns string dd/MM/yyyy hoặc dd/MM/yyyy HH:mm
  */
-export const formatDateVN = (value: string | Date | null, withTime: boolean = false): string => {
-  if (!value) return '--';
+export const formatDateVN = (
+  value: string | Date | null | undefined,
+  withTime: boolean = false
+): string => {
+  if (!value) return '---';
   try {
-    const date = typeof value === 'string'
-      ? new Date(value.endsWith('Z') ? value : value + 'Z')
-      : value;
+    const date =
+      typeof value === 'string'
+        ? new Date(value.endsWith('Z') ? value : value + 'Z')
+        : value;
 
     return formatInTimeZone(
       date,
@@ -22,8 +29,7 @@ export const formatDateVN = (value: string | Date | null, withTime: boolean = fa
       withTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy',
       { locale: vi }
     );
-  } catch (error) {
-    console.error('Error formatting date VN:', error);
+  } catch {
     return '--';
   }
 };
