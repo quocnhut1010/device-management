@@ -1,3 +1,4 @@
+using backend.Models.Dtos;
 using backend.Models.DTOs;
 
 namespace backend.Services.Interfaces
@@ -31,8 +32,12 @@ namespace backend.Services.Interfaces
         
         // Kỹ thuật viên đánh dấu "không cần sửa"
         Task<bool> MarkAsNotNeededAsync(Guid repairId, string note, Guid technicianId);
-        
+
         // Kỹ thuật viên chọn từ chối hoặc không cần sửa (thống nhất)
         Task<bool> RejectOrMarkNotNeededAsync(Guid repairId, RejectOrNotNeededDto dto, Guid technicianId);
+        Task<IEnumerable<RepairDto>> GetRepairHistoryByDeviceAsync(Guid deviceId);
+        Task<DeviceRepairAnalysisDto> AnalyzeDeviceRepairHistoryAsync(Guid deviceId);
+
+
     }
 }

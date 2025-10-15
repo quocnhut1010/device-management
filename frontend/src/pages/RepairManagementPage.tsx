@@ -252,6 +252,7 @@ export default function RepairManagementPage() {
         open={viewDetailsOpen}
         onClose={() => setViewDetailsOpen(false)}
         repair={selectedRepair}
+        onReplacementSuccess={handleRefresh}
       />
 
       {/* Assign Technician Dialog */}

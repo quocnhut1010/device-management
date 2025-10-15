@@ -84,10 +84,10 @@ export default function CreateIncidentForm({ open, onClose, onSuccess }: CreateI
 
       let response;
       if (user.role === 'Admin') {
+        // Admin có thể tạo báo cáo cho bất kỳ thiết bị nào
         response = await getAllDevices();
-      } else if (user.position === 'Trưởng phòng') {
-        response = await getManagedDevices();
       } else {
+        // Nhân viên và Trưởng phòng chỉ báo cáo thiết bị của riêng họ
         response = await getMyDevices();
       }
 

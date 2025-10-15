@@ -1,5 +1,6 @@
 using AutoMapper;
 using backend.Data;
+using backend.Models.Dtos;
 using backend.Models.DTOs;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
@@ -387,8 +388,92 @@ namespace backend.Services.Implementations
             {
                 return await MarkAsNotNeededAsync(repairId, dto.Reason, technicianId);
             }
-            
+
             return false; // Status không hợp lệ
         }
+       public async Task<IEnumerable<RepairDto>> GetRepairHistoryByDeviceAsync(Guid deviceId)
+        {
+            var repairs = await _context.Repairs
+                .Include(r => r.Device)
+                .Include(r => r.AssignedToTechnician)
+                .Include(r => r.RepairImages)
+                .Where(r => r.DeviceId == deviceId)
+                .OrderByDescending(r => r.StartDate)
+                .ToListAsync();
+
+            // ⚙️ Tính toán cảnh báo cơ bản
+            var dtoList = _mapper.Map<List<RepairDto>>(repairs);
+
+            // Lấy thông tin thiết bị để so sánh
+            var device = await _context.Devices.FindAsync(deviceId);
+            var deviceValue = device?.PurchasePrice ?? 0;
+
+            decimal totalCost = dtoList.Sum(r => r.Cost ?? 0);
+            int repairCount = dtoList.Count;
+            var lastRepair = dtoList.OrderByDescending(r => r.EndDate ?? r.StartDate).FirstOrDefault();
+
+            // ⚠️ Thêm cảnh báo tổng quan (đưa lên DTO)
+            foreach (var r in dtoList)
+            {
+                r.Warning = "";
+            }
+
+            if (repairCount >= 3)
+                dtoList.First().Warning += $"Thiết bị đã được sửa {repairCount} lần. ";
+
+            if (deviceValue > 0 && totalCost > deviceValue * 0.5M)
+                dtoList.First().Warning += $"Tổng chi phí sửa ({totalCost:N0}₫) vượt quá 50% giá trị thiết bị ({deviceValue:N0}₫). ";
+
+            if (lastRepair?.EndDate != null && (DateTime.UtcNow - lastRepair.EndDate.Value).TotalDays < 30)
+                dtoList.First().Warning += "Thiết bị vừa mới được sửa gần đây (<30 ngày).";
+
+            return dtoList;
+        }
+        public async Task<DeviceRepairAnalysisDto> AnalyzeDeviceRepairHistoryAsync(Guid deviceId)
+        {
+            var repairs = await _context.Repairs
+                .Include(r => r.Device)
+                .Where(r => r.DeviceId == deviceId)
+                .OrderByDescending(r => r.EndDate ?? r.StartDate)
+                .ToListAsync();
+
+            var device = await _context.Devices.FindAsync(deviceId);
+            if (device == null)
+                throw new Exception("Không tìm thấy thiết bị.");
+
+            var analysis = new DeviceRepairAnalysisDto
+            {
+                DeviceId = device.Id,
+                DeviceName = device.DeviceName ?? device.DeviceCode ?? "Thiết bị không xác định",
+                DeviceValue = device.PurchasePrice ?? 0,
+                RepairCount = repairs.Count,
+                TotalCost = repairs.Sum(r => r.Cost ?? 0),
+                LastRepairDate = repairs.FirstOrDefault()?.EndDate ?? repairs.FirstOrDefault()?.StartDate
+            };
+
+            // ⚠️ Cảnh báo nghiệp vụ
+            if (analysis.RepairCount >= 3)
+                analysis.Warnings.Add($"Thiết bị đã được sửa {analysis.RepairCount} lần.");
+
+            if (analysis.DeviceValue > 0 && analysis.TotalCost > analysis.DeviceValue * 0.5M)
+                analysis.Warnings.Add($"Tổng chi phí sửa ({analysis.TotalCost:N0}₫) vượt quá 50% giá trị thiết bị ({analysis.DeviceValue:N0}₫).");
+
+            if (analysis.LastRepairDate.HasValue && (DateTime.UtcNow - analysis.LastRepairDate.Value).TotalDays < 30)
+                analysis.Warnings.Add("Thiết bị vừa được sửa gần đây (<30 ngày).");
+
+            // ⚙️ Gợi ý hành động
+            if (analysis.Warnings.Count == 0)
+                analysis.Suggestion = "Thiết bị hoạt động ổn định.";
+            else if (analysis.Warnings.Count == 1)
+                analysis.Suggestion = "Nên theo dõi thêm tình trạng thiết bị.";
+            else if (analysis.TotalCost > analysis.DeviceValue)
+                analysis.Suggestion = "Chi phí sửa vượt giá trị thiết bị. Nên thanh lý.";
+            else
+                analysis.Suggestion = "Nên xem xét thay thế hoặc thanh lý thiết bị.";
+
+            return analysis;
+        }
+
+
     }
 }

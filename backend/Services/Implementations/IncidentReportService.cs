@@ -22,6 +22,7 @@ namespace backend.Services.Implementations
             var reports = await _context.IncidentReports
                 .Include(r => r.Device)
                 .Include(r => r.ReportedByUser)
+                .OrderByDescending(r => r.ReportDate) // ✅ Sắp xếp mới nhất
                 .ToListAsync();
 
             return _mapper.Map<IEnumerable<IncidentReportDto>>(reports);
@@ -48,27 +49,42 @@ namespace backend.Services.Implementations
             return report == null ? null : _mapper.Map<IncidentReportDto>(report);
         }
 
-        public async Task<IncidentReportDto> CreateAsync(CreateIncidentReportDto dto, Guid userId)
+       public async Task<IncidentReportDto> CreateAsync(CreateIncidentReportDto dto, Guid userId)
         {
             var report = _mapper.Map<IncidentReport>(dto);
             report.Id = Guid.NewGuid();
             report.ReportedByUserId = userId;
             report.ReportDate = DateTime.UtcNow;
             report.Status = IncidentStatus.ChoDuyet;
+
+            // 🔍 Kiểm tra thiết bị có đang tồn tại không
+            var device = await _context.Devices.FirstOrDefaultAsync(d => d.Id == dto.DeviceId);
+            if (device == null)
+                throw new InvalidOperationException("Thiết bị không tồn tại.");
+
+            // ✅ Kiểm tra trạng thái thiết bị trước khi tạo báo cáo
+           if (device.Status == DeviceStatus.Repairing ||
+                device.Status == DeviceStatus.PendingLiquidation ||
+                device.Status == DeviceStatus.Liquidated)
+            {
+                throw new InvalidOperationException($"Không thể tạo báo cáo cho thiết bị có trạng thái '{device.Status}'.");
+            }
+
+
+            // ✅ Kiểm tra thiết bị có đang có sự cố chưa xử lý không
             var hasOpenIncident = await _context.IncidentReports
                 .AnyAsync(r => r.DeviceId == dto.DeviceId &&
-                    (r.Status == IncidentStatus.ChoDuyet || 
+                    (r.Status == IncidentStatus.ChoDuyet ||
                     r.Status == IncidentStatus.DaTaoLenhSua));
 
             if (hasOpenIncident)
-            {
                 throw new InvalidOperationException("Thiết bị này đã có sự cố đang xử lý. Không thể tạo mới.");
-            }
-            
+
+            // ✅ Nếu tất cả hợp lệ → tạo báo cáo mới
             _context.IncidentReports.Add(report);
             await _context.SaveChangesAsync();
 
-            // Reload with includes to get nested data
+            // Reload with includes
             var createdReport = await _context.IncidentReports
                 .Include(r => r.Device)
                 .Include(r => r.ReportedByUser)
@@ -76,6 +92,7 @@ namespace backend.Services.Implementations
 
             return _mapper.Map<IncidentReportDto>(createdReport);
         }
+
 
         public async Task<IncidentReportDto?> UpdateStatusAsync(Guid id, UpdateIncidentReportDto dto, string updatedBy)
         {
@@ -159,20 +176,87 @@ namespace backend.Services.Implementations
             }
         }
 
-        public async Task<bool> RejectAsync(Guid reportId, string reason, string rejectedBy)
+       public async Task<bool> RejectAsync(Guid reportId, string reason, string rejectedBy, string decision = "Keep")
         {
-            var report = await _context.IncidentReports.FirstOrDefaultAsync(r => r.Id == reportId);
-            if (report == null) return false;
+            var report = await _context.IncidentReports
+                .Include(r => r.Device)
+                .FirstOrDefaultAsync(r => r.Id == reportId);
+
+            if (report == null || report.Device == null)
+                return false;
 
             report.Status = IncidentStatus.DaTuChoi;
             report.RejectedReason = reason;
-            report.RejectedBy = null; // Có thể gán Guid của user nếu cần
+            report.RejectedBy = Guid.TryParse(rejectedBy, out var userGuid) ? userGuid : null;
             report.RejectedAt = DateTime.UtcNow;
             report.UpdatedBy = rejectedBy;
             report.UpdatedAt = DateTime.UtcNow;
 
+            // ✅ Cập nhật Device.Status theo quyết định
+            if (decision.Equals("Liquidate", StringComparison.OrdinalIgnoreCase))
+            {
+                report.Device.Status = DeviceStatus.PendingLiquidation; // "Chờ thanh lý"
+            }
+            else
+            {
+                report.Device.Status = DeviceStatus.InUse; // "Đang sử dụng"
+            }
+
+            report.Device.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
             return true;
         }
+    //    public async Task<object> GetPagedReportsAsync(int page, int pageSize, string? search, string? status, Guid? userId = null)
+    //     {
+    //         var query = _context.IncidentReports
+    //             .Include(r => r.Device)
+    //             .Include(r => r.ReportedByUser)
+    //             .AsQueryable();
+
+    //         // 🔍 Lọc theo user (tab “Báo cáo của tôi”)
+    //         if (userId.HasValue)
+    //             query = query.Where(r => r.ReportedByUserId == userId.Value);
+
+    //         // 🔍 Lọc theo từ khóa (mã hoặc tên thiết bị, loại sự cố)
+    //         if (!string.IsNullOrEmpty(search))
+    //         {
+    //             query = query.Where(r =>
+    //                 r.Device.DeviceCode.Contains(search) ||
+    //                 r.Device.DeviceName.Contains(search) ||
+    //                 r.ReportType.Contains(search) ||
+    //                 r.Description.Contains(search));
+    //         }
+
+    //         // 🔍 Lọc theo trạng thái (sửa lỗi tại đây ✅)
+    //         if (!string.IsNullOrEmpty(status))
+    //         {
+    //             if (int.TryParse(status, out var statusValue))
+    //             {
+    //                 query = query.Where(r => (int)r.Status == statusValue);
+    //             }
+    //         }
+
+    //         // ✅ Sắp xếp mới nhất trước
+    //         query = query.OrderByDescending(r => r.ReportDate);
+
+    //         var total = await query.CountAsync();
+    //         var reports = await query
+    //             .Skip((page - 1) * pageSize)
+    //             .Take(pageSize)
+    //             .ToListAsync();
+
+    //         var reportDtos = _mapper.Map<IEnumerable<IncidentReportDto>>(reports);
+
+    //         return new
+    //         {
+    //             reports = reportDtos,
+    //             total,
+    //             page,
+    //             pageSize,
+    //             totalPages = (int)Math.Ceiling((double)total / pageSize)
+    //         };
+    //     }
+
     }
 }

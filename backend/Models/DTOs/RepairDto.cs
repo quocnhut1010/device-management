@@ -13,6 +13,7 @@ public class RepairDto
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public DateTime? RepairDate { get; set; }
+    public string DeviceStatus { get; set; } = string.Empty;
 
     public string? Description { get; set; }
     public int Status { get; set; }
@@ -25,6 +26,8 @@ public class RepairDto
 
     public DateTime? RejectedAt { get; set; }
     public string? RejectedReason { get; set; }
+    public string? Warning { get; set; }
+
      public List<RepairImageDto> RepairImages { get; set; } = new();
 
 

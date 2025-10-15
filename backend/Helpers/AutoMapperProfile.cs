@@ -112,7 +112,9 @@ namespace backend.Helpers
                 .ForMember(dest => dest.ReportedByUser, opt => opt.MapFrom(src => src.ReportedByUser));
 
             // Device → IncidentDeviceDto (simplified for incident reports)
-            CreateMap<Device, backend.Models.Dtos.IncidentReports.IncidentDeviceDto>();
+            CreateMap<Device, backend.Models.Dtos.IncidentReports.IncidentDeviceDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
+
 
             // User → IncidentUserDto (simplified for incident reports)
             CreateMap<User, backend.Models.Dtos.IncidentReports.IncidentUserDto>();
@@ -134,8 +136,28 @@ namespace backend.Helpers
              .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
              .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
              .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate))
-             .ForMember(dest => dest.RepairImages, opt => opt.MapFrom(src => src.RepairImages));
+             .ForMember(dest => dest.RepairImages, opt => opt.MapFrom(src => src.RepairImages))
+            .ForMember(dest => dest.DeviceStatus, opt => opt.MapFrom(src => src.Device.Status));
 
+
+            CreateMap<Replacement, ReplacementDto>()
+            .ForMember(dest => dest.OldDeviceCode, opt => opt.MapFrom(src => src.OldDevice!.DeviceCode))
+            .ForMember(dest => dest.OldDeviceName, opt => opt.MapFrom(src => src.OldDevice!.DeviceName))
+            .ForMember(dest => dest.NewDeviceCode, opt => opt.MapFrom(src => src.NewDevice!.DeviceCode))
+            .ForMember(dest => dest.NewDeviceName, opt => opt.MapFrom(src => src.NewDevice!.DeviceName))
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.OldDevice!.CurrentUserId))
+            .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => src.OldDevice!.CurrentUser!.FullName))
+            .ForMember(dest => dest.UserEmail, opt => opt.MapFrom(src => src.OldDevice!.CurrentUser!.Email));
+
+            // Liquidation
+            CreateMap<Liquidation, LiquidationDto>()
+                .ForMember(dest => dest.DeviceCode, opt => opt.MapFrom(src => src.Device!.DeviceCode))
+                .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device!.DeviceName))
+                .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedByNavigation!.FullName));
+
+            CreateMap<CreateLiquidationDto, Liquidation>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovedBy, opt => opt.Ignore());
         }
     }
 }

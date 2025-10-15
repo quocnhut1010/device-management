@@ -14,23 +14,26 @@ namespace backend.Controllers
     {
         private readonly IIncidentReportService _incidentService;
         private readonly IAuthService _authService;
+        private readonly INotificationService _notificationService;
 
         public IncidentReportController(
             IIncidentReportService incidentService,
-            IAuthService authService)
+            IAuthService authService,
+            INotificationService notificationService)
         {
             _incidentService = incidentService;
             _authService = authService;
+            _notificationService = notificationService;
         }
 
-        // [1] Nhân viên tạo báo cáo
+        // [1] Nhân viên và Trưởng phòng tạo báo cáo
         [HttpPost]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> Create([FromBody] CreateIncidentReportDto dto)
         {
             var position = _authService.GetCurrentUserPosition(User);
-            if (position != "Nhân viên")
-                return Forbid("Chỉ nhân viên mới được tạo báo cáo");
+            if (position != "Nhân viên" && position != "Trưởng phòng")
+                return Forbid("Chỉ Nhân viên và Trưởng phòng mới được tạo báo cáo");
 
             var userId = _authService.GetCurrentUserId(User);
             if (userId == null) return Unauthorized();
@@ -38,6 +41,10 @@ namespace backend.Controllers
             try
             {
                 var created = await _incidentService.CreateAsync(dto, userId.Value);
+                
+                // Send notification to all admins about new incident report
+                await _notificationService.NotifyNewIncidentReportAsync(created.Id);
+                
                 return Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -60,6 +67,9 @@ namespace backend.Controllers
             var result = await _incidentService.ApproveAndCreateRepairAsync(id, updatedBy);
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
+            
+            // Send notification to employee that their incident report was approved
+            await _notificationService.NotifyIncidentReportStatusChangedAsync(id, true);
 
             // Return simplified data without navigation properties to avoid JSON cycles
             var repairData = result.Data as Repair;
@@ -88,11 +98,19 @@ namespace backend.Controllers
         {
             var adminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin";
 
-            var success = await _incidentService.RejectAsync(id, dto.Reason, adminEmail);
+            var success = await _incidentService.RejectAsync(id, dto.Reason, adminEmail, dto.Decision);
             if (!success) return NotFound();
+            
+            // Send notification to employee that their incident report was rejected
+            await _notificationService.NotifyIncidentReportStatusChangedAsync(id, false, dto.Reason);
 
-            return Ok(new { message = "Đã từ chối báo cáo sự cố." });
+            string message = dto.Decision.Equals("Liquidate", StringComparison.OrdinalIgnoreCase)
+                ? "Báo cáo bị từ chối. Thiết bị đã chuyển sang trạng thái 'Chờ thanh lý'."
+                : "Báo cáo bị từ chối. Thiết bị vẫn giữ trạng thái 'Đang sử dụng'.";
+
+            return Ok(new { message });
         }
+
 
         // [4] Kỹ thuật viên hoặc admin xem tất cả
         [HttpGet("all")]
@@ -163,6 +181,24 @@ namespace backend.Controllers
 
             return Ok(new { imageUrl });
         }
+        // [HttpGet("paged")]
+        // [Authorize]
+        // public async Task<IActionResult> GetPagedReports(
+        //     [FromQuery] int page = 1,
+        //     [FromQuery] int pageSize = 10,
+        //     [FromQuery] string? search = null,
+        //     [FromQuery] string? status = null)
+        // {
+        //     var user = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //     Guid? userId = null;
+
+        //     // Nếu user không phải admin/kỹ thuật viên, chỉ xem báo cáo của mình
+        //     if (!User.IsInRole("Admin"))
+        //         userId = Guid.TryParse(user, out var id) ? id : null;
+
+        //     var result = await _incidentService.GetPagedReportsAsync(page, pageSize, search, status, userId);
+        //     return Ok(result);
+        // }
 
     }
 }

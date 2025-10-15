@@ -341,11 +341,20 @@ ALTER TABLE Repairs
 ADD StartDate DATETIME NULL,
     EndDate DATETIME NULL;
 
+ALTER TABLE Replacements
+ALTER COLUMN ReplacementDate DATETIME;
+
 
 -- Run in SQL Server Management Studio:
 ALTER TABLE IncidentReports 
 ADD UpdatedAt DATETIME2 NULL,
     UpdatedBy NVARCHAR(450) NULL;
+
+ALTER TABLE Replacements
+ADD OldUserId UNIQUEIDENTIFIER NULL,
+    OldUserFullName NVARCHAR(255) NULL,
+    OldUserEmail NVARCHAR(255) NULL;
+
 
 select * from Departments
 select * from Users
@@ -354,8 +363,13 @@ select * from Devices
 select * from IncidentReports
 select * from DeviceAssignments
 select * from DeviceHistories
-
+select * from Replacements
+select * from DeviceModels
+select * from DeviceTypes
 select * from Repairs
 select * from RepairImages
+select * from DeviceStatusLogs
+select * from Liquidations
 
 select ReturnedDate from DeviceAssignments 
+select Status from Devices

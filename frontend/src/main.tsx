@@ -7,6 +7,8 @@ import { AppThemeProvider } from './contexts/ThemeContext';
 import { SnackbarProvider } from 'notistack';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -16,7 +18,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       autoHideDuration={3000}
     >
       <AppThemeProvider>
-        <AppRouter />
+        <AuthProvider>
+          <NotificationProvider>
+            <AppRouter />
+          </NotificationProvider>
+        </AuthProvider>
       </AppThemeProvider>
       <ToastContainer />
     </SnackbarProvider>

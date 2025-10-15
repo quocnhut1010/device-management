@@ -22,10 +22,14 @@ export interface Repair {
   technicianName?: string;
   approvedBy?: string;
   approvedAt?: string;
+  deviceStatus: string;
+  warning?: string;
   device?: {
     id: string;
     deviceCode: string;
     deviceName: string;
+    deviceStatus: string;
+    price: number;
   };
   incidentReport?: {
     id: string;
@@ -176,6 +180,17 @@ const getAvailableTechnicians = async (): Promise<TechnicianUser[]> => {
   return res.data;
 };
 
+// Lấy lịch sử sửa chữa của một thiết bị
+const getDeviceRepairHistory = async (deviceId: string): Promise<Repair[]> => {
+  const res = await api.get(`/repair/device/${deviceId}/history`);
+  return res.data;
+};
+// 📊 Phân tích lịch sử sửa chữa thiết bị
+const analyzeDeviceRepairHistory = async (deviceId: string) => {
+  const res = await api.get(`/repair/device/${deviceId}/analysis`);
+  return res.data;
+};
+
 // ========== EXPORT ==========
 export const repairService = {
   getAllRepairs,
@@ -189,4 +204,6 @@ export const repairService = {
   acceptRepair,
   confirmCompletion,
   getAvailableTechnicians,
+  getDeviceRepairHistory,
+  analyzeDeviceRepairHistory,
 };

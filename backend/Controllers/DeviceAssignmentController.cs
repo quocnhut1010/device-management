@@ -15,11 +15,13 @@ namespace backend.Controllers
     {
         private readonly IDeviceAssignmentService _service;
         private readonly DeviceManagementDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public DeviceAssignmentController(IDeviceAssignmentService service, DeviceManagementDbContext context)
+        public DeviceAssignmentController(IDeviceAssignmentService service, DeviceManagementDbContext context, INotificationService notificationService)
         {
             _service = service;
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -173,6 +175,9 @@ namespace backend.Controllers
                     return BadRequest(new { message = "Assignment creation failed. Check device availability, user validity, and department." });
                 }
                 
+                // Send notification to user about device assignment
+                await _notificationService.NotifyDeviceAssignedAsync(result.Id);
+                
                 Console.WriteLine("✅ Assignment created successfully");
                 return Ok(result);
             }
@@ -237,6 +242,13 @@ namespace backend.Controllers
                 };
                 
                 var result = await _service.TransferAsync(dto.OldAssignmentId, transferDto, currentUserId);
+                
+                if (result != null)
+                {
+                    // Send notification to new user about device assignment
+                    await _notificationService.NotifyDeviceAssignedAsync(result.Id);
+                }
+                
                 return result == null ? BadRequest() : Ok(result);
             }
             catch (Exception ex)

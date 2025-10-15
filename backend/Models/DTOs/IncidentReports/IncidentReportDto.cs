@@ -34,6 +34,7 @@ namespace backend.Models.Dtos.IncidentReports
         public Guid Id { get; set; }
         public string DeviceCode { get; set; } = string.Empty;
         public string DeviceName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
     }
 
     public class IncidentUserDto
@@ -41,5 +42,6 @@ namespace backend.Models.Dtos.IncidentReports
         public Guid Id { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        
     }
 }

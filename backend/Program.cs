@@ -83,6 +83,10 @@ builder.Services.AddDbContext<DeviceManagementDbContext>(options =>
 // Add missing service registrations
 builder.Services.AddScoped<IIncidentReportService, IncidentReportService>();
 builder.Services.AddScoped<IRepairService, RepairService>();
+builder.Services.AddScoped<IReplacementService, ReplacementService>();
+builder.Services.AddScoped<IDeviceHistoryService, DeviceHistoryService>();
+builder.Services.AddScoped<ILiquidationService, LiquidationService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

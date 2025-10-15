@@ -234,17 +234,28 @@ const Sidebar = ({}: SidebarProps) => {
           />
         )} */}
         {/* Báo cáo sự cố - Tất cả user đã login */}
+        {(role === 'Admin' || position === 'Nhân viên' || position === 'Trưởng phòng') && (
         <SidebarItem label="Báo cáo sự cố" icon={<ReportProblemIcon />} path="/incidents" active={isActive('/incidents')} collapsed={collapsed} onClick={() => handleNavigate('/incidents')} />
-        
+        )}
+
         {/* Sửa chữa - Admin hoặc Kỹ thuật viên */}
         {(role === 'Admin' || position === 'Kỹ thuật viên') && (
           <SidebarItem label="Sửa chữa" icon={<BuildIcon />} path="/repairs" active={isActive('/repairs')} collapsed={collapsed} onClick={() => handleNavigate('/repairs')} />
         )}
 
+        {/* Thay thế - All users can view, Admin can create */}
+        <SidebarItem 
+          label="Thay thế" 
+          icon={<SwapHorizIcon />} 
+          path="/replacements" 
+          active={isActive('/replacements')} 
+          collapsed={collapsed} 
+          onClick={() => handleNavigate('/replacements')} 
+        />
+        
         {role === 'Admin' && (
           <>
-            <SidebarItem label="Thay thế" icon={<SwapHorizIcon />} path="/replacements" active={isActive('/replacements')} collapsed={collapsed} onClick={() => handleNavigate('/replacements')} />
-            <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidations" active={isActive('/liquidations')} collapsed={collapsed} onClick={() => handleNavigate('/liquidations')} />
+            <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidation" active={isActive('/liquidation')} collapsed={collapsed} onClick={() => handleNavigate('/liquidation')} />
             <SidebarItem label="Lịch sử thiết bị" icon={<HistoryIcon />} path="/device-histories" active={isActive('/device-histories')} collapsed={collapsed} onClick={() => handleNavigate('/device-histories')} />
           </>
         )}

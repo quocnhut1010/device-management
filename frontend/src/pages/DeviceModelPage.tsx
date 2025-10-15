@@ -47,6 +47,7 @@ const DeviceModelPage = () => {
   });
 
   const isAdmin = getUserRole() === 'Admin';
+  
 
   const fetchData = async () => {
   try {

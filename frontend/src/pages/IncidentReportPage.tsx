@@ -38,8 +38,12 @@ export default function IncidentReportPage() {
 
   const currentUser = getUserFromToken();
   const isEmployee = currentUser?.position === 'Nhân viên';
+  const isManager = currentUser?.position === 'Trưởng phòng';
   const isAdmin = currentUser?.role === 'Admin';
   const isTechnician = currentUser?.position === 'Kỹ thuật viên';
+  
+  // Trưởng phòng và Nhân viên đều có thể tạo báo cáo sự cố
+  const canCreateReport = isEmployee || isManager;
 
   const handleCreateSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -61,8 +65,8 @@ export default function IncidentReportPage() {
             Quản lý báo cáo sự cố
           </Typography>
           
-          {/* Chỉ nhân viên mới có thể tạo báo cáo */}
-          {isEmployee && (
+          {/* Nhân viên và Trưởng phòng có thể tạo báo cáo */}
+          {canCreateReport && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -120,6 +124,7 @@ export default function IncidentReportPage() {
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         report={selectedReport}
+        onReplacementSuccess={handleCreateSuccess}
       />
     </Container>
   );

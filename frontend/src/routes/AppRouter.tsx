@@ -21,6 +21,8 @@ import DeviceAssignmentPage from '../pages/DeviceAssignmentPage';
 import DepartmentDevicesPage from '../pages/DepartmentDevicesPage';
 import IncidentReportPage from '../pages/IncidentReportPage';
 import RepairManagementPage from '../pages/RepairManagementPage';
+import ReplacementPage from '../pages/ReplacementPage';
+import LiquidationPage from '../pages/LiquidationPage';
 
 const AppRoutes = () => {
   return (
@@ -109,7 +111,7 @@ const AppRoutes = () => {
             <Route
               path="incidents"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute allowedRoles={['Admin']} allowedPositions={['Nhân viên', 'Trưởng phòng']} requireBoth={false}>
                   <IncidentReportPage />
                 </PrivateRoute>
               }
@@ -119,6 +121,22 @@ const AppRoutes = () => {
               element={
                 <PrivateRoute allowedRoles={['Admin']} allowedPositions={['Kỹ thuật viên']} requireBoth={false}>
                   <RepairManagementPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="replacements"
+              element={
+                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                  <ReplacementPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="liquidation"
+              element={
+                <PrivateRoute allowedRoles={['Admin']}>
+                  <LiquidationPage />
                 </PrivateRoute>
               }
             />

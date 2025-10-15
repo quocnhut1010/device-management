@@ -11,6 +11,9 @@ namespace backend.Services.Interfaces
         Task<IncidentReportDto?> UpdateStatusAsync(Guid id, UpdateIncidentReportDto dto, string updatedBy);
 
         Task<(bool Success, string Message, object? Data)> ApproveAndCreateRepairAsync(Guid reportId, string updatedBy);
-        Task<bool> RejectAsync(Guid reportId, string reason, string rejectedBy);
+        Task<bool> RejectAsync(Guid reportId, string reason, string rejectedBy, string decision = "Keep");
+        // Task<object> GetPagedReportsAsync(int page, int pageSize, string? search, string? status, Guid? userId = null);
+
+
     }
 }

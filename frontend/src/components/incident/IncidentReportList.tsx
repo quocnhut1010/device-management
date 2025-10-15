@@ -1,42 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Box,
-  Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Alert,
-  CircularProgress
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Chip, IconButton, Tooltip, Box, Typography, Button,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Alert, CircularProgress, FormControl, FormLabel, RadioGroup, Radio, FormControlLabel,
+  Snackbar, Alert as MuiAlert, Divider
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Check as ApproveIcon,
   Close as RejectIcon
 } from '@mui/icons-material';
-import { 
-  IncidentReport, 
-  incidentService, 
-  getStatusText, 
-  getStatusColor, 
+import {
+  IncidentReport,
+  incidentService,
+  getStatusText,
+  getStatusColor,
   IncidentStatus,
-  RejectIncidentDto 
+  RejectIncidentDto
 } from '../../services/incidentService';
 import { getUserFromToken } from '../../services/auth';
-// import { format } from 'date-fns';
-// import { vi } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { vi } from 'date-fns/locale';
 
@@ -46,20 +29,28 @@ interface IncidentReportListProps {
   refreshTrigger?: number;
 }
 
-export default function IncidentReportList({ 
-  showMyReports = false, 
-  onViewDetails, 
-  refreshTrigger 
+export default function IncidentReportList({
+  showMyReports = false,
+  onViewDetails,
+  refreshTrigger
 }: IncidentReportListProps) {
   const [reports, setReports] = useState<IncidentReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  
+
   // Reject dialog state
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState<string>('');
   const [rejectReason, setRejectReason] = useState('');
+  const [decision, setDecision] = useState<'Keep' | 'Liquidate'>('Keep');
   const [rejecting, setRejecting] = useState(false);
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   const currentUser = getUserFromToken();
   const isAdmin = currentUser?.role === 'Admin';
@@ -72,14 +63,9 @@ export default function IncidentReportList({
     try {
       setLoading(true);
       setError('');
-      
-      let data: IncidentReport[];
-      if (showMyReports) {
-        data = await incidentService.getMyReports();
-      } else {
-        data = await incidentService.getAllReports();
-      }
-      
+      const data = showMyReports
+        ? await incidentService.getMyReports()
+        : await incidentService.getAllReports();
       setReports(data);
     } catch (error: any) {
       console.error('Lỗi khi tải danh sách báo cáo:', error);
@@ -92,10 +78,19 @@ export default function IncidentReportList({
   const handleApprove = async (reportId: string) => {
     try {
       await incidentService.approveReport(reportId);
-      await loadReports(); // Refresh danh sách
+      setSnackbar({
+        open: true,
+        message: '✅ Báo cáo đã được duyệt và tạo lệnh sửa chữa.',
+        severity: 'success'
+      });
+      await loadReports();
     } catch (error: any) {
       console.error('Lỗi khi duyệt báo cáo:', error);
-      setError(error.response?.data?.message || 'Không thể duyệt báo cáo');
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Không thể duyệt báo cáo.',
+        severity: 'error'
+      });
     }
   };
 
@@ -103,53 +98,58 @@ export default function IncidentReportList({
     setSelectedReportId(reportId);
     setRejectDialogOpen(true);
     setRejectReason('');
+    setDecision('Keep');
   };
 
   const confirmReject = async () => {
     if (!rejectReason.trim()) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng nhập lý do từ chối!',
+        severity: 'error'
+      });
       return;
     }
-
     try {
       setRejecting(true);
-      const data: RejectIncidentDto = { reason: rejectReason };
+      const data: RejectIncidentDto = { reason: rejectReason, decision };
       await incidentService.rejectReport(selectedReportId, data);
-      
       setRejectDialogOpen(false);
       setSelectedReportId('');
       setRejectReason('');
-      await loadReports(); // Refresh danh sách
+      setSnackbar({
+        open: true,
+        message:
+          decision === 'Liquidate'
+            ? 'Báo cáo đã bị từ chối. Thiết bị chuyển sang trạng thái "Chờ thanh lý".'
+            : 'Báo cáo đã bị từ chối. Thiết bị giữ trạng thái "Đang sử dụng".',
+        severity: 'success'
+      });
+      await loadReports();
     } catch (error: any) {
       console.error('Lỗi khi từ chối báo cáo:', error);
-      setError(error.response?.data?.message || 'Không thể từ chối báo cáo');
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Không thể từ chối báo cáo.',
+        severity: 'error'
+      });
     } finally {
       setRejecting(false);
     }
   };
 
- const formatDate = (dateString?: string) => {
-   if (!dateString) return 'N/A';
-   try {
-     // Ép luôn coi input là UTC
-     const utcDate = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
-     return formatInTimeZone(
-       utcDate,
-       'Asia/Ho_Chi_Minh',
-       'dd/MM/yyyy HH:mm',
-       { locale: vi }
-     );
-   } catch {
-     return dateString;
-   }
- };
-
-  const canApprove = (report: IncidentReport): boolean => {
-    return isAdmin && report.status === IncidentStatus.ChoDuyet;
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    try {
+      const utcDate = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+      return formatInTimeZone(utcDate, 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm', { locale: vi });
+    } catch {
+      return dateString;
+    }
   };
 
-  const canReject = (report: IncidentReport): boolean => {
-    return isAdmin && report.status === IncidentStatus.ChoDuyet;
-  };
+  const canApprove = (r: IncidentReport) => isAdmin && r.status === IncidentStatus.ChoDuyet;
+  const canReject = (r: IncidentReport) => isAdmin && r.status === IncidentStatus.ChoDuyet;
 
   if (loading) {
     return (
@@ -161,11 +161,7 @@ export default function IncidentReportList({
 
   return (
     <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {reports.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -174,7 +170,7 @@ export default function IncidentReportList({
           </Typography>
         </Paper>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -188,88 +184,60 @@ export default function IncidentReportList({
               </TableRow>
             </TableHead>
             <TableBody>
-              {reports.map((report) => (
-                <TableRow key={report.id}>
+              {reports.map((r) => (
+                <TableRow key={r.id} hover>
                   <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {report.device?.deviceCode}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {report.device?.deviceName}
-                    </Typography>
+                    <Typography variant="body2" fontWeight="bold">{r.device?.deviceCode}</Typography>
+                    <Typography variant="caption" color="textSecondary">{r.device?.deviceName}</Typography>
                   </TableCell>
-                  
-                  <TableCell>{report.reportType}</TableCell>
-                  
+                  <TableCell>{r.reportType}</TableCell>
                   <TableCell>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        maxWidth: 200, 
-                        overflow: 'hidden', 
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 220,
+                        overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      {report.description}
+                      {r.description}
                     </Typography>
                   </TableCell>
-                  
                   {!showMyReports && (
                     <TableCell>
-                      <Typography variant="body2">
-                        {report.reportedByUser?.fullName}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {report.reportedByUser?.email}
-                      </Typography>
+                      <Typography variant="body2">{r.reportedByUser?.fullName}</Typography>
+                      <Typography variant="caption" color="textSecondary">{r.reportedByUser?.email}</Typography>
                     </TableCell>
                   )}
-                  
+                  <TableCell>{formatDate(r.reportDate)}</TableCell>
                   <TableCell>
-                    {formatDate(report.reportDate)}
-                  </TableCell>
-                  
-                  <TableCell>
-                    <Chip 
-                      label={getStatusText(report.status)}
-                      color={getStatusColor(report.status) as any}
+                    <Chip
+                      label={getStatusText(r.status)}
+                      color={getStatusColor(r.status) as any}
                       size="small"
+                      sx={{ fontWeight: 600 }}
                     />
                   </TableCell>
-                  
                   <TableCell align="center">
-                    <Box display="flex" gap={1}>
-                      {/* Xem chi tiết */}
+                    <Box display="flex" justifyContent="center" gap={1}>
                       <Tooltip title="Xem chi tiết">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => onViewDetails(report)}
-                        >
+                        <IconButton size="small" onClick={() => onViewDetails(r)}>
                           <ViewIcon />
                         </IconButton>
                       </Tooltip>
 
-                      {/* Admin actions */}
-                      {canApprove(report) && (
+                      {canApprove(r) && (
                         <Tooltip title="Duyệt và tạo lệnh sửa chữa">
-                          <IconButton 
-                            size="small" 
-                            color="success"
-                            onClick={() => handleApprove(report.id)}
-                          >
+                          <IconButton size="small" color="success" onClick={() => handleApprove(r.id)}>
                             <ApproveIcon />
                           </IconButton>
                         </Tooltip>
                       )}
 
-                      {canReject(report) && (
+                      {canReject(r) && (
                         <Tooltip title="Từ chối báo cáo">
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleReject(report.id)}
-                          >
+                          <IconButton size="small" color="error" onClick={() => handleReject(r.id)}>
                             <RejectIcon />
                           </IconButton>
                         </Tooltip>
@@ -284,9 +252,18 @@ export default function IncidentReportList({
       )}
 
       {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onClose={() => !rejecting && setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Từ chối báo cáo</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={() => !rejecting && setRejectDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Từ chối báo cáo sự cố</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Vui lòng nhập lý do từ chối và chọn hành động sau khi từ chối báo cáo này.
+          </Typography>
+
           <TextField
             fullWidth
             multiline
@@ -294,27 +271,65 @@ export default function IncidentReportList({
             label="Lý do từ chối"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Nhập lý do từ chối báo cáo này..."
-            sx={{ mt: 1 }}
+            placeholder="Nhập lý do từ chối..."
+            sx={{ mb: 3 }}
           />
+
+          <Divider sx={{ mb: 2 }} />
+
+          {/* Radio chọn hành động */}
+          <FormControl component="fieldset" sx={{ mb: 1 }}>
+            <FormLabel component="legend" sx={{ fontWeight: 600 }}>Hành động sau khi từ chối</FormLabel>
+            <RadioGroup
+              value={decision}
+              onChange={(e) => setDecision(e.target.value as 'Keep' | 'Liquidate')}
+            >
+              <FormControlLabel
+                value="Keep"
+                control={<Radio color="primary" />}
+                label="Giữ nguyên thiết bị (Đang sử dụng)"
+              />
+              <FormControlLabel
+                value="Liquidate"
+                control={<Radio color="primary" />}
+                label="Đưa vào danh sách chờ thanh lý"
+              />
+            </RadioGroup>
+          </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setRejectDialogOpen(false)}
-            disabled={rejecting}
-          >
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setRejectDialogOpen(false)} disabled={rejecting}>
             Hủy
           </Button>
-          <Button 
+          <Button
             onClick={confirmReject}
             color="error"
+            variant="contained"
             disabled={!rejectReason.trim() || rejecting}
-            startIcon={rejecting ? <CircularProgress size={20} /> : null}
+            startIcon={rejecting ? <CircularProgress size={20} /> : <RejectIcon />}
           >
-            {rejecting ? 'Đang từ chối...' : 'Từ chối'}
+            {rejecting ? 'Đang xử lý...' : 'Xác nhận từ chối'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar thông báo */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MuiAlert
+          severity={snackbar.severity}
+          elevation={8}
+          variant="filled"
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 }

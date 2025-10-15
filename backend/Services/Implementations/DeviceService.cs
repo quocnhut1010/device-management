@@ -4,6 +4,8 @@ using backend.Models.DTOs;
 using backend.Models.Entities;
 using backend.Repositories.Interfaces;
 using backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using backend.Data;
 
 namespace backend.Services.Implementations
 {
@@ -11,11 +13,14 @@ namespace backend.Services.Implementations
     {
         private readonly IDeviceRepository _repository;
         private readonly IMapper _mapper;
+        private readonly DeviceManagementDbContext _context;
+        
 
-        public DeviceService(IDeviceRepository repository, IMapper mapper)
+        public DeviceService(IDeviceRepository repository, IMapper mapper, DeviceManagementDbContext context)
         {
             _repository = repository;
             _mapper = mapper;
+            _context = context;
         }
 
         public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync()
@@ -221,10 +226,60 @@ namespace backend.Services.Implementations
 
         public async Task<IEnumerable<DeviceDto>> GetDevicesByManagedDepartmentAsync(Guid userId)
         {
-            // This would need user context to get managed department
-            // For now, return empty collection
-            var allDevices = await _repository.GetAllAsync();
-            var devices = allDevices.Where(d => d.IsDeleted != true);
+            // Lấy user với thông tin department
+            var user = await _context.Users
+                .Include(u => u.Department)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsDeleted == false);
+                
+            if (user == null)
+            {
+                Console.WriteLine($"[DEBUG] User not found for ID: {userId}");
+                return new List<DeviceDto>();
+            }
+            
+            Console.WriteLine($"[DEBUG] User found - ID: {user.Id}, Position: {user.Position}, DepartmentId: {user.DepartmentId}");
+            
+            var managedDepartmentIds = new List<Guid>();
+            
+            // Logic đơn giản: Nếu là Trưởng phòng, lấy thiết bị của department mình
+            if (user.Position == "Trưởng phòng" && user.DepartmentId.HasValue)
+            {
+                managedDepartmentIds.Add(user.DepartmentId.Value);
+                Console.WriteLine($"[DEBUG] Manager found - Added department: {user.DepartmentId.Value}");
+            }
+            else if (user.DepartmentId.HasValue)
+            {
+                // Nếu không phải trưởng phòng, vẫn lấy department của mình
+                managedDepartmentIds.Add(user.DepartmentId.Value);
+                Console.WriteLine($"[DEBUG] Regular user - Added department: {user.DepartmentId.Value}");
+            }
+            
+            Console.WriteLine($"[DEBUG] Total managed departments: {managedDepartmentIds.Count}");
+            
+            if (!managedDepartmentIds.Any())
+            {
+                Console.WriteLine($"[DEBUG] No managed departments found");
+                return new List<DeviceDto>();
+            }
+            
+            // Lấy thiết bị thuộc các departments được quản lý
+            var devices = await _context.Devices
+                .Include(d => d.Model!).ThenInclude(m => m.DeviceType)
+                .Include(d => d.Supplier)
+                .Include(d => d.CurrentUser)
+                .Include(d => d.CurrentDepartment)
+                .Where(d => d.IsDeleted != true && 
+                           managedDepartmentIds.Contains(d.CurrentDepartmentId ?? Guid.Empty))
+                .ToListAsync();
+                
+            Console.WriteLine($"[DEBUG] Found {devices.Count} devices for departments: [{string.Join(", ", managedDepartmentIds)}]");
+            
+            // Debug: Hiển thị thông tin các device tìm thấy
+            foreach (var device in devices.Take(5)) // Chỉ hiển thị 5 device đầu tiên
+            {
+                Console.WriteLine($"[DEBUG] Device: {device.DeviceCode} - {device.DeviceName} - Dept: {device.CurrentDepartmentId}");
+            }
+                
             return _mapper.Map<IEnumerable<DeviceDto>>(devices);
         }
 

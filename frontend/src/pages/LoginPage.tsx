@@ -19,11 +19,13 @@ import { useNavigate } from 'react-router-dom';
 
 import CustomInput from '../components/ui/CustomInput';
 import CustomButton from '../components/ui/CustomButton';
-import { login } from '../services/auth';
+import { login as authLogin } from '../services/auth';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { login: contextLogin } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +37,8 @@ const LoginPage = () => {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
+      const token = await authLogin(email, password);
+      contextLogin(token);
       navigate('/dashboard');
     } catch {
       setError('Đăng nhập thất bại. Kiểm tra lại thông tin.');

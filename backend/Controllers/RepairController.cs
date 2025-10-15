@@ -18,15 +18,18 @@ namespace backend.Controllers
         private readonly IRepairService _repairService;
         private readonly IAuthService _authService;
         private readonly DeviceManagementDbContext _context;
+        private readonly INotificationService _notificationService;
 
         public RepairController(
             IRepairService repairService,
             IAuthService authService,
-            DeviceManagementDbContext context)
+            DeviceManagementDbContext context,
+            INotificationService notificationService)
         {
             _repairService = repairService;
             _authService = authService;
             _context = context;
+            _notificationService = notificationService;
         }
 
         private Guid? GetUserId() => _authService.GetCurrentUserId(User);
@@ -132,6 +135,9 @@ namespace backend.Controllers
             if (!success)
                 return BadRequest(new { message = "Không thể phân công kỹ thuật viên cho lệnh sửa chữa này" });
 
+            // Send notification to technician about new repair assignment
+            await _notificationService.NotifyRepairAssignedAsync(repairId, dto.TechnicianId);
+
             return Ok(new { message = "Đã phân công kỹ thuật viên thành công" });
         }
 
@@ -172,6 +178,9 @@ namespace backend.Controllers
             if (!success)
                 return BadRequest(new { message = "Không thể hoàn thành lệnh sửa chữa này" });
 
+            // Send notification to admins about repair completion
+            await _notificationService.NotifyRepairCompletedAsync(repairId);
+
             return Ok(new { message = "Đã hoàn thành sửa chữa, chờ admin duyệt" });
         }
 
@@ -206,6 +215,9 @@ namespace backend.Controllers
             var success = await _repairService.RejectRepairAsync(repairId, dto.Reason, userId.Value);
             if (!success)
                 return BadRequest(new { message = "Không thể từ chối lệnh sửa chữa này" });
+
+            // Send notification to admins about repair rejection
+            await _notificationService.NotifyRepairRejectedAsync(repairId, dto.Reason);
 
             return Ok(new { message = "Đã từ chối lệnh sửa chữa" });
         }
@@ -252,6 +264,12 @@ namespace backend.Controllers
             var success = await _repairService.RejectOrMarkNotNeededAsync(repairId, dto, userId.Value);
             if (!success)
                 return BadRequest(new { message = "Không thể thực hiện thao tác này" });
+
+            // Send notification to admins about repair rejection (only for actual rejection, not "not needed")
+            if (dto.Status == RepairStatus.TuChoi)
+            {
+                await _notificationService.NotifyRepairRejectedAsync(repairId, dto.Reason ?? "Kỹ thuật viên từ chối");
+            }
 
             var message = dto.Status == RepairStatus.TuChoi
                 ? "Đã từ chối lệnh sửa chữa"
@@ -311,6 +329,44 @@ namespace backend.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Đã tải ảnh thành công", imageUrls });
+        }
+        // GET: api/repair/device/{deviceId}/history - Lấy lịch sử sửa chữa của một thiết bị
+        [HttpGet("device/{deviceId}/history")]
+        [Authorize]
+        public async Task<IActionResult> GetRepairHistoryByDevice(Guid deviceId)
+        {
+            try
+            {
+                var result = await _repairService.GetRepairHistoryByDeviceAsync(deviceId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Lỗi khi lấy lịch sử sửa chữa thiết bị",
+                    error = ex.Message
+                });
+            }
+        }
+        // GET: api/repair/device/{deviceId}/analysis
+        [HttpGet("device/{deviceId}/analysis")]
+        [Authorize]
+        public async Task<IActionResult> AnalyzeDeviceRepairHistory(Guid deviceId)
+        {
+            try
+            {
+                var result = await _repairService.AnalyzeDeviceRepairHistoryAsync(deviceId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Lỗi khi phân tích lịch sử sửa chữa thiết bị",
+                    error = ex.Message
+                });
+            }
         }
 
     }

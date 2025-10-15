@@ -18,6 +18,9 @@ export interface IncidentReport {
     id: string;
     deviceCode: string;
     deviceName: string;
+    status: string;
+    currentUserName?: string;
+    departmentName?: string;
   };
   reportedByUser?: {
     id: string;
@@ -35,6 +38,7 @@ export interface CreateIncidentReportDto {
 
 export interface RejectIncidentDto {
   reason: string;
+  decision: 'Keep' | 'Liquidate';
 }
 
 // Status constants
@@ -119,7 +123,6 @@ class IncidentService {
 
     return response.data.imageUrl; // Backend trả về đường dẫn /images/incidents/abc.jpg
   }
-
 
 }
 

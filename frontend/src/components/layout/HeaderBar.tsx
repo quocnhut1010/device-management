@@ -18,19 +18,20 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Notifications as NotificationsIcon,
   Search as SearchIcon,
   Settings,
   Logout,
 } from '@mui/icons-material';
 
 import { useState } from 'react';
-import { getUserFromToken, logout } from '../../services/auth';
+import { getUserFromToken } from '../../services/auth';
 import { useNavigate } from 'react-router-dom';
 import UserProfileDialog from '../user/UserProfileDialog';
 import { getUserProfile, updateUserProfile } from '../../services/userService';
 import { UserDto } from '../../types/UserDto';
 import  useNotification  from '../../hooks/useNotification';
+import NotificationBell from '../notifications/NotificationBell';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface HeaderBarProps {
   onMenuClick: () => void;
@@ -38,6 +39,7 @@ interface HeaderBarProps {
 
 const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
   const navigate = useNavigate();
+  const { logout: contextLogout } = useAuth();
   const user = getUserFromToken(); // lấy từ JWT
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -52,15 +54,10 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
   const handleClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
-    logout();
+    contextLogout();
     navigate('/login');
   };
 
-  // Notification dropdown
-  const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
-  const openNotif = Boolean(notifAnchor);
-  const handleNotifClick = (event: React.MouseEvent<HTMLElement>) => setNotifAnchor(event.currentTarget);
-  const handleNotifClose = () => setNotifAnchor(null);
 
   // Profile dialog
   const [openProfile, setOpenProfile] = useState(false);
@@ -139,17 +136,7 @@ const HeaderBar = ({ onMenuClick }: HeaderBarProps) => {
         {/* Right: Notification, user */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Notifications */}
-          <Tooltip title="Thông báo">
-            <IconButton onClick={handleNotifClick}>
-              <Badge badgeContent={2} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
-          <Menu anchorEl={notifAnchor} open={openNotif} onClose={handleNotifClose}>
-            <MenuItem disabled>🔔 Báo cáo sự cố mới</MenuItem>
-            <MenuItem disabled>🛠️ Thiết bị đang được sửa</MenuItem>
-          </Menu>
+          <NotificationBell color="inherit" />
 
           {/* Role label */}
           <Typography variant="body2" sx={{ display: { xs: 'none', md: 'block' } }}>
