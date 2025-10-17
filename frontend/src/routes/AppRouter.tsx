@@ -23,6 +23,7 @@ import IncidentReportPage from '../pages/IncidentReportPage';
 import RepairManagementPage from '../pages/RepairManagementPage';
 import ReplacementPage from '../pages/ReplacementPage';
 import LiquidationPage from '../pages/LiquidationPage';
+import DeviceHistoryPage from '../pages/DeviceHistoryPage';
 
 const AppRoutes = () => {
   return (
@@ -127,7 +128,7 @@ const AppRoutes = () => {
             <Route
               path="replacements"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute allowedRoles={['Admin']} allowedPositions={['Nhân viên', 'Trưởng phòng']} requireBoth={false}>
                   <ReplacementPage />
                 </PrivateRoute>
               }
@@ -137,6 +138,22 @@ const AppRoutes = () => {
               element={
                 <PrivateRoute allowedRoles={['Admin']}>
                   <LiquidationPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="device-history"
+              element={
+                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                  <DeviceHistoryPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="device-history/:deviceId"
+              element={
+                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                  <DeviceHistoryPage />
                 </PrivateRoute>
               }
             />

@@ -244,6 +244,7 @@ const Sidebar = ({}: SidebarProps) => {
         )}
 
         {/* Thay thế - All users can view, Admin can create */}
+         {(role === 'Admin' || position === 'Nhân viên' || position === 'Trưởng phòng') && (
         <SidebarItem 
           label="Thay thế" 
           icon={<SwapHorizIcon />} 
@@ -252,12 +253,17 @@ const Sidebar = ({}: SidebarProps) => {
           collapsed={collapsed} 
           onClick={() => handleNavigate('/replacements')} 
         />
-        
+         )}
+        <SidebarItem 
+          label="Lịch sử hệ thống" 
+          icon={<HistoryIcon />} 
+          path="/device-history" 
+          active={isActive('/device-history')} 
+          collapsed={collapsed} 
+          onClick={() => handleNavigate('/device-history')} 
+        />
         {role === 'Admin' && (
-          <>
-            <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidation" active={isActive('/liquidation')} collapsed={collapsed} onClick={() => handleNavigate('/liquidation')} />
-            <SidebarItem label="Lịch sử thiết bị" icon={<HistoryIcon />} path="/device-histories" active={isActive('/device-histories')} collapsed={collapsed} onClick={() => handleNavigate('/device-histories')} />
-          </>
+          <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidation" active={isActive('/liquidation')} collapsed={collapsed} onClick={() => handleNavigate('/liquidation')} />
         )}
 
         {/* Người dùng & Hệ thống */}

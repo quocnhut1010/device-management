@@ -9,10 +9,12 @@ namespace backend.Services.Implementations
     public class DeviceAssignmentService : IDeviceAssignmentService
     {
         private readonly DeviceManagementDbContext _context;
+        private readonly IDeviceHistoryService _deviceHistoryService;
 
-        public DeviceAssignmentService(DeviceManagementDbContext context)
+        public DeviceAssignmentService(DeviceManagementDbContext context, IDeviceHistoryService deviceHistoryService)
         {
             _context = context;
+            _deviceHistoryService = deviceHistoryService;
         }
 
         public async Task<List<DeviceAssignmentDto>> GetAllAsync()
@@ -80,6 +82,28 @@ namespace backend.Services.Implementations
 
             await _context.SaveChangesAsync();
 
+            // Log device assignment
+            if (device != null)
+            {
+                var assignedUser = await _context.Users.FindAsync(createDto.AssignedToUserId);
+                var assignedDept = createDto.AssignedToDepartmentId != Guid.Empty 
+                    ? await _context.Departments.FindAsync(createDto.AssignedToDepartmentId)
+                    : null;
+                    
+                var assignedToInfo = assignedUser != null 
+                    ? $"user {assignedUser.FullName}"
+                    : assignedDept != null 
+                        ? $"department {assignedDept.DepartmentName}"
+                        : "unknown";
+                        
+                await _deviceHistoryService.LogActionAsync(
+                    device.Id,
+                    "Device Assigned",
+                    currentUserId,
+                    $"Device '{device.DeviceName}' was assigned to {assignedToInfo}",
+                    "ASSIGNMENT");
+            }
+
             // Reload with includes
             assignment = await _context.DeviceAssignments
                 .Include(da => da.Device)
@@ -138,6 +162,18 @@ namespace backend.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+            
+            // Log device revocation
+            if (device != null)
+            {
+                await _deviceHistoryService.LogActionAsync(
+                    device.Id,
+                    "Device Assignment Revoked",
+                    currentUserId,
+                    $"Device '{device.DeviceName}' assignment was revoked and device is now available",
+                    "REVOCATION");
+            }
+            
             return true;
         }
 

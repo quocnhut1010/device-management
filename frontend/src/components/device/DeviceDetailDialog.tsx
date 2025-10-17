@@ -3,13 +3,17 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Box,
   Typography,
   Button,
+  Stack,
 } from '@mui/material';
 import { QRCodeCanvas } from 'qrcode.react';
 import DownloadIcon from '@mui/icons-material/Download';
+import HistoryIcon from '@mui/icons-material/History';
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DeviceDto } from '../../types/device';
 
 interface Props {
@@ -22,6 +26,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
 const DeviceDetailDialog = ({ open, device, onClose }: Props) => {
   const qrRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
@@ -33,6 +38,13 @@ const DeviceDetailDialog = ({ open, device, onClose }: Props) => {
     link.href = url;
     link.download = `QR_${device?.deviceCode || 'device'}.png`;
     link.click();
+  };
+
+  const handleViewHistory = () => {
+    if (device) {
+      navigate(`/device-history/${device.id}`);
+      onClose();
+    }
   };
 
   if (!device) return null;
@@ -98,6 +110,21 @@ const DeviceDetailDialog = ({ open, device, onClose }: Props) => {
           <Typography><b>Hết hạn BH:</b> {device.warrantyExpiry?.split('T')[0]}</Typography>
         </Box>
       </DialogContent>
+      
+      <DialogActions>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            startIcon={<HistoryIcon />}
+            onClick={handleViewHistory}
+          >
+            Xem lịch sử
+          </Button>
+          <Button onClick={onClose} variant="contained">
+            Đóng
+          </Button>
+        </Stack>
+      </DialogActions>
     </Dialog>
   );
 };

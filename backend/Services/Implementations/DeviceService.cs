@@ -14,13 +14,15 @@ namespace backend.Services.Implementations
         private readonly IDeviceRepository _repository;
         private readonly IMapper _mapper;
         private readonly DeviceManagementDbContext _context;
+        private readonly IDeviceHistoryService _deviceHistoryService;
         
 
-        public DeviceService(IDeviceRepository repository, IMapper mapper, DeviceManagementDbContext context)
+        public DeviceService(IDeviceRepository repository, IMapper mapper, DeviceManagementDbContext context, IDeviceHistoryService deviceHistoryService)
         {
             _repository = repository;
             _mapper = mapper;
             _context = context;
+            _deviceHistoryService = deviceHistoryService;
         }
 
         public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync()
@@ -81,6 +83,15 @@ namespace backend.Services.Implementations
             
             await _repository.AddAsync(device);
             await _repository.SaveChangesAsync();
+            
+            // Log device creation - using system user since CreatedBy field not available
+            await _deviceHistoryService.LogActionAsync(
+                device.Id,
+                "Device Created",
+                Guid.Empty, // Will be replaced with actual user ID when available
+                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was created",
+                "CREATE");
+            
             return true;
         }
         
@@ -105,6 +116,14 @@ namespace backend.Services.Implementations
             
             await _repository.AddAsync(device);
             await _repository.SaveChangesAsync();
+            
+            // Log device creation - using system user since CreatedBy field not available
+            await _deviceHistoryService.LogActionAsync(
+                device.Id,
+                "Device Created",
+                Guid.Empty, // Will be replaced with actual user ID when available
+                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was created",
+                "CREATE");
             
             // Return the created device with all generated fields
             var createdDevice = await _repository.GetByIdAsync(device.Id);
@@ -154,9 +173,22 @@ namespace backend.Services.Implementations
             var device = await _repository.GetByIdAsync(id);
             if (device == null) return false;
 
+            var oldDeviceName = device.DeviceName;
             _mapper.Map(dto, device);
             device.UpdatedAt = DateTime.UtcNow;
             await _repository.SaveChangesAsync();
+            
+            // Log device update
+            if (device.UpdatedBy.HasValue)
+            {
+                await _deviceHistoryService.LogActionAsync(
+                    device.Id,
+                    "Device Updated",
+                    device.UpdatedBy.Value,
+                    $"Device '{oldDeviceName}' was updated to '{device.DeviceName}'",
+                    "UPDATE");
+            }
+            
             return true;
         }
 
@@ -169,6 +201,15 @@ namespace backend.Services.Implementations
             device.UpdatedAt = DateTime.UtcNow;
             device.UpdatedBy = userId;
             await _repository.SaveChangesAsync();
+            
+            // Log device deletion
+            await _deviceHistoryService.LogActionAsync(
+                device.Id,
+                "Device Deleted",
+                userId,
+                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was deleted",
+                "DELETE");
+            
             return true;
         }
 
@@ -221,6 +262,18 @@ namespace backend.Services.Implementations
             device.IsDeleted = false;
             device.UpdatedAt = DateTime.UtcNow;
             await _repository.SaveChangesAsync();
+            
+            // Log device restoration
+            if (device.UpdatedBy.HasValue)
+            {
+                await _deviceHistoryService.LogActionAsync(
+                    device.Id,
+                    "Device Restored",
+                    device.UpdatedBy.Value,
+                    $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was restored from deletion",
+                    "RESTORE");
+            }
+            
             return true;
         }
 

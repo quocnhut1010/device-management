@@ -16,6 +16,8 @@ public partial class DeviceHistory
 
     public string? Description { get; set; }
 
+    public string? ActionType { get; set; }
+
     public Guid? ActionBy { get; set; }
 
     public DateTime? ActionDate { get; set; }
