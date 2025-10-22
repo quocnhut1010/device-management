@@ -13,7 +13,7 @@ export interface ChatResponse {
 }
 
 export class AIChatService {
-  private static readonly DEFAULT_API_KEY = 'AIzaSyBDzwpa0-JXC2RuDtod_3YBtomFjX6PXII'; // Working default key
+  private static readonly DEFAULT_API_KEY = import.meta.env.VITE_AI_API_KEY || ''; // Load from .env file
   private static readonly MODEL_NAME = 'gemini-2.0-flash-lite';
   
   private static readonly SYSTEM_INSTRUCTION = `Bạn là trợ lý AI chuyên về quản lý thiết bị công nghệ thông tin với khả năng truy cập dữ liệu thực từ hệ thống. Vai trò của bạn là:
