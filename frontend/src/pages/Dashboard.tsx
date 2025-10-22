@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Typography, Box, CircularProgress, Button, IconButton } from '@mui/material';
+import { Typography, Box, CircularProgress, Button, IconButton, Fab, Tooltip } from '@mui/material';
 import DevicesIcon from '@mui/icons-material/Devices';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SummaryCard from '../components/dashboard/SummaryCard';
 import { getUserFromToken } from '../services/auth';
+import { AIChatDialog } from '../components/ai';
 import { getAllDevices, getMyDevices, getManagedDevices } from '../services/deviceService';
 import { getAllDepartmentsData } from '../services/departmentService';
 import { getAllUsersData } from '../services/userService';
@@ -22,6 +24,7 @@ const Dashboard = () => {
   const [position, setPosition] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [hasToken, setHasToken] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -254,6 +257,31 @@ const Dashboard = () => {
         <Typography variant="body2">User Count: {userCount}</Typography>
         <Typography variant="body2">Token Preview: {localStorage.getItem('token')?.substring(0, 50)}...</Typography>
       </Box> */}
+
+      {/* AI Chat FAB */}
+      {hasToken && (
+        <Tooltip title="Chat với AI" placement="left">
+          <Fab
+            color="primary"
+            aria-label="chat with ai"
+            onClick={() => setShowAIChat(true)}
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+            }}
+          >
+            <SmartToyIcon />
+          </Fab>
+        </Tooltip>
+      )}
+
+      {/* AI Chat Dialog */}
+      <AIChatDialog
+        open={showAIChat}
+        onClose={() => setShowAIChat(false)}
+      />
     </Box>
   );
 };

@@ -254,6 +254,7 @@ const Sidebar = ({}: SidebarProps) => {
           onClick={() => handleNavigate('/replacements')} 
         />
          )}
+         {role === 'Admin' && (
         <SidebarItem 
           label="Lịch sử hệ thống" 
           icon={<HistoryIcon />} 
@@ -262,6 +263,7 @@ const Sidebar = ({}: SidebarProps) => {
           collapsed={collapsed} 
           onClick={() => handleNavigate('/device-history')} 
         />
+        )}
         {role === 'Admin' && (
           <SidebarItem label="Thanh lý" icon={<DeleteSweepIcon />} path="/liquidation" active={isActive('/liquidation')} collapsed={collapsed} onClick={() => handleNavigate('/liquidation')} />
         )}
