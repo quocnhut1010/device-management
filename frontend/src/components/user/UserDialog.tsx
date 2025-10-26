@@ -3,7 +3,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText,
   TextField,
   Button,
   MenuItem,
@@ -12,18 +11,44 @@ import {
   CircularProgress,
   Fade,
 } from '@mui/material';
-import { useEffect, useState, forwardRef } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import { RegisterUserDto, UserDto } from '../../types/UserDto';
 import { getAllDepartments } from '../../services/departmentService';
 import { DepartmentDto } from '../../types/DepartmentDto';
 import { TransitionProps } from '@mui/material/transitions';
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (data: RegisterUserDto | UserDto) => void;
-  user?: UserDto | null;
-}
+// ================== SCHEMA ==================
+const validationSchema = yup.object({
+  fullName: yup.string().required('Vui lòng nhập họ tên'),
+  email: yup
+    .string()
+    .email('Email không hợp lệ')
+    .required('Vui lòng nhập email'),
+  password: yup
+    .string()
+    .when('isEdit', {
+      is: false,
+      then: (schema) =>
+        schema
+          .min(6, 'Mật khẩu phải ít nhất 6 ký tự')
+          .required('Vui lòng nhập mật khẩu'),
+    }),
+  confirmPassword: yup
+    .string()
+    .when('isEdit', {
+      is: false,
+      then: (schema) =>
+        schema
+          .oneOf([yup.ref('password')], 'Mật khẩu nhập lại không khớp')
+          .required('Vui lòng xác nhận mật khẩu'),
+    }),
+  role: yup.string().required('Vui lòng chọn vai trò'),
+  departmentId: yup.string().required('Vui lòng chọn phòng ban'),
+  position: yup.string().required('Vui lòng chọn vị trí'),
+});
 
 const commonPositions = ['Nhân viên', 'Trưởng phòng', 'Kỹ thuật', 'Khác'];
 
@@ -34,83 +59,107 @@ const Transition = forwardRef(function Transition(
   return <Fade ref={ref} {...props} />;
 });
 
-const UserDialog = ({ open, onClose, onSubmit, user }: Props) => {
-  const [form, setForm] = useState<RegisterUserDto | UserDto>({
-    fullName: '',
-    email: '',
-    password: '',
-    role: 'User',
-    departmentId: '',
-    position: '',
-  });
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: RegisterUserDto | UserDto) => void;
+  user?: UserDto | null;
+}
 
+// ================== COMPONENT ==================
+export default function UserDialog({ open, onClose, onSubmit, user }: Props) {
+  const isEdit = Boolean(user);
   const [departments, setDepartments] = useState<DepartmentDto[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const resetForm = () => {
-    if (user) {
-      setForm({ ...user, password: '' });
-    } else {
-      setForm({
-        fullName: '',
-        email: '',
-        password: '',
-        role: 'User',
-        departmentId: '',
-        position: '',
-      });
-    }
-  };
+  // Hook Form setup
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<any>({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'User',
+      departmentId: '',
+      position: '',
+      customPosition: '',
+      isEdit: isEdit,
+    },
+  });
 
+  // Load departments & set form data
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getAllDepartments(false); // chỉ lấy phòng ban đang hoạt động
+        const res = await getAllDepartments(false);
         setDepartments(res.data);
       } catch (err) {
         console.error('Lỗi khi tải danh sách phòng ban', err);
       }
     };
+    fetchData();
 
-    fetchDepartments();
-    resetForm();
-  }, [user]);
+    if (user) {
+      reset({
+        ...user,
+        password: '',
+        confirmPassword: '',
+        isEdit: true,
+      });
+    } else {
+      reset({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'User',
+        departmentId: '',
+        position: '',
+        customPosition: '',
+        isEdit: false,
+      });
+    }
+  }, [user, reset]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+  const position = watch('position');
+  const customPosition = watch('customPosition');
 
-  const handleSubmit = async () => {
+  const onSubmitForm = async (data: any) => {
     setLoading(true);
     try {
       const finalData = {
-        ...form,
-        position:
-          form.position === 'Khác'
-            ? (form as any).customPosition || ''
-            : form.position,
+        ...data,
+        position: data.position === 'Khác' ? customPosition : data.position,
       };
+      delete finalData.confirmPassword;
+      delete finalData.isEdit;
+
       await onSubmit(finalData);
     } finally {
       setLoading(false);
     }
   };
 
+  // ================== UI ==================
   return (
     <Dialog
       open={open}
       onClose={() => {
-        resetForm();
+        reset();
         onClose();
       }}
       fullWidth
       maxWidth="sm"
       TransitionComponent={Transition}
     >
-      <DialogTitle>
-        {user ? 'Cập nhật người dùng' : 'Thêm người dùng'}
-      </DialogTitle>
+      <DialogTitle>{isEdit ? 'Cập nhật người dùng' : 'Thêm người dùng'}</DialogTitle>
 
       <DialogContent
         dividers
@@ -119,117 +168,156 @@ const UserDialog = ({ open, onClose, onSubmit, user }: Props) => {
           pointerEvents: loading ? 'none' : 'auto',
         }}
       >
-        <DialogContentText sx={{ mb: 2 }}>
-          {user
-            ? 'Cập nhật thông tin chi tiết của người dùng trong hệ thống.'
-            : 'Nhập thông tin để thêm người dùng mới vào hệ thống.'}
-        </DialogContentText>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
+        <Box display="flex" flexDirection="column" gap={2}>
+          {/* Họ tên + Email */}
+          <Box display="flex" gap={2}>
+            <Controller
               name="fullName"
-              label="Họ tên"
-              fullWidth
-              variant="outlined"
-              value={form.fullName}
-              onChange={handleChange}
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Họ tên"
+                  fullWidth
+                  error={!!errors.fullName}
+                  helperText={errors.fullName?.message as string}
+                />
+              )}
             />
-            <TextField
+            <Controller
               name="email"
-              label="Email"
-              type="email"
-              fullWidth
-              variant="outlined"
-              value={form.email}
-              onChange={handleChange}
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  error={!!errors.email}
+                  helperText={errors.email?.message as string}
+                />
+              )}
             />
           </Box>
 
-          {!user && (
-            <TextField
-              name="password"
-              type="password"
-              label="Mật khẩu"
-              fullWidth
-              variant="outlined"
-              value={(form as RegisterUserDto).password || ''}
-              onChange={handleChange}
-            />
+          {/* Mật khẩu & Xác nhận mật khẩu (chỉ khi thêm mới) */}
+          {!isEdit && (
+            <>
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Mật khẩu"
+                    type="password"
+                    fullWidth
+                    error={!!errors.password}
+                    helperText={errors.password?.message as string}
+                  />
+                )}
+              />
+              <Controller
+                name="confirmPassword"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Nhập lại mật khẩu"
+                    type="password"
+                    fullWidth
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword?.message as string}
+                  />
+                )}
+              />
+            </>
           )}
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
+          {/* Vai trò & Phòng ban */}
+          <Box display="flex" gap={2}>
+            <Controller
               name="role"
-              label="Vai trò"
-              select
-              fullWidth
-              variant="outlined"
-              value={form.role}
-              onChange={handleChange}
-            >
-              <MenuItem value="User">User</MenuItem>
-              <MenuItem value="Admin">Admin</MenuItem>
-            </TextField>
-
-            <TextField
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Vai trò"
+                  fullWidth
+                  error={!!errors.role}
+                  helperText={errors.role?.message as string}
+                >
+                  <MenuItem value="User">User</MenuItem>
+                  <MenuItem value="Admin">Admin</MenuItem>
+                </TextField>
+              )}
+            />
+            <Controller
               name="departmentId"
-              label="Phòng ban"
-              select
-              fullWidth
-              variant="outlined"
-              value={form.departmentId || ''}
-              onChange={handleChange}
-            >
-              {departments.map((dep) => (
-                <MenuItem key={dep.id} value={dep.id}>
-                  {dep.departmentName}
-                </MenuItem>
-              ))}
-            </TextField>
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Phòng ban"
+                  fullWidth
+                  error={!!errors.departmentId}
+                  helperText={errors.departmentId?.message as string}
+                >
+                  {departments.map((dep) => (
+                    <MenuItem key={dep.id} value={dep.id}>
+                      {dep.departmentName}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
           </Box>
 
-          <Box>
-            <TextField
-              name="position"
-              label="Vị trí"
-              select
-              fullWidth
-              variant="outlined"
-              value={form.position || ''}
-              onChange={handleChange}
-            >
-              {commonPositions.map((pos) => (
-                <MenuItem key={pos} value={pos}>
-                  {pos}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Collapse in={form.position === 'Khác'} timeout="auto" unmountOnExit>
+          {/* Vị trí */}
+          <Controller
+            name="position"
+            control={control}
+            render={({ field }) => (
               <TextField
-                name="customPosition"
-                label="Nhập vị trí khác"
+                {...field}
+                select
+                label="Vị trí"
                 fullWidth
-                variant="outlined"
-                sx={{ mt: 2 }}
-                value={(form as any).customPosition || ''}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    customPosition: e.target.value,
-                  }))
-                }
-              />
-            </Collapse>
-          </Box>
+                error={!!errors.position}
+                helperText={errors.position?.message as string}
+              >
+                {commonPositions.map((pos) => (
+                  <MenuItem key={pos} value={pos}>
+                    {pos}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
+          <Collapse in={position === 'Khác'} timeout="auto" unmountOnExit>
+            <Controller
+              name="customPosition"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Nhập vị trí khác"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                />
+              )}
+            />
+          </Collapse>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button
           onClick={() => {
-            resetForm();
+            reset();
             onClose();
           }}
           color="secondary"
@@ -238,7 +326,7 @@ const UserDialog = ({ open, onClose, onSubmit, user }: Props) => {
           Hủy
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={handleSubmit(onSubmitForm)}
           variant="contained"
           color="primary"
           disabled={loading}
@@ -250,6 +338,4 @@ const UserDialog = ({ open, onClose, onSubmit, user }: Props) => {
       </DialogActions>
     </Dialog>
   );
-};
-
-export default UserDialog;
+}

@@ -56,18 +56,48 @@ export const updateDevice = async (id: string, device: UpdateDeviceDto): Promise
 export const deleteDevice = async (id: string): Promise<void> => {
   await axios.delete(`/device/${id}`);
 };
-export const createDeviceWithImage = async (formData: FormData) => {
-  const res = await axios.post('/device', formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+export const createDeviceWithImage = async (data: CreateDeviceDto & { file?: File | null }) => {
+  const formData = new FormData();
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, value as any);
+    }
   });
-  return res.data;
+
+  // ✅ Nếu có file ảnh, thêm vào form
+  if (data.file) {
+    formData.append('file', data.file);
+  }
+
+  const response = await axios.post('/device', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return response.data;
 };
 
-export const updateDeviceWithImage = async (id: string, formData: FormData) => {
-  const res = await axios.put(`/device/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+export const updateDeviceWithImage = async (
+  id: string,
+  data: Partial<CreateDeviceDto> & { file?: File | null }
+) => {
+  const formData = new FormData();
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && key !== 'file') {
+      formData.append(key, value as any);
+    }
   });
-  return res.data;
+
+  if (data.file) {
+    formData.append('file', data.file);
+  }
+
+  const response = await axios.put(`/device/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return response.data;
 };
 
 // Lấy danh sách thiết bị của tôi (cho Nhân viên)

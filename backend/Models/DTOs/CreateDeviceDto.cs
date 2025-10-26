@@ -15,5 +15,7 @@ namespace backend.Models.DTOs
         public string? Barcode { get; set; }
         public string? DeviceImageUrl { get; set; }
         public string? WarrantyProvider { get; set; }
+        public Guid? CreatedBy { get; set; }
+
     }
 }

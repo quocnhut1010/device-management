@@ -41,6 +41,7 @@ export interface CreateDeviceDto {
   barcode?: string;
   deviceImageUrl?: string;
   warrantyProvider?: string;
+  createdBy?: string; 
 }
  
 export interface UpdateDeviceDto {

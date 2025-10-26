@@ -121,7 +121,7 @@ namespace backend.Services.Implementations
             await _deviceHistoryService.LogActionAsync(
                 device.Id,
                 "Device Created",
-                Guid.Empty, // Will be replaced with actual user ID when available
+                dto.CreatedBy ?? Guid.Empty, // Will be replaced with actual user ID when available
                 $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was created",
                 "CREATE");
             

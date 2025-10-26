@@ -15,8 +15,10 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import  useNotification  from '../hooks/useNotification';
 
-import { DeviceDto } from '../types/device';
+
+import { CreateDeviceDto, DeviceDto } from '../types/device';
 import {
   createDeviceWithImage,
   updateDeviceWithImage,
@@ -30,7 +32,6 @@ import {
 } from '../services/deviceService';
 import DeviceTable from '../components/device/DeviceTable';
 import DeviceDialog from '../components/device/DeviceDialog';
-import useNotification from '../hooks/useNotification';
 import useUserRole from '../services/useUserRole';
 
 const DevicePage = () => {
@@ -146,43 +147,28 @@ const DevicePage = () => {
     }
   };
 
-  const handleSubmit = async (device: any) => {
-    try {
-      const formData = new FormData();
-      formData.append('deviceName', device.deviceName || '');
-      if (device.modelId) formData.append('modelId', device.modelId);
-      if (device.supplierId) formData.append('supplierId', device.supplierId);
-      if (device.purchasePrice) formData.append('purchasePrice', device.purchasePrice.toString());
-      if (device.serialNumber) formData.append('serialNumber', device.serialNumber);
-      if (device.status) formData.append('status', device.status);
-      if (device.purchaseDate) formData.append('purchaseDate', device.purchaseDate);
-      if (device.warrantyExpiry) formData.append('warrantyExpiry', device.warrantyExpiry);
-      if (device.currentDepartmentId) formData.append('currentDepartmentId', device.currentDepartmentId);
-      if (device.currentUserId) formData.append('currentUserId', device.currentUserId);
-      if (device.barcode) formData.append('barcode', device.barcode);
-      if (device.warrantyProvider) formData.append('warrantyProvider', device.warrantyProvider);
-      if (device.file) formData.append('file', device.file);
+  const handleSubmit = async (data: CreateDeviceDto & { file?: File | null }) => {
+  try {
+    if (selectedDevice) {
+      await updateDeviceWithImage(selectedDevice.id, data);
+      showSuccess('Cập nhật thiết bị thành công');
+    } else {
+      const result = await createDeviceWithImage(data);
+      showSuccess(result?.message || 'Thêm thiết bị thành công');
 
-      if (selectedDevice) {
-        await updateDeviceWithImage(selectedDevice.id, formData);
-        showSuccess('Cập nhật thành công.');
-      } else {
-        const result = await createDeviceWithImage(formData);
-        showSuccess(result.message || 'Tạo thiết bị thành công.');
-
-        // Sử dụng device data từ response luôn
-        if (result.device) {
-          setQrDevice(result.device);
-        }
+      // Nếu backend trả về thiết bị, hiển thị QR
+      if (result.device) {
+        setQrDevice(result.device);
       }
-
-      fetchDevices();
-      setOpenDialog(false);
-    } catch (err) {
-      console.error('Lỗi khi lưu thiết bị:', err);
-      showError('Lỗi khi lưu thiết bị.');
     }
-  };
+
+    setOpenDialog(false);
+    fetchDevices(); // reload bảng
+  } catch (err: any) {
+    console.error('Lỗi khi lưu thiết bị:', err);
+    showError(err?.response?.data?.message || 'Thao tác thất bại');
+  }
+};
 
   return (
     <Box p={3}>
