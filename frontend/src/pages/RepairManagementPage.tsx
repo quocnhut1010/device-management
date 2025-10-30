@@ -22,6 +22,7 @@ import { RejectRepairDialog, NotNeededDialog } from '../components/repair/Repair
 import RepairDetailsDialog from '../components/repair/RepairDetailsDialog';
 import AssignTechnicianDialog from '../components/repair/AssignTechnicianDialog';
 import RejectOrNotNeededDialog from '../components/repair/RejectOrNotNeededDialog';
+import QuickExportButton from '../components/reports/QuickExportButton';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -131,14 +132,21 @@ export default function RepairManagementPage() {
     <Container maxWidth="xl">
       <Box py={3}>
         {/* Header */}
-        <Box mb={3}>
-          <Typography variant="h4" component="h1" fontWeight="bold">
-            Quản lý sửa chữa thiết bị
-          </Typography>
-          <Typography variant="body1" color="textSecondary" mt={1}>
-            {isTechnician && 'Quản lý các lệnh sửa chữa được giao cho bạn'}
-            {isAdmin && 'Xem tổng quan tất cả các lệnh sửa chữa trong hệ thống'}
-          </Typography>
+        <Box mb={3} display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box>
+            <Typography variant="h4" component="h1" fontWeight="bold">
+              Quản lý sửa chữa thiết bị
+            </Typography>
+            <Typography variant="body1" color="textSecondary" mt={1}>
+              {isTechnician && 'Quản lý các lệnh sửa chữa được giao cho bạn'}
+              {isAdmin && 'Xem tổng quan tất cả các lệnh sửa chữa trong hệ thống'}
+            </Typography>
+          </Box>
+          <QuickExportButton 
+            reportType="Repairs" 
+            variant="iconButton"
+            onSuccess={handleRefresh}
+          />
         </Box>
 
         <Paper sx={{ width: '100%' }}>

@@ -14,6 +14,7 @@ import { getUserFromToken } from '../services/auth';
 import CreateIncidentForm from '../components/incident/CreateIncidentForm';
 import IncidentReportList from '../components/incident/IncidentReportList';
 import IncidentReportDetails from '../components/incident/IncidentReportDetails';
+import QuickExportButton from '../components/reports/QuickExportButton';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -65,16 +66,23 @@ export default function IncidentReportPage() {
             Quản lý báo cáo sự cố
           </Typography>
           
-          {/* Nhân viên và Trưởng phòng có thể tạo báo cáo */}
-          {canCreateReport && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateFormOpen(true)}
-            >
-              Tạo báo cáo sự cố
-            </Button>
-          )}
+          <Box display="flex" gap={1}>
+            <QuickExportButton 
+              reportType="Incidents" 
+              variant="iconButton"
+              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+            {/* Nhân viên và Trưởng phòng có thể tạo báo cáo */}
+            {canCreateReport && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateFormOpen(true)}
+              >
+                Tạo báo cáo sự cố
+              </Button>
+            )}
+          </Box>
         </Box>
 
         <Paper sx={{ width: '100%' }}>

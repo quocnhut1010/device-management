@@ -24,6 +24,7 @@ import RepairManagementPage from '../pages/RepairManagementPage';
 import ReplacementPage from '../pages/ReplacementPage';
 import LiquidationPage from '../pages/LiquidationPage';
 import DeviceHistoryPage from '../pages/DeviceHistoryPage';
+import ReportsPage from '../pages/ReportsPage';
 
 const AppRoutes = () => {
   return (
@@ -154,6 +155,14 @@ const AppRoutes = () => {
               element={
                 <PrivateRoute allowedRoles={['Admin', 'User']}>
                   <DeviceHistoryPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <PrivateRoute allowedRoles={['Admin']}>
+                  <ReportsPage />
                 </PrivateRoute>
               }
             />

@@ -33,6 +33,7 @@ import {
 import DeviceTable from '../components/device/DeviceTable';
 import DeviceDialog from '../components/device/DeviceDialog';
 import useUserRole from '../services/useUserRole';
+import QuickExportButton from '../components/reports/QuickExportButton';
 
 const DevicePage = () => {
   const [devices, setDevices] = useState<DeviceDto[]>([]);
@@ -181,11 +182,18 @@ const DevicePage = () => {
               : 'Thiết bị của tôi'
           }
         </Typography>
-        {isAdmin && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
-            Thêm thiết bị
-          </Button>
-        )}
+        <Box display="flex" gap={1}>
+          <QuickExportButton 
+            reportType="Devices" 
+            variant="iconButton"
+            onSuccess={fetchDevices}
+          />
+          {isAdmin && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+              Thêm thiết bị
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Tabs cho Trưởng phòng */}

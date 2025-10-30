@@ -34,6 +34,7 @@ import { getUserFromToken } from '../services/auth';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import LiquidationDetailsDialog from '../components/liquidation/LiquidationDetailsDialog';
+import QuickExportButton from '../components/reports/QuickExportButton';
 
 const LiquidationPage: React.FC = () => {
   const user = getUserFromToken();
@@ -144,9 +145,16 @@ const LiquidationPage: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Quản lý thanh lý thiết bị
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h4" gutterBottom>
+          Quản lý thanh lý thiết bị
+        </Typography>
+        <QuickExportButton 
+          reportType="Liquidation" 
+          variant="iconButton"
+          onSuccess={loadData}
+        />
+      </Box>
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>

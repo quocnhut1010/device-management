@@ -274,7 +274,7 @@ const Sidebar = ({}: SidebarProps) => {
             <SidebarSection label="Người dùng & Hệ thống" collapsed={collapsed} />
             <SidebarItem label="Người dùng" icon={<PeopleIcon />} path="/users" active={isActive('/users')} collapsed={collapsed} onClick={() => handleNavigate('/users')} />
             <SidebarItem label="Thông báo" icon={<NotificationsIcon />} path="/notifications" active={isActive('/notifications')} collapsed={collapsed} onClick={() => handleNavigate('/notifications')} />
-            <SidebarItem label="Xuất báo cáo" icon={<FileDownloadIcon />} path="/report-exports" active={isActive('/report-exports')} collapsed={collapsed} onClick={() => handleNavigate('/report-exports')} />
+            <SidebarItem label="Báo cáo" icon={<FileDownloadIcon />} path="/reports" active={isActive('/reports')} collapsed={collapsed} onClick={() => handleNavigate('/reports')} />
           </>
         )}
       </List>
