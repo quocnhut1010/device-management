@@ -1,0 +1,80 @@
+import React from 'react';
+import { Alert } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { IconButton } from 'react-native-paper';
+import DashboardScreen from '../screens/admin/DashboardScreen';
+import QRScannerScreen from '../screens/QRScannerScreen';
+import { AdminTabParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+
+const Tab = createBottomTabNavigator<AdminTabParamList>();
+
+const AdminTabs: React.FC = () => {
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: () => {
+            logout();
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#6200ee',
+        tabBarInactiveTintColor: '#757575',
+        headerStyle: {
+          backgroundColor: '#6200ee',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={({ navigation }) => ({
+          title: 'Tổng quan',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
+          ),
+          headerRight: () => (
+            <IconButton
+              icon="logout"
+              iconColor="#fff"
+              size={24}
+              onPress={handleLogout}
+            />
+          ),
+        })}
+      />
+      <Tab.Screen
+        name="QRScanner"
+        component={QRScannerScreen}
+        options={{
+          title: 'Quét QR',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="qrcode-scan" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default AdminTabs;
+

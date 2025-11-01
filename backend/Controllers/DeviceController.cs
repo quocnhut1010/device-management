@@ -13,10 +13,12 @@ namespace backend.Controllers
     public class DeviceController : ControllerBase
     {
         private readonly IDeviceService _deviceService;
+        private readonly IAuthService _authService;
 
-        public DeviceController(IDeviceService deviceService)
+        public DeviceController(IDeviceService deviceService, IAuthService authService)
         {
             _deviceService = deviceService;
+            _authService = authService;
         }
 
         // ADMIN: Phân trang tất cả thiết bị (chưa bị xoá)
@@ -333,6 +335,33 @@ namespace backend.Controllers
 
             if (result == null)
                 return NotFound("Không tìm thấy thiết bị với mã QR này");
+
+            return Ok(result);
+        }
+
+        // GET: api/Device/by-code/{code} - Secure QR scanning with role-based access
+        [HttpGet("by-code/{code}")]
+        [Authorize]
+        public async Task<IActionResult> GetDeviceByCode(string code)
+        {
+            var userId = _authService.GetCurrentUserId(User);
+            if (!userId.HasValue)
+                return Unauthorized("Không xác định được người dùng.");
+
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+            var position = _authService.GetCurrentUserPosition(User);
+
+            var result = await _deviceService.GetDeviceByCodeAsync(code, userId.Value, role, position);
+
+            if (result == null)
+            {
+                // Check if device exists but access denied
+                var device = await _deviceService.ScanDeviceAsync(code);
+                if (device != null)
+                    return Forbid("Không đủ quyền truy cập thiết bị này.");
+                
+                return NotFound("Không tìm thấy thiết bị với mã này.");
+            }
 
             return Ok(result);
         }

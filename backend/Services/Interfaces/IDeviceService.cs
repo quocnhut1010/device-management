@@ -19,5 +19,6 @@ namespace backend.Services.Interfaces
         Task<bool> RestoreDeviceAsync(Guid id);
         Task<IEnumerable<DeviceDto>> GetDevicesByManagedDepartmentAsync(Guid userId);
         Task<DeviceDto?> ScanDeviceAsync(string qrCode);
+        Task<DeviceQrDto?> GetDeviceByCodeAsync(string code, Guid userId, string role, string? position);
     }
 }

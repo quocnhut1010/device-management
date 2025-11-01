@@ -342,5 +342,76 @@ namespace backend.Services.Implementations
             var device = allDevices.FirstOrDefault(d => d.DeviceCode == qrCode && d.IsDeleted != true);
             return device != null ? _mapper.Map<DeviceDto>(device) : null;
         }
+
+        public async Task<DeviceQrDto?> GetDeviceByCodeAsync(string code, Guid userId, string role, string? position)
+        {
+            // Query device with all necessary includes
+            var device = await _context.Devices
+                .Include(d => d.Model)
+                    .ThenInclude(m => m!.DeviceType)
+                .Include(d => d.CurrentUser)
+                .Include(d => d.CurrentDepartment)
+                .Include(d => d.Repairs)
+                .Include(d => d.IncidentReports)
+                .Where(d => d.DeviceCode == code && d.IsDeleted != true)
+                .FirstOrDefaultAsync();
+
+            if (device == null)
+                return null;
+
+            // Check authorization based on role
+            bool hasAccess = false;
+
+            if (role == "Admin")
+            {
+                // Admin can access all devices
+                hasAccess = true;
+            }
+            else if (role == "User" && position == "Kỹ thuật viên")
+            {
+                // Technician can only access devices in their assigned repairs
+                hasAccess = device.Repairs.Any(r => r.AssignedToTechnicianId == userId);
+            }
+            else if (role == "User")
+            {
+                // Regular user can only access their own devices
+                hasAccess = device.CurrentUserId == userId;
+            }
+
+            if (!hasAccess)
+                return null;
+
+            // Get repair history statistics
+            var repairs = device.Repairs.Where(r => r.DeviceId == device.Id).ToList();
+            var incidents = device.IncidentReports.Where(i => i.DeviceId == device.Id).ToList();
+
+            var lastRepairDate = repairs.Any() 
+                ? repairs.Max(r => r.EndDate ?? r.StartDate ?? (DateTime?)null)
+                : null;
+
+            // Map to DeviceQrDto
+            var dto = new DeviceQrDto
+            {
+                Id = device.Id,
+                DeviceCode = device.DeviceCode,
+                DeviceName = device.DeviceName,
+                Status = device.Status,
+                Barcode = device.Barcode,
+                SerialNumber = device.SerialNumber,
+                ModelName = device.Model?.ModelName,
+                DeviceTypeName = device.Model?.DeviceType?.TypeName,
+                Manufacturer = device.Model?.Manufacturer,
+                CurrentUserName = device.CurrentUser?.FullName,
+                DepartmentName = device.CurrentDepartment?.DepartmentName,
+                LastRepairDate = lastRepairDate,
+                RepairCount = repairs.Count,
+                IncidentCount = incidents.Count,
+                PurchaseDate = device.PurchaseDate,
+                WarrantyExpiry = device.WarrantyExpiry,
+                DeviceImageUrl = device.DeviceImageUrl
+            };
+
+            return dto;
+        }
     }
 }

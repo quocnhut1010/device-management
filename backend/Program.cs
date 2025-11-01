@@ -22,6 +22,15 @@ builder.Services.AddCors(options =>
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
+    
+    // Add policy for mobile app
+    options.AddPolicy("AllowMobile",
+        policy =>
+        {
+            policy.AllowAnyOrigin()  // Allow from any origin for mobile
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
 });
 
 // Add services to the container.
@@ -117,7 +126,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowFrontend"); // đặt trước UseAuthorization()
+// Use both CORS policies
+app.UseCors(builder =>
+{
+    builder.AllowAnyOrigin()
+           .AllowAnyMethod()
+           .AllowAnyHeader();
+}); // đặt trước UseAuthorization()
 
 app.UseAuthentication();
 app.UseAuthorization();
