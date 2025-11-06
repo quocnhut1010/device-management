@@ -7,6 +7,10 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SummaryCard from '../components/dashboard/SummaryCard';
+import AdminDashboard from '../components/dashboard/AdminDashboard';
+import ManagerDashboard from '../components/dashboard/ManagerDashboard';
+import TechnicianDashboard from '../components/dashboard/TechnicianDashboard';
+import EmployeeDashboard from '../components/dashboard/EmployeeDashboard';
 import { getUserFromToken } from '../services/auth';
 import { AIChatDialog } from '../components/ai';
 import { getAllDevices, getMyDevices, getManagedDevices } from '../services/deviceService';
@@ -144,22 +148,10 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Hi, Welcome back 👋
-        </Typography>
-        <IconButton 
-          onClick={() => window.location.reload()} 
-          disabled={loading}
-          sx={{ ml: 2 }}
-        >
-          <RefreshIcon />
-        </IconButton>
-      </Box>
-
-      {!hasToken ? (
+  // Render appropriate dashboard based on role and position
+  const renderDashboard = () => {
+    if (!hasToken) {
+      return (
         <Box sx={{ textAlign: 'center', my: 5 }}>
           <Typography variant="h6" color="error">
             Bạn cần đăng nhập để xem dữ liệu dashboard
@@ -175,88 +167,51 @@ const Dashboard = () => {
             Đăng nhập
           </Button>
         </Box>
-      ) : loading ? (
+      );
+    }
+
+    if (loading) {
+      return (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           <CircularProgress />
         </Box>
-      ) : (
-        <>
-          {/* Summary Cards */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-              gap: 3,
-              mb: 4,
-            }}
-          >
-            <SummaryCard
-              title={
-                role === 'Admin' 
-                  ? 'Tổng thiết bị' 
-                  : position === 'Trưởng phòng' 
-                    ? 'Thiết bị phòng ban' 
-                    : 'Thiết bị của tôi'
-              }
-              count={deviceCount}
-              icon={<DevicesIcon />}
-              color="primary"
-            />
-            
-            {/* Chỉ hiển thị cho Admin */}
-            {role === 'Admin' && (
-              <>
-                <SummaryCard
-                  title="Phòng ban"
-                  count={departmentCount}
-                  icon={<ApartmentIcon />}
-                  color="info"
-                />
-                <SummaryCard
-                  title="Người dùng"
-                  count={userCount}
-                  icon={<PeopleIcon />}
-                  color="success"
-                />
-              </>
-            )}
-            
-            <SummaryCard
-              title="Thiết bị đang sử dụng"
-              count={activeDeviceCount}
-              subtitle={deviceCount > 0 ? `${Math.round((activeDeviceCount / deviceCount) * 100)}% tổng số` : '0%'}
-              icon={<AssignmentIcon />}
-              color="warning"
-            />
-          </Box>
+      );
+    }
 
-          {/* User Info */}
-          <Box mt={4}>
-            <Typography variant="h6">Thông tin tài khoản</Typography>
-            <Typography>Email: {email}</Typography>
-            <Typography>
-              Vai trò: {role === 'Admin' ? 'Quản trị viên (Admin)' : 'Người dùng (User)'}
-            </Typography>
-            {position && (
-              <Typography>
-                Chức vụ: {position}
-              </Typography>
-            )}
-          </Box>
-        </>
-      )}
-      
-      {/* Debug Info */}
-      {/* <Box sx={{ mt: 4, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-        <Typography variant="h6">Debug Info</Typography>
-        <Typography variant="body2">Has Token: {hasToken ? 'Yes' : 'No'}</Typography>
-        <Typography variant="body2">Loading: {loading ? 'Yes' : 'No'}</Typography>
-        <Typography variant="body2">Device Count: {deviceCount}</Typography>
-        <Typography variant="body2">Active Device Count: {activeDeviceCount}</Typography>
-        <Typography variant="body2">Department Count: {departmentCount}</Typography>
-        <Typography variant="body2">User Count: {userCount}</Typography>
-        <Typography variant="body2">Token Preview: {localStorage.getItem('token')?.substring(0, 50)}...</Typography>
-      </Box> */}
+    // Route to appropriate dashboard
+    if (role === 'Admin') {
+      return <AdminDashboard />;
+    }
+    
+    if (position === 'Trưởng phòng') {
+      return <ManagerDashboard />;
+    }
+    
+    if (position === 'Kỹ thuật viên') {
+      return <TechnicianDashboard />;
+    }
+    
+    // Default: Employee dashboard
+    return <EmployeeDashboard />;
+  };
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Hi, Welcome back 👋
+        </Typography>
+        <IconButton 
+          onClick={() => window.location.reload()} 
+          disabled={loading}
+          sx={{ ml: 2 }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Box>
+
+      {/* Render appropriate dashboard */}
+      {renderDashboard()}
 
       {/* AI Chat FAB */}
       {hasToken && (

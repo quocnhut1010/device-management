@@ -75,4 +75,6 @@ public partial class Device
     public virtual Supplier? Supplier { get; set; }
 
     public virtual User? UpdatedByNavigation { get; set; }
+
+    public virtual ICollection<DeviceQrToken> DeviceQrTokens { get; set; } = new List<DeviceQrToken>();
 }

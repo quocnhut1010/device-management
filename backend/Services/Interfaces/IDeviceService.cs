@@ -20,5 +20,9 @@ namespace backend.Services.Interfaces
         Task<IEnumerable<DeviceDto>> GetDevicesByManagedDepartmentAsync(Guid userId);
         Task<DeviceDto?> ScanDeviceAsync(string qrCode);
         Task<DeviceQrDto?> GetDeviceByCodeAsync(string code, Guid userId, string role, string? position);
+        Task<DeviceQrDto?> GetDeviceByBarcodeAsync(string barcode, Guid userId, string role, string? position);
+        Task<string> GenerateQrTokenAsync(Guid deviceId, Guid actorId);
+        Task<DeviceQrDto?> GetDeviceByTokenAsync(string token, Guid userId, string role, string? position);
+        Task<string?> GetActiveQrTokenAsync(Guid deviceId);
     }
 }

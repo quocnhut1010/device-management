@@ -97,6 +97,7 @@ builder.Services.AddScoped<IDeviceHistoryService, DeviceHistoryService>();
 builder.Services.AddScoped<ILiquidationService, LiquidationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

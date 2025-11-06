@@ -42,6 +42,8 @@ const EmployeeTabs: React.FC = () => {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        unmountOnBlur: true,
+        detachInactiveScreens: true,
       }}
     >
       <Tab.Screen
@@ -70,6 +72,7 @@ const EmployeeTabs: React.FC = () => {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="qrcode-scan" color={color} size={size} />
           ),
+          unmountOnBlur: true,
         }}
       />
     </Tab.Navigator>

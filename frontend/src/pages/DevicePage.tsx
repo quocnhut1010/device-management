@@ -44,6 +44,7 @@ const DevicePage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [viewDeleted, setViewDeleted] = useState(false);
   const [qrDevice, setQrDevice] = useState<DeviceDto | null>(null); // Thiết bị để hiện QR
+  const [qrToken, setQrToken] = useState<string>('');
   const [currentTab, setCurrentTab] = useState(0); // Tab hiện tại cho Trưởng phòng
 
   const { showSuccess, showError } = useNotification();
@@ -160,6 +161,12 @@ const DevicePage = () => {
       // Nếu backend trả về thiết bị, hiển thị QR
       if (result.device) {
         setQrDevice(result.device);
+        // Lấy QR token để hiển thị ngay
+        try {
+          const { getDeviceQrToken } = await import('../services/deviceService');
+          const token = await getDeviceQrToken(result.device.id);
+          setQrToken(token);
+        } catch {}
       }
     }
 
@@ -267,19 +274,13 @@ const DevicePage = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center' }}>
-          {qrDevice && (
+          {qrDevice && qrToken && (
             <>
               <Typography variant="subtitle1" gutterBottom>
                 {qrDevice.deviceName}
               </Typography>
               <QRCodeSVG
-                value={JSON.stringify({
-                  id: qrDevice.id,
-                  barcode: qrDevice.barcode,
-                  deviceName: qrDevice.deviceName,
-                  status: qrDevice.status,
-                  modelName: qrDevice.modelName || '',
-                })}
+                value={qrToken}
                 size={256}
                 level="H"
                 includeMargin

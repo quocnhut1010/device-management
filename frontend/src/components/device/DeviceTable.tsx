@@ -56,20 +56,14 @@ const DeviceTable = ({
 
     document.body.appendChild(qr);
 
-    const qrComponent = (
-      <QRCodeCanvas
-        value={JSON.stringify({
-          id: device.id,
-          deviceCode: device.deviceCode,
-          deviceName: device.deviceName,
-          barcode: device.barcode,
-          status: device.status,
-        })}
-        size={256}
-        level="H"
-        includeMargin
-      />
-    );
+      const qrComponent = (
+        <QRCodeCanvas
+          value={device.id}
+          size={256}
+          level="H"
+          includeMargin
+        />
+      );
 
     // Render tạm vào DOM để lấy canvas
     import('react-dom/client').then(({ createRoot }) => {

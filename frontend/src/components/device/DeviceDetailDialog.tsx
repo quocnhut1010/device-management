@@ -12,9 +12,10 @@ import {
 import { QRCodeCanvas } from 'qrcode.react';
 import DownloadIcon from '@mui/icons-material/Download';
 import HistoryIcon from '@mui/icons-material/History';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DeviceDto } from '../../types/device';
+import { getDeviceQrToken } from '../../services/deviceService';
 
 interface Props {
   open: boolean;
@@ -26,7 +27,21 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
 const DeviceDetailDialog = ({ open, device, onClose }: Props) => {
   const qrRef = useRef<HTMLDivElement>(null);
+  const [qrToken, setQrToken] = useState<string>('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      if (!device?.id) return;
+      try {
+        const token = await getDeviceQrToken(device.id);
+        setQrToken(token);
+      } catch (e) {
+        setQrToken('');
+      }
+    };
+    if (open && device?.id) fetchToken();
+  }, [open, device?.id]);
 
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
@@ -71,18 +86,12 @@ const DeviceDetailDialog = ({ open, device, onClose }: Props) => {
             />
           )}
 
-          {device.barcode && (
+          {qrToken && (
             <Box mt={2} textAlign="center">
               <Typography variant="subtitle2" gutterBottom>Mã QR</Typography>
               <Box ref={qrRef} display="inline-block" bgcolor="#fff" p={1} borderRadius={2} border="1px solid #ccc">
                 <QRCodeCanvas
-                  value={JSON.stringify({
-                    id: device.id,
-                    deviceCode: device.deviceCode,
-                    deviceName: device.deviceName,
-                    barcode: device.barcode,
-                    status: device.status,
-                  })}
+                  value={qrToken}
                   size={180}
                   level="H"
                   includeMargin

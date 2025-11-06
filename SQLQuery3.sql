@@ -355,7 +355,18 @@ ADD OldUserId UNIQUEIDENTIFIER NULL,
     OldUserFullName NVARCHAR(255) NULL,
     OldUserEmail NVARCHAR(255) NULL;
 
+CREATE TABLE [dbo].[DeviceQrTokens](
+  [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+  [DeviceId] UNIQUEIDENTIFIER NOT NULL,
+  [Token] NVARCHAR(100) NOT NULL UNIQUE,
+  [CreatedAt] DATETIME NOT NULL DEFAULT(GETDATE()),
+  [RevokedAt] DATETIME NULL,
+  [IsActive] BIT NOT NULL DEFAULT(1),
+  CONSTRAINT [FK_DeviceQrTokens_Devices]
+    FOREIGN KEY([DeviceId]) REFERENCES [dbo].[Devices]([Id])
+);
 
+select * from DeviceQrTokens
 select * from Departments
 select * from Users
 select * from Suppliers

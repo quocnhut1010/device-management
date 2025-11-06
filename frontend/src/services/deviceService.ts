@@ -111,3 +111,9 @@ export const getManagedDevices = async (): Promise<DeviceDto[]> => {
   const res = await axios.get('/device/managed');
   return res.data;
 };
+
+// Lấy QR token đang hoạt động của thiết bị
+export const getDeviceQrToken = async (id: string): Promise<string> => {
+  const res = await axios.get(`/device/${id}/qr-token`);
+  return res.data?.token as string;
+};

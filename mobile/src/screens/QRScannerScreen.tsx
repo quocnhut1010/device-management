@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Text, Button, ActivityIndicator } from 'react-native-paper';
 import { Camera, CameraView, BarcodeScanningResult } from 'expo-camera';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../services/api';
 import { DeviceQrScanResult, RootStackParamList } from '../types';
@@ -13,7 +13,10 @@ const QRScannerScreen: React.FC = () => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [scanningEnabled, setScanningEnabled] = useState(true);
   const navigation = useNavigation<QRScannerNavigationProp>();
+  const isFocused = useIsFocused();
+  const alertShownRef = useRef(false);
 
   React.useEffect(() => {
     (async () => {
@@ -23,33 +26,46 @@ const QRScannerScreen: React.FC = () => {
   }, []);
 
   const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
-    if (scanned || loading) return;
+    if (!scanningEnabled || scanned || loading) return;
 
+    setScanningEnabled(false);
     setScanned(true);
     setLoading(true);
 
     try {
-      // Call backend endpoint to get device by code
-      const response = await apiClient.get<DeviceQrScanResult>(`/Device/by-code/${data}`);
+      // Determine if payload looks like a GUID token
+      const isGuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.trim());
+      const encoded = encodeURIComponent(data.trim());
+      const url = isGuid
+        ? `/Device/by-token/${encoded}`
+        : `/Device/by-code/${encoded}`;
+
+      const response = await apiClient.get<DeviceQrScanResult>(url);
       
       if (response.status === 200 && response.data) {
         // Navigate to device detail screen
         navigation.navigate('DeviceDetail', { device: response.data });
       }
     } catch (error: any) {
-      console.error('QR Scan error:', error);
+      console.log('QR Scan error:', error);
       const status = error.response?.status;
       
-      if (status === 403) {
-        Alert.alert(
-          'Không đủ quyền',
-          'Bạn không có quyền truy cập thiết bị này.'
-        );
-      } else if (status === 404) {
-        Alert.alert(
-          'Không tìm thấy',
-          'Không tìm thấy thiết bị với mã này.'
-        );
+      if (status === 403 || status === 404) {
+        if (!alertShownRef.current) {
+          alertShownRef.current = true;
+          Alert.alert(
+            'Không đủ quyền',
+            'Bạn không có đủ quyền hạn để quét thiết bị này.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setTimeout(() => (alertShownRef.current = false), 300);
+                },
+              },
+            ]
+          );
+        }
       } else {
         Alert.alert(
           'Lỗi',
@@ -59,9 +75,23 @@ const QRScannerScreen: React.FC = () => {
     } finally {
       setLoading(false);
       // Allow scanning again after 2 seconds
-      setTimeout(() => setScanned(false), 2000);
+      setTimeout(() => {
+        setScanned(false);
+        setScanningEnabled(true);
+      }, 2000);
     }
   };
+
+  // Enable scanning only when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      setScanningEnabled(true);
+      alertShownRef.current = false;
+      return () => {
+        setScanningEnabled(false);
+      };
+    }, [])
+  );
 
   if (hasPermission === null) {
     return (
@@ -92,14 +122,16 @@ const QRScannerScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <CameraView
+      {isFocused ? (
+        <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={scanned || !scanningEnabled ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ['qr'],
         }}
-      />
+        />
+      ) : null}
       <View style={styles.overlay}>
         <View style={styles.scanArea}>
           {loading && (

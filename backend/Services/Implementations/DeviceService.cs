@@ -83,6 +83,9 @@ namespace backend.Services.Implementations
             
             await _repository.AddAsync(device);
             await _repository.SaveChangesAsync();
+
+            // Generate QR token for the device
+            await GenerateQrTokenAsync(device.Id, dto.CreatedBy ?? Guid.Empty);
             
             // Log device creation - using system user since CreatedBy field not available
             await _deviceHistoryService.LogActionAsync(
@@ -127,6 +130,8 @@ namespace backend.Services.Implementations
             
             // Return the created device with all generated fields
             var createdDevice = await _repository.GetByIdAsync(device.Id);
+            // Ensure QR token exists
+            await GenerateQrTokenAsync(device.Id, dto.CreatedBy ?? Guid.Empty);
             return _mapper.Map<DeviceDto>(createdDevice!);
         }
         
@@ -412,6 +417,160 @@ namespace backend.Services.Implementations
             };
 
             return dto;
+        }
+
+        public async Task<DeviceQrDto?> GetDeviceByBarcodeAsync(string barcode, Guid userId, string role, string? position)
+        {
+            var device = await _context.Devices
+                .Include(d => d.Model)
+                    .ThenInclude(m => m!.DeviceType)
+                .Include(d => d.CurrentUser)
+                .Include(d => d.CurrentDepartment)
+                .Include(d => d.Repairs)
+                .Include(d => d.IncidentReports)
+                .Where(d => d.Barcode == barcode && d.IsDeleted != true)
+                .FirstOrDefaultAsync();
+
+            if (device == null)
+                return null;
+
+            bool hasAccess = false;
+            if (role == "Admin")
+            {
+                hasAccess = true;
+            }
+            else if (role == "User" && position == "Kỹ thuật viên")
+            {
+                hasAccess = device.Repairs.Any(r => r.AssignedToTechnicianId == userId);
+            }
+            else if (role == "User")
+            {
+                hasAccess = device.CurrentUserId == userId;
+            }
+
+            if (!hasAccess)
+                return null;
+
+            var repairs = device.Repairs.Where(r => r.DeviceId == device.Id).ToList();
+            var incidents = device.IncidentReports.Where(i => i.DeviceId == device.Id).ToList();
+            var lastRepairDate = repairs.Any()
+                ? repairs.Max(r => r.EndDate ?? r.StartDate ?? (DateTime?)null)
+                : null;
+
+            var dto = new DeviceQrDto
+            {
+                Id = device.Id,
+                DeviceCode = device.DeviceCode,
+                DeviceName = device.DeviceName,
+                Status = device.Status,
+                Barcode = device.Barcode,
+                SerialNumber = device.SerialNumber,
+                ModelName = device.Model?.ModelName,
+                DeviceTypeName = device.Model?.DeviceType?.TypeName,
+                Manufacturer = device.Model?.Manufacturer,
+                CurrentUserName = device.CurrentUser?.FullName,
+                DepartmentName = device.CurrentDepartment?.DepartmentName,
+                LastRepairDate = lastRepairDate,
+                RepairCount = repairs.Count,
+                IncidentCount = incidents.Count,
+                PurchaseDate = device.PurchaseDate,
+                WarrantyExpiry = device.WarrantyExpiry,
+                DeviceImageUrl = device.DeviceImageUrl
+            };
+
+            return dto;
+        }
+
+        public async Task<string> GenerateQrTokenAsync(Guid deviceId, Guid actorId)
+        {
+            // Revoke existing active tokens
+            var activeTokens = await _context.DeviceQrTokens
+                .Where(t => t.DeviceId == deviceId && t.IsActive)
+                .ToListAsync();
+            foreach (var t in activeTokens)
+            {
+                t.IsActive = false;
+                t.RevokedAt = DateTime.UtcNow;
+            }
+
+            var token = Guid.NewGuid().ToString();
+            var entity = new DeviceQrToken
+            {
+                Id = Guid.NewGuid(),
+                DeviceId = deviceId,
+                Token = token,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.DeviceQrTokens.Add(entity);
+            await _context.SaveChangesAsync();
+            return token;
+        }
+
+        public async Task<DeviceQrDto?> GetDeviceByTokenAsync(string token, Guid userId, string role, string? position)
+        {
+            var tokenEntity = await _context.DeviceQrTokens
+                .Include(t => t.Device)!
+                    .ThenInclude(d => d!.Model)!
+                        .ThenInclude(m => m!.DeviceType)
+                .Include(t => t.Device)!
+                    .ThenInclude(d => d!.CurrentUser)
+                .Include(t => t.Device)!
+                    .ThenInclude(d => d!.CurrentDepartment)
+                .Include(t => t.Device)!
+                    .ThenInclude(d => d!.Repairs)
+                .Include(t => t.Device)!
+                    .ThenInclude(d => d!.IncidentReports)
+                .Where(t => t.Token == token && t.IsActive)
+                .FirstOrDefaultAsync();
+
+            var device = tokenEntity?.Device;
+            if (device == null || device.IsDeleted == true)
+                return null;
+
+            bool hasAccess = false;
+            if (role == "Admin") hasAccess = true;
+            else if (role == "User" && position == "Kỹ thuật viên")
+                hasAccess = device.Repairs.Any(r => r.AssignedToTechnicianId == userId);
+            else if (role == "User")
+                hasAccess = device.CurrentUserId == userId;
+
+            if (!hasAccess) return null;
+
+            var repairs = device.Repairs.Where(r => r.DeviceId == device.Id).ToList();
+            var incidents = device.IncidentReports.Where(i => i.DeviceId == device.Id).ToList();
+            var lastRepairDate = repairs.Any() ? repairs.Max(r => r.EndDate ?? r.StartDate ?? (DateTime?)null) : null;
+
+            return new DeviceQrDto
+            {
+                Id = device.Id,
+                DeviceCode = device.DeviceCode,
+                DeviceName = device.DeviceName,
+                Status = device.Status,
+                Barcode = device.Barcode,
+                SerialNumber = device.SerialNumber,
+                ModelName = device.Model?.ModelName,
+                DeviceTypeName = device.Model?.DeviceType?.TypeName,
+                Manufacturer = device.Model?.Manufacturer,
+                CurrentUserName = device.CurrentUser?.FullName,
+                DepartmentName = device.CurrentDepartment?.DepartmentName,
+                LastRepairDate = lastRepairDate,
+                RepairCount = repairs.Count,
+                IncidentCount = incidents.Count,
+                PurchaseDate = device.PurchaseDate,
+                WarrantyExpiry = device.WarrantyExpiry,
+                DeviceImageUrl = device.DeviceImageUrl
+            };
+        }
+
+        public async Task<string?> GetActiveQrTokenAsync(Guid deviceId)
+        {
+            var token = await _context.DeviceQrTokens
+                .Where(t => t.DeviceId == deviceId && t.IsActive)
+                .Select(t => t.Token)
+                .FirstOrDefaultAsync();
+            return token;
         }
     }
 }

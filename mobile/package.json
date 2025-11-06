@@ -21,6 +21,7 @@
     "date-fns": "^4.1.0",
     "expo": "~54.0.20",
     "expo-camera": "~17.0.8",
+    "expo-constants": "~18.0.10",
     "expo-status-bar": "~3.0.8",
     "jwt-decode": "^4.0.0",
     "react": "19.1.0",

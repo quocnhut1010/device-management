@@ -1,26 +1,29 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiBaseUrl } from '../utils/baseUrl';
 
-// TODO: Temporarily hardcoded for testing. Will migrate to Expo Constants later
-const API_BASE_URL = 'http://192.168.1.10:5264/api';
-
+// Create axios instance; baseURL will be injected per request
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'http://0.0.0.0',
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 15000,
 });
 
 // Interceptor: Tự động gắn JWT token từ AsyncStorage
 apiClient.interceptors.request.use(
   async (config) => {
     try {
+      // Inject dynamic baseURL per request
+      const baseURL = await getApiBaseUrl();
+      config.baseURL = baseURL;
+
+      // Attach token if present
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        (config.headers as any).Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error getting token:', error);
+      // keep config; request may still succeed if absolute URL used
     }
     return config;
   },

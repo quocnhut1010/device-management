@@ -50,6 +50,8 @@ public partial class DeviceManagementDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<DeviceQrToken> DeviceQrTokens { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Connection string đã được cấu hình trong Program.cs thông qua DI
@@ -127,6 +129,25 @@ public partial class DeviceManagementDbContext : DbContext
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.DeviceUpdatedByNavigations)
                 .HasForeignKey(d => d.UpdatedBy)
                 .HasConstraintName("FK__Devices__Updated__3C69FB99");
+        });
+
+        modelBuilder.Entity<DeviceQrToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Token).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.RevokedAt).HasColumnType("datetime");
+            entity.Property(e => e.IsActive).HasDefaultValueSql("((1))");
+
+            entity.HasIndex(e => e.Token).IsUnique();
+
+            entity.HasOne(e => e.Device)
+                .WithMany(d => d.DeviceQrTokens)
+                .HasForeignKey(e => e.DeviceId)
+                .HasConstraintName("FK_DeviceQrTokens_Devices");
         });
 
         modelBuilder.Entity<DeviceAssignment>(entity =>
