@@ -41,13 +41,112 @@ namespace backend.Services.Implementations
 
         public async Task<IEnumerable<DeviceDto>> GetDevicesByUserAsync(Guid userId)
         {
-            var all = await _repository.GetAllAsync();
-            // var filtered = all.Where(d => d.CurrentUserId == userId);
-            var filtered = all
+            Console.WriteLine($"[DeviceService] ===== GetDevicesByUserAsync Debug =====");
+            Console.WriteLine($"[DeviceService] UserId: {userId}");
+            
+            // 1. Get devices where CurrentUserId == userId (with IncidentReports included)
+            var devicesByCurrentUserId = await _context.Devices
+                .Include(d => d.Model!).ThenInclude(m => m.DeviceType)
+                .Include(d => d.Supplier)
+                .Include(d => d.CurrentUser)
+                .Include(d => d.CurrentDepartment)
+                .Include(d => d.IncidentReports)
                 .Where(d => d.CurrentUserId == userId && d.IsDeleted != true)
-                .Where(d => !d.IncidentReports.Any(r =>
+                .ToListAsync();
+            
+            Console.WriteLine($"[DeviceService] Devices with CurrentUserId={userId}: {devicesByCurrentUserId.Count}");
+            foreach (var device in devicesByCurrentUserId.Take(10))
+            {
+                Console.WriteLine($"[DeviceService]   - Device: {device.DeviceCode} - {device.DeviceName}, Status: {device.Status}, CurrentUserId: {device.CurrentUserId}, IncidentReports: {device.IncidentReports?.Count ?? 0}");
+                if (device.IncidentReports != null && device.IncidentReports.Any())
+                {
+                    foreach (var incident in device.IncidentReports)
+                    {
+                        Console.WriteLine($"[DeviceService]     Incident: Status={incident.Status} (ChoDuyet={IncidentStatus.ChoDuyet}, DaTaoLenhSua={IncidentStatus.DaTaoLenhSua})");
+                    }
+                }
+            }
+            
+            // 2. Get devices from DeviceAssignment where AssignedToUserId == userId and not returned
+            var activeAssignments = await _context.DeviceAssignments
+                .Include(da => da.Device!)
+                    .ThenInclude(d => d.Model!)
+                        .ThenInclude(m => m.DeviceType)
+                .Include(da => da.Device!)
+                    .ThenInclude(d => d.Supplier)
+                .Include(da => da.Device!)
+                    .ThenInclude(d => d.CurrentUser)
+                .Include(da => da.Device!)
+                    .ThenInclude(d => d.CurrentDepartment)
+                .Include(da => da.Device!)
+                    .ThenInclude(d => d.IncidentReports)
+                .Where(da => da.AssignedToUserId == userId && 
+                            da.ReturnedDate == null && 
+                            da.IsDeleted == false &&
+                            da.Device != null &&
+                            da.Device.IsDeleted != true)
+                .Select(da => da.Device!)
+                .ToListAsync();
+            
+            Console.WriteLine($"[DeviceService] Devices from DeviceAssignment (AssignedToUserId={userId}, not returned): {activeAssignments.Count}");
+            foreach (var device in activeAssignments.Take(10))
+            {
+                Console.WriteLine($"[DeviceService]   - Device: {device.DeviceCode} - {device.DeviceName}, Status: {device.Status}, CurrentUserId: {device.CurrentUserId}, IncidentReports: {device.IncidentReports?.Count ?? 0}");
+                if (device.IncidentReports != null && device.IncidentReports.Any())
+                {
+                    foreach (var incident in device.IncidentReports)
+                    {
+                        Console.WriteLine($"[DeviceService]     Incident: Status={incident.Status} (ChoDuyet={IncidentStatus.ChoDuyet}, DaTaoLenhSua={IncidentStatus.DaTaoLenhSua})");
+                    }
+                }
+            }
+            
+            // 3. Combine results and deduplicate by device ID
+            var combinedDevices = devicesByCurrentUserId
+                .Union(activeAssignments)
+                .GroupBy(d => d.Id)
+                .Select(g => g.First())
+                .ToList();
+            
+            Console.WriteLine($"[DeviceService] Combined unique devices: {combinedDevices.Count}");
+            
+            // 4. Filter by status: only show "Đang sử dụng" or "Đang sửa chữa"
+            var statusFiltered = combinedDevices
+                .Where(d => d.Status == DeviceStatus.InUse || d.Status == DeviceStatus.Repairing)
+                .ToList();
+            
+            Console.WriteLine($"[DeviceService] After filtering by status (Đang sử dụng or Đang sửa chữa): {statusFiltered.Count}");
+            foreach (var device in statusFiltered.Take(10))
+            {
+                var pendingIncidents = device.IncidentReports?.Where(r => 
                     r.Status == IncidentStatus.ChoDuyet || 
-                    r.Status == IncidentStatus.DaTaoLenhSua));
+                    r.Status == IncidentStatus.DaTaoLenhSua).Count() ?? 0;
+                Console.WriteLine($"[DeviceService]   - Device: {device.DeviceCode} - {device.DeviceName}, Status: {device.Status}, PendingIncidents: {pendingIncidents}");
+            }
+            
+            // 5. Filter out devices with pending incident reports
+            // NOTE: Removed this filter - users should see their devices even with pending incident reports
+            // The original filter was too strict and was hiding devices from users
+            // If needed, this can be handled in the frontend UI instead
+            
+            var devicesWithPendingIncidents = statusFiltered
+                .Where(d => d.IncidentReports.Any(r =>
+                    r.Status == IncidentStatus.ChoDuyet || 
+                    r.Status == IncidentStatus.DaTaoLenhSua))
+                .ToList();
+            
+            Console.WriteLine($"[DeviceService] Devices WITH pending incident reports (still showing): {devicesWithPendingIncidents.Count}");
+            foreach (var device in devicesWithPendingIncidents.Take(5))
+            {
+                Console.WriteLine($"[DeviceService]   - Device: {device.DeviceCode} - {device.DeviceName}, Status: {device.Status}");
+            }
+            
+            // Return all devices that passed the status filter (no incident report filtering)
+            var filtered = statusFiltered;
+            
+            Console.WriteLine($"[DeviceService] Final device count (after all filters): {filtered.Count}");
+            Console.WriteLine($"[DeviceService] ===== GetDevicesByUserAsync Debug End =====");
+            
             return _mapper.Map<IEnumerable<DeviceDto>>(filtered);
         }
 

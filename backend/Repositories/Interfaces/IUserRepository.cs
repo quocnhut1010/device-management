@@ -8,6 +8,7 @@ namespace backend.Repositories.Interfaces
         Task<User?> GetByIdAsync(Guid id);
         Task AddAsync(User user);
         Task<IEnumerable<User>> GetAllAsync();
+        Task UpdateAsync(User user);
         Task SaveChangesAsync();
     }
 }

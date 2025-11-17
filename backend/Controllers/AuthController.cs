@@ -30,5 +30,40 @@ namespace backend.Controllers
 
             return Ok(new { token });
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto == null)
+                return BadRequest("Dữ liệu không hợp lệ.");
+
+            var token = await _authService.ForgotPasswordAsync(dto);
+            // Always return success message for security (don't reveal if email exists)
+            // Token is sent via email, not in response
+            return Ok(new { 
+                message = "Nếu email tồn tại, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu qua email." 
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto == null)
+                return BadRequest("Dữ liệu không hợp lệ.");
+
+            var success = await _authService.ResetPasswordAsync(dto);
+            if (!success)
+            {
+                return BadRequest(new { message = "Token không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới." });
+            }
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới." });
+        }
     }
 }

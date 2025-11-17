@@ -45,7 +45,9 @@ namespace backend.Helpers
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeletedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.CurrentUserId, opt => opt.Ignore())
+                .ForMember(dest => dest.CurrentDepartmentId, opt => opt.Ignore());
 
 
 

@@ -45,7 +45,26 @@ namespace backend.Services.Implementations
         var user = await _context.Users.FindAsync(id);
         if (user is null || user.IsDeleted == true) return null;
 
+        // Preserve IsActive value if DTO doesn't provide it (null)
+        // This prevents IsActive from being set to NULL unintentionally
+        var existingIsActive = user.IsActive;
+
         _mapper.Map(dto, user);
+        
+        // If DTO.IsActive is null, restore the existing value
+        if (dto.IsActive == null)
+        {
+            user.IsActive = existingIsActive;
+        }
+
+        // Preserve IsDeleted - should not be updated via DTO
+        // This prevents accidental soft-delete via update
+        var existingIsDeleted = user.IsDeleted;
+        if (dto.IsDeleted == null)
+        {
+            user.IsDeleted = existingIsDeleted;
+        }
+
         user.UpdatedAt = DateTime.UtcNow;
 
         _context.Users.Update(user);

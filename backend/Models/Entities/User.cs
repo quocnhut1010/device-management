@@ -36,6 +36,10 @@ public partial class User
 
     public Guid? DeletedBy { get; set; }
 
+    public string? ResetPasswordToken { get; set; }
+
+    public DateTime? ResetPasswordTokenExpiry { get; set; }
+
     public virtual Department? Department { get; set; }
 
     public virtual ICollection<Department> Departments { get; set; } = new List<Department>();

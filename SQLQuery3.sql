@@ -366,16 +366,21 @@ CREATE TABLE [dbo].[DeviceQrTokens](
     FOREIGN KEY([DeviceId]) REFERENCES [dbo].[Devices]([Id])
 );
 
+ALTER TABLE Users
+ADD ResetPasswordToken NVARCHAR(MAX) NULL,
+    ResetPasswordTokenExpiry DATETIME2 NULL;
+
 select * from DeviceQrTokens
 select * from Departments
 select * from Users
 select * from Suppliers
 select * from Devices
+select * from DeviceModels
 select * from IncidentReports
 select * from DeviceAssignments
 select * from DeviceHistories
 select * from Replacements
-select * from DeviceModels
+
 select * from DeviceTypes
 select * from Repairs
 select * from RepairImages

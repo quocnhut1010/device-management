@@ -93,8 +93,9 @@ namespace backend.Controllers
         }
 
         // USER: Lấy danh sách thiết bị đang quản lý
+        // Cho phép tất cả user đã đăng nhập (không giới hạn role)
         [HttpGet("my")]
-        [Authorize(Roles = "User")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<DeviceDto>>> GetMyDevices()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -106,8 +107,9 @@ namespace backend.Controllers
         }
 
         // MANAGER: Lấy danh sách thiết bị của phòng ban quản lý
+        // Cho phép tất cả user đã đăng nhập, nhưng chỉ Trưởng phòng mới được truy cập
         [HttpGet("managed")]
-        [Authorize(Roles = "User")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<DeviceDto>>> GetManagedDevices()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -1,0 +1,374 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
+import {
+  type Repair,
+  repairService,
+  RepairStatus,
+  getRepairStatusText,
+  getRepairStatusBadge,
+} from '@/services/repairService'
+import { useAuth } from '@/contexts/AuthContext'
+import {
+  Eye,
+  UserPlus,
+  Play,
+  CheckCircle2,
+  ShieldCheck,
+  Ban,
+  ClipboardCheck,
+  Loader2,
+} from 'lucide-react'
+
+interface RepairListProps {
+  showMyRepairs?: boolean
+  refreshTrigger?: number
+  onViewDetails: (repair: Repair) => void
+  onAcceptRepair?: (repairId: string) => void
+  onCompleteRepair?: (repair: Repair) => void
+  onConfirmCompletion?: (repairId: string) => void
+  onAssignTechnician?: (repair: Repair) => void
+  onRejectOrNotNeeded?: (repair: Repair) => void
+}
+
+function formatDate(value?: string, withTime = true) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    ...(withTime && { hour: '2-digit', minute: '2-digit' }),
+  }).format(date)
+}
+
+function formatCurrency(value?: number) {
+  if (value === undefined || value === null) return '—'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
+}
+
+export default function RepairList({
+  showMyRepairs = false,
+  refreshTrigger,
+  onViewDetails,
+  onAcceptRepair,
+  onCompleteRepair,
+  onConfirmCompletion,
+  onAssignTechnician,
+  onRejectOrNotNeeded,
+}: RepairListProps) {
+  const { toast } = useToast()
+  const { user } = useAuth()
+  const [repairs, setRepairs] = useState<Repair[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>('')
+
+  const roleLower = user?.role?.toLowerCase() || ''
+  const positionLower = user?.position?.toLowerCase() || ''
+  const currentUserId = user?.nameid
+
+  const isAdmin = roleLower === 'admin'
+  const isTechnician = roleLower === 'user' && positionLower === 'kỹ thuật viên'
+
+  const loadRepairs = async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      const response = showMyRepairs
+        ? await repairService.getMyRepairs()
+        : await repairService.getAllRepairs()
+
+      setRepairs(response.data)
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || err?.message || 'Không thể tải danh sách lệnh sửa chữa'
+      setError(message)
+      toast({ title: 'Lỗi', description: message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadRepairs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMyRepairs, refreshTrigger])
+
+  const statistics = useMemo(() => {
+    const total = repairs.length
+    const inProgress = repairs.filter((r) => r.status === RepairStatus.DangSua).length
+    const completed = repairs.filter((r) => r.status === RepairStatus.DaHoanTat).length
+    const avgRepairTime = (() => {
+      const durations = repairs
+        .filter((r) => r.startDate && r.endDate)
+        .map((r) => {
+          const start = new Date(r.startDate as string).getTime()
+          const end = new Date(r.endDate as string).getTime()
+          return Math.max(0, end - start)
+        })
+
+      if (!durations.length) return null
+      const avgMillis = durations.reduce((sum, dur) => sum + dur, 0) / durations.length
+      const hours = avgMillis / (1000 * 60 * 60)
+      return `${hours.toFixed(1)} giờ`
+    })()
+
+    return { total, inProgress, completed, avgRepairTime }
+  }, [repairs])
+
+  const canAccept = (repair: Repair) =>
+    isTechnician && repair.status === RepairStatus.ChoThucHien
+
+  const canComplete = (repair: Repair) =>
+    isTechnician &&
+    repair.status === RepairStatus.DangSua &&
+    repair.technicianId &&
+    repair.technicianId === currentUserId
+
+  const canConfirm = (repair: Repair) =>
+    isAdmin && repair.status === RepairStatus.ChoDuyetHoanTat
+
+  const canAssign = (repair: Repair) =>
+    isAdmin && repair.status === RepairStatus.ChoThucHien && !!onAssignTechnician
+
+  const canRejectOrNotNeeded = (repair: Repair) =>
+    isTechnician &&
+    !!onRejectOrNotNeeded &&
+    (repair.status === RepairStatus.ChoThucHien || repair.status === RepairStatus.DangSua) &&
+    (!repair.technicianId || repair.technicianId === currentUserId)
+
+  if (loading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+
+  if (repairs.length === 0) {
+    return (
+      <div className="rounded-md border bg-muted/30 p-8 text-center text-muted-foreground">
+        {showMyRepairs ? 'Bạn chưa có lệnh sửa chữa nào' : 'Không có lệnh sửa chữa nào'}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Tổng số lệnh sửa</CardTitle>
+            <CardDescription>Toàn bộ lệnh sửa trong danh sách</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Đang sửa</CardTitle>
+            <CardDescription>Đang được kỹ thuật viên xử lý</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.inProgress}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Đã hoàn tất</CardTitle>
+            <CardDescription>Đã được xác nhận hoàn tất</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statistics.completed}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Thời gian sửa trung bình</CardTitle>
+            <CardDescription>Dựa trên các lệnh đã hoàn tất</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {statistics.avgRepairTime ? statistics.avgRepairTime : 'N/A'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Thiết bị</TableHead>
+              <TableHead>Mô tả</TableHead>
+              {!showMyRepairs && <TableHead>Kỹ thuật viên</TableHead>}
+              <TableHead>Chi phí</TableHead>
+              <TableHead>Thời gian</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {repairs.map((repair) => (
+              <TableRow key={repair.id}>
+                <TableCell>
+                  <div className="font-semibold">{repair.deviceCode}</div>
+                  <div className="text-xs text-muted-foreground">{repair.deviceName}</div>
+                </TableCell>
+                <TableCell className="max-w-xs text-sm">
+                  <div className="truncate" title={repair.description || repair.incidentReport?.description}>
+                    {repair.description || repair.incidentReport?.description || '—'}
+                  </div>
+                </TableCell>
+                {!showMyRepairs && (
+                  <TableCell>
+                    {repair.technicianName ? (
+                      <span>{repair.technicianName}</span>
+                    ) : (
+                      <span className="text-sm italic text-muted-foreground">Chưa phân công</span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell>{formatCurrency(repair.cost)}</TableCell>
+                <TableCell>
+                  <div className="text-xs">
+                    <div>Bắt đầu: {formatDate(repair.startDate)}</div>
+                    <div>Kết thúc: {repair.endDate ? formatDate(repair.endDate) : '—'}</div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={getRepairStatusBadge(repair.status)}>
+                    {getRepairStatusText(repair.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onViewDetails(repair)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Xem chi tiết</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    {canAssign(repair) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onAssignTechnician?.(repair)}
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Phân công kỹ thuật viên</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {canAccept(repair) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onAcceptRepair?.(repair.id)}
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Chấp nhận lệnh sửa</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {canComplete(repair) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onCompleteRepair?.(repair)}
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Hoàn thành sửa chữa</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {canConfirm(repair) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onConfirmCompletion?.(repair.id)}
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Xác nhận hoàn tất</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {canRejectOrNotNeeded(repair) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onRejectOrNotNeeded?.(repair)}
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Từ chối / Không cần sửa</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}

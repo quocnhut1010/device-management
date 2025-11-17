@@ -59,6 +59,14 @@ namespace backend.Controllers
             return Ok(charts);
         }
 
+        [HttpGet("manager-tables")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetManagerTables([FromQuery] Guid departmentId)
+        {
+            var tables = await _dashboardService.GetManagerTablesAsync(departmentId);
+            return Ok(tables);
+        }
+
         [HttpGet("technician-stats")]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> GetTechnicianStats()
@@ -81,6 +89,17 @@ namespace backend.Controllers
             return Ok(charts);
         }
 
+        [HttpGet("technician-tables")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetTechnicianTables()
+        {
+            var userId = _authService.GetCurrentUserId(User);
+            if (!userId.HasValue) return Unauthorized();
+
+            var tables = await _dashboardService.GetTechnicianTablesAsync(userId.Value);
+            return Ok(tables);
+        }
+
         [HttpGet("employee-stats")]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> GetEmployeeStats()
@@ -101,6 +120,17 @@ namespace backend.Controllers
 
             var charts = await _dashboardService.GetEmployeeChartsAsync(userId.Value);
             return Ok(charts);
+        }
+
+        [HttpGet("employee-tables")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetEmployeeTables()
+        {
+            var userId = _authService.GetCurrentUserId(User);
+            if (!userId.HasValue) return Unauthorized();
+
+            var tables = await _dashboardService.GetEmployeeTablesAsync(userId.Value);
+            return Ok(tables);
         }
     }
 }
