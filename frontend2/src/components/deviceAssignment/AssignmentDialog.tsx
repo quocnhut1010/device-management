@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import type { CreateDeviceAssignmentDto, DeviceAssignmentDto } from '@/types'
 import { departmentService } from '@/services/departmentService'
 import { userService } from '@/services/userService'
@@ -79,6 +80,12 @@ const AssignmentDialog: React.FC<Props> = ({ open, onClose, device, onSubmit }) 
     onSubmit(payload)
   }
 
+  const getStatusVariant = (status?: string) => {
+    if (status === 'Chưa cấp phát') return 'secondary'
+    if (status === 'Sẵn sàng') return 'outline'
+    return 'default'
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
@@ -95,7 +102,15 @@ const AssignmentDialog: React.FC<Props> = ({ open, onClose, device, onSubmit }) 
               <SelectContent>
                 {unassignedDevices.map((d) => (
                   <SelectItem key={d.deviceId || d.id} value={d.deviceId || d.id}>
-                    {d.deviceName} {d.deviceCode ? `(${d.deviceCode})` : ''}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium">
+                        {d.deviceName} {d.deviceCode ? `(${d.deviceCode})` : ''}
+                      </span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Trạng thái:</span>
+                        <Badge variant={getStatusVariant(d.status)}>{d.status ?? 'Không xác định'}</Badge>
+                      </div>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
