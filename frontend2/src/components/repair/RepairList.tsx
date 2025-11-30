@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Tooltip,
   TooltipContent,
@@ -72,6 +73,15 @@ export default function RepairList({
   const [repairs, setRepairs] = useState<Repair[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<number | 'all'>('all')
 
   const roleLower = user?.role?.toLowerCase() || ''
   const positionLower = user?.position?.toLowerCase() || ''
@@ -86,10 +96,20 @@ export default function RepairList({
       setError('')
 
       const response = showMyRepairs
-        ? await repairService.getMyRepairs()
-        : await repairService.getAllRepairs()
+        ? await repairService.getMyRepairs(page, pageSize, statusFilter)
+        : await repairService.getAllRepairs(page, pageSize, statusFilter)
 
-      setRepairs(response.data)
+      // Check if response is paged or array
+      if ('items' in response.data) {
+        setRepairs(response.data.items)
+        setTotal(response.data.total)
+        setTotalPages(response.data.totalPages)
+      } else {
+        // Fallback for backward compatibility
+        setRepairs(response.data as Repair[])
+        setTotal((response.data as Repair[]).length)
+        setTotalPages(1)
+      }
     } catch (err: any) {
       const message =
         err?.response?.data?.message || err?.message || 'Không thể tải danh sách lệnh sửa chữa'
@@ -103,14 +123,49 @@ export default function RepairList({
   useEffect(() => {
     loadRepairs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showMyRepairs, refreshTrigger])
+  }, [showMyRepairs, refreshTrigger, page, pageSize, statusFilter])
+  
+  // Reset to page 1 when status filter changes
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter])
 
+  // Load all repairs for statistics calculation (not paginated)
+  const [allRepairsForStats, setAllRepairsForStats] = useState<Repair[]>([])
+  
+  useEffect(() => {
+    // Load all repairs for statistics (without pagination)
+    const loadStats = async () => {
+      try {
+        const response = showMyRepairs
+          ? await repairService.getMyRepairs()
+          : await repairService.getAllRepairs()
+        
+        if ('items' in response.data) {
+          // If paginated response, we need to load all
+          // For now, use current repairs or fetch without pagination
+          setAllRepairsForStats([])
+        } else {
+          setAllRepairsForStats(response.data as Repair[])
+        }
+      } catch {
+        // Fallback: use current repairs if stats load fails
+        setAllRepairsForStats(repairs)
+      }
+    }
+    
+    loadStats()
+  }, [showMyRepairs, refreshTrigger])
+  
   const statistics = useMemo(() => {
-    const total = repairs.length
-    const inProgress = repairs.filter((r) => r.status === RepairStatus.DangSua).length
-    const completed = repairs.filter((r) => r.status === RepairStatus.DaHoanTat).length
+    // Use allRepairsForStats if available, otherwise use current page repairs
+    const statsSource = allRepairsForStats.length > 0 ? allRepairsForStats : repairs
+    
+    const total = statsSource.length
+    const inProgress = statsSource.filter((r) => r.status === RepairStatus.DangSua).length
+    const completed = statsSource.filter((r) => r.status === RepairStatus.DaHoanTat).length
     const avgRepairTime = (() => {
-      const durations = repairs
+      const durations = statsSource
         .filter((r) => r.startDate && r.endDate)
         .map((r) => {
           const start = new Date(r.startDate as string).getTime()
@@ -125,7 +180,7 @@ export default function RepairList({
     })()
 
     return { total, inProgress, completed, avgRepairTime }
-  }, [repairs])
+  }, [repairs, allRepairsForStats])
 
   const canAccept = (repair: Repair) =>
     isTechnician && repair.status === RepairStatus.ChoThucHien
@@ -174,6 +229,27 @@ export default function RepairList({
 
   return (
     <div className="space-y-4">
+      {/* Status Filter */}
+      <div className="flex items-center justify-between">
+        <Select
+          value={statusFilter === 'all' ? 'all' : statusFilter.toString()}
+          onValueChange={(value) => setStatusFilter(value === 'all' ? 'all' : parseInt(value))}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Lọc theo trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+            <SelectItem value="0">Chờ thực hiện</SelectItem>
+            <SelectItem value="1">Đang sửa</SelectItem>
+            <SelectItem value="2">Chờ duyệt hoàn tất</SelectItem>
+            <SelectItem value="3">Đã hoàn tất</SelectItem>
+            <SelectItem value="4">Từ chối</SelectItem>
+            <SelectItem value="5">Không cần sửa</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
@@ -257,9 +333,16 @@ export default function RepairList({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getRepairStatusBadge(repair.status)}>
-                    {getRepairStatusText(repair.status)}
-                  </Badge>
+                  <div className="space-y-1">
+                    <Badge variant={getRepairStatusBadge(repair.status)}>
+                      {getRepairStatusText(repair.status)}
+                    </Badge>
+                    {repair.rejectedReason && repair.status === RepairStatus.ChoThucHien && (
+                      <p className="text-xs text-destructive">
+                        Đã bị từ chối: {repair.rejectedReason}
+                      </p>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
@@ -368,6 +451,37 @@ export default function RepairList({
             ))}
           </TableBody>
         </Table>
+
+        {/* Pagination */}
+        {repairs.length > 0 && total > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="text-sm text-muted-foreground">
+              Hiển thị {(page - 1) * pageSize + 1} -{' '}
+              {Math.min(page * pageSize, total)} trong tổng số {total} lệnh sửa chữa
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1 || loading}
+              >
+                Trước
+              </Button>
+              <span className="text-sm">
+                Trang {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={page >= totalPages || loading}
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

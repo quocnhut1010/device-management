@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { getTechnicianTables } from '@/services/dashboardService'
 import type { WorkQueueDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 const getPriorityBadge = (priority: string) => {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -50,29 +51,29 @@ export function WorkQueueTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Work Queue</CardTitle>
-        <CardDescription>Available repair orders sorted by priority</CardDescription>
+        <CardTitle>Hàng đợi công việc</CardTitle>
+        <CardDescription>Lệnh sửa chữa khả dụng được sắp xếp theo độ ưu tiên</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Priority</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Độ ưu tiên</TableHead>
                 <TableHead>SLA</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Ngày tạo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {repairs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No work queue items found
+                    Không tìm thấy mục hàng đợi
                   </TableCell>
                 </TableRow>
               ) : (
@@ -93,7 +94,7 @@ export function WorkQueueTable() {
                         {repair.sla}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(repair.createdDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateForTable(repair.createdDate)}</TableCell>
                   </TableRow>
                 ))
               )}

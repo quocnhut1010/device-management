@@ -14,6 +14,7 @@ import CreateIncidentDialog from "@/components/incident/CreateIncidentDialog"
 import ExportDialog from "@/components/reports/ExportDialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { Eye, CheckCircle2, XCircle, Search, Filter, Download, Plus } from "lucide-react"
+import { formatDateTimeForTable } from "@/lib/dateUtils"
 
 export default function IncidentsPage() {
   const { toast } = useToast()
@@ -196,8 +197,8 @@ export default function IncidentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Incident Reports</h1>
-          <p className="text-muted-foreground">Quản lý, theo dõi và xử lý các sự cố thiết bị</p>
+          <h1 className="text-3xl font-bold tracking-tight">Quản lý báo cáo sự cố</h1>
+          <p className="text-muted-foreground">Quản lý, theo dõi và xử lý các sự cố liên quan đến thiết bị</p>
         </div>
         <div className="flex gap-2">
           {isAdmin && (
@@ -308,14 +309,14 @@ export default function IncidentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Incident ID</TableHead>
-                  <TableHead>Device</TableHead>
-                  <TableHead>Reporter</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reported At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Mã sự cố</TableHead>
+                  <TableHead>Thiết bị</TableHead>
+                  <TableHead>Người báo cáo</TableHead>
+                  <TableHead>Nội dung</TableHead>
+                  <TableHead>Mức độ ưu tiên</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Thời gian báo cáo</TableHead>
+                  <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -333,7 +334,7 @@ export default function IncidentsPage() {
                     <TableCell className="max-w-xs truncate">{r.description || '—'}</TableCell>
                     <TableCell>{renderPriority(r.reportType)}</TableCell>
                     <TableCell>{renderStatus(r.status)}</TableCell>
-                    <TableCell>{new Date(r.reportDate).toLocaleString()}</TableCell>
+                    <TableCell>{formatDateTimeForTable(r.reportDate)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <TooltipProvider>

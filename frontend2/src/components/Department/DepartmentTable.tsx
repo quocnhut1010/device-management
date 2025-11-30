@@ -173,9 +173,9 @@ export default function DepartmentTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Department Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Manager</TableHead>
+            <TableHead>Tên phòng ban</TableHead>
+            <TableHead>Mã</TableHead>
+            <TableHead>Trưởng phòng</TableHead>
             <TableHead>Vị trí</TableHead>
             {showUserCount && <TableHead className="text-center">Số nhân viên</TableHead>}
             <TableHead className="text-center">Số thiết bị</TableHead>

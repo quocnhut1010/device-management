@@ -32,6 +32,8 @@ namespace backend.Helpers
                     opt => opt.MapFrom(src => src.Model != null && src.Model.DeviceType != null ? src.Model.DeviceType.TypeName : null))
                 .ForMember(dest => dest.DepartmentName,
                     opt => opt.MapFrom(src => src.CurrentDepartment != null ? src.CurrentDepartment.DepartmentName : null))
+                .ForMember(dest => dest.CurrentUserId,
+                    opt => opt.MapFrom(src => src.CurrentUserId))
                 .ForMember(dest => dest.CurrentUserName,
                     opt => opt.MapFrom(src => src.CurrentUser != null ? src.CurrentUser.FullName : null))
                 .ForMember(dest => dest.SupplierName,

@@ -1,3 +1,4 @@
+using backend.Helpers;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +36,17 @@ public class NotificationController : ControllerBase
         {
             var userId = GetCurrentUserId();
             var notifications = await _notificationService.GetUserNotificationsAsync(userId, isRead);
-            return Ok(new { success = true, data = notifications });
+            var responseData = notifications.Select(n => new
+            {
+                n.Id,
+                n.UserId,
+                n.Title,
+                n.Content,
+                n.IsRead,
+                CreatedAt = TimeZoneHelper.ConvertUtcToVietnam(n.CreatedAt),
+                n.User
+            });
+            return Ok(new { success = true, data = responseData });
         }
         catch (Exception ex)
         {

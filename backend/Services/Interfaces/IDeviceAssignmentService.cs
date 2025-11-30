@@ -5,6 +5,7 @@ namespace backend.Services.Interfaces
     public interface IDeviceAssignmentService
     {
         Task<List<DeviceAssignmentDto>> GetAllAsync();
+        Task<object> GetAllPagedAsync(int page, int pageSize, string? status = null);
         Task<DeviceAssignmentDto?> GetByIdAsync(Guid id);
         Task<DeviceAssignmentDto?> CreateAsync(CreateDeviceAssignmentDto createDto, Guid currentUserId);
         Task<bool> SoftDeleteAsync(Guid id, Guid currentUserId);

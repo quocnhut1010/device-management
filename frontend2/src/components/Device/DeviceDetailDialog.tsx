@@ -16,6 +16,7 @@ import { getDeviceQrToken } from '@/services/deviceService'
 import { getImageUrl } from '@/utils/imageUtils'
 import { toast } from 'sonner'
 import type { DeviceDto } from '@/types'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 interface DeviceDetailDialogProps {
   open: boolean
@@ -201,7 +202,7 @@ export default function DeviceDetailDialog({
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <p className="font-medium">
                     {device.warrantyExpiry
-                      ? new Date(device.warrantyExpiry).toLocaleDateString('vi-VN')
+                      ? formatDateForTable(device.warrantyExpiry)
                       : '-'}
                   </p>
                 </div>
@@ -228,7 +229,7 @@ export default function DeviceDetailDialog({
                   <p className="text-sm text-muted-foreground">Ngày mua</p>
                   <p className="font-medium">
                     {device.purchaseDate
-                      ? new Date(device.purchaseDate).toLocaleDateString('vi-VN')
+                      ? formatDateForTable(device.purchaseDate)
                       : '-'}
                   </p>
                 </div>

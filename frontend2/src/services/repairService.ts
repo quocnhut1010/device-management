@@ -139,10 +139,6 @@ export const getRepairStatusBadge = (
 
 const base = '/Repair'
 
-export const getAllRepairs = () => api.get<Repair[]>(base)
-
-export const getMyRepairs = () => api.get<Repair[]>(`${base}/mine`)
-
 export const getRepairById = (id: string) => api.get<Repair>(`${base}/${id}`)
 
 export const acceptRepair = (id: string) => api.post(`${base}/${id}/accept`)
@@ -187,6 +183,38 @@ export interface DeviceRepairAnalysis {
   lastRepairDate?: string
   warnings: string[]
   suggestion?: string
+}
+
+export interface PagedRepairResponse {
+  items: Repair[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export const getAllRepairs = (page?: number, pageSize?: number, status?: number | string) => {
+  const params: Record<string, string> = {}
+  if (page !== undefined) params.page = page.toString()
+  if (pageSize !== undefined) params.pageSize = pageSize.toString()
+  if (status !== undefined && status !== 'all') params.status = status.toString()
+  
+  if (Object.keys(params).length > 0) {
+    return api.get<PagedRepairResponse>(base, { params })
+  }
+  return api.get<Repair[]>(base)
+}
+
+export const getMyRepairs = (page?: number, pageSize?: number, status?: number | string) => {
+  const params: Record<string, string> = {}
+  if (page !== undefined) params.page = page.toString()
+  if (pageSize !== undefined) params.pageSize = pageSize.toString()
+  if (status !== undefined && status !== 'all') params.status = status.toString()
+  
+  if (Object.keys(params).length > 0) {
+    return api.get<PagedRepairResponse>(`${base}/mine`, { params })
+  }
+  return api.get<Repair[]>(`${base}/mine`)
 }
 
 export const analyzeDeviceRepairHistory = (deviceId: string) =>

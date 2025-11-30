@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowRight } from 'lucide-react'
 import { getAdminTables } from '@/services/dashboardService'
 import type { ReplacementHistoryDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 export function ReplacementHistoryTable() {
   const [replacements, setReplacements] = useState<ReplacementHistoryDto[]>([])
@@ -28,8 +29,8 @@ export function ReplacementHistoryTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Replacements</CardTitle>
-        <CardDescription>Device replacement and liquidation history</CardDescription>
+        <CardTitle>Lịch sử thay thế gần đây</CardTitle>
+        <CardDescription>Lịch sử thay thế và thanh lý thiết bị</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -40,18 +41,18 @@ export function ReplacementHistoryTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Old Device</TableHead>
+                <TableHead>Thiết bị cũ</TableHead>
                 <TableHead></TableHead>
-                <TableHead>New Device</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Reason</TableHead>
+                <TableHead>Thiết bị mới</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Lý do</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {replacements.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No replacements found
+                    Không có lịch sử thay thế nào
                   </TableCell>
                 </TableRow>
               ) : (
@@ -67,7 +68,7 @@ export function ReplacementHistoryTable() {
                       {replacement.deviceName} ({replacement.deviceCode})
                     </TableCell>
                     <TableCell>
-                      {new Date(replacement.replacementDate).toLocaleDateString()}
+                      {formatDateForTable(replacement.replacementDate)}
                     </TableCell>
                     <TableCell>{replacement.reason || 'N/A'}</TableCell>
                   </TableRow>

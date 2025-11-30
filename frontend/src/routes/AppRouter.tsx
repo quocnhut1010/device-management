@@ -41,7 +41,7 @@ const AppRoutes = () => {
             <Route
               path="dashboard"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute>
                   <Dashboard />
                 </PrivateRoute>
               }
@@ -49,7 +49,7 @@ const AppRoutes = () => {
             <Route
               path="devices"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute>
                   <DevicePage />
                 </PrivateRoute>
               }
@@ -73,7 +73,7 @@ const AppRoutes = () => {
             <Route
               path="departments"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute>
                   <DepartmentPage />
                 </PrivateRoute>
               }
@@ -145,7 +145,7 @@ const AppRoutes = () => {
             <Route
               path="device-history"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute>
                   <DeviceHistoryPage />
                 </PrivateRoute>
               }
@@ -153,7 +153,7 @@ const AppRoutes = () => {
             <Route
               path="device-history/:deviceId"
               element={
-                <PrivateRoute allowedRoles={['Admin', 'User']}>
+                <PrivateRoute>
                   <DeviceHistoryPage />
                 </PrivateRoute>
               }

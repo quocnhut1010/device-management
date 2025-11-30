@@ -152,10 +152,8 @@ export default function SuppliersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-muted-foreground">
-            Manage supplier information and contacts
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Nhà cung cấp</h1>
+          <p className="text-muted-foreground">Quản lý thông tin và liên hệ nhà cung cấp</p>
         </div>
         {isAdmin && (
           <Button
@@ -165,7 +163,7 @@ export default function SuppliersPage() {
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Supplier
+            Thêm nhà cung cấp
           </Button>
         )}
       </div>
@@ -174,7 +172,7 @@ export default function SuppliersPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số nhà cung cấp</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSuppliers}</div>
@@ -182,7 +180,7 @@ export default function SuppliersPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active Suppliers</CardTitle>
+            <CardTitle className="text-sm font-medium">Nhà cung cấp đang hoạt động</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeSuppliers}</div>
@@ -190,7 +188,7 @@ export default function SuppliersPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Devices Supplied</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số thiết bị cung cấp</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDevicesSupplied}</div>
@@ -198,7 +196,7 @@ export default function SuppliersPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg. Devices/Supplier</CardTitle>
+            <CardTitle className="text-sm font-medium">TB thiết bị / nhà cung cấp</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgDevicesPerSupplier}</div>
@@ -209,15 +207,15 @@ export default function SuppliersPage() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Supplier Directory</CardTitle>
-          <CardDescription>View and manage all supplier information</CardDescription>
+          <CardTitle>Danh bạ nhà cung cấp</CardTitle>
+          <CardDescription>Xem và quản lý toàn bộ thông tin nhà cung cấp</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
             <div className="relative flex-1 min-w-[250px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by supplier name or contact person..."
+                placeholder="Tìm theo tên nhà cung cấp hoặc người liên hệ..."
                 className="pl-8"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -226,12 +224,12 @@ export default function SuppliersPage() {
 
             <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Lọc theo trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="deleted">Deleted</SelectItem>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem value="active">Đang hoạt động</SelectItem>
+                <SelectItem value="deleted">Đã xóa</SelectItem>
               </SelectContent>
             </Select>
           </div>

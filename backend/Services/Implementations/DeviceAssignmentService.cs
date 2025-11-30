@@ -30,6 +30,54 @@ namespace backend.Services.Implementations
             return assignments.Select(MapToDto).ToList();
         }
 
+        public async Task<object> GetAllPagedAsync(int page, int pageSize, string? status = null)
+        {
+            var query = _context.DeviceAssignments
+                .Include(da => da.Device)
+                .Include(da => da.AssignedToUser)
+                .Include(da => da.AssignedToDepartment)
+                .Include(da => da.AssignedByUser)
+                .Where(da => !da.IsDeleted)
+                .AsQueryable();
+
+            // Apply status filter
+            if (!string.IsNullOrEmpty(status) && status.ToLower() != "all")
+            {
+                if (status.ToLower() == "active")
+                {
+                    query = query.Where(da => da.ReturnedDate == null);
+                }
+                else if (status.ToLower() == "returned")
+                {
+                    query = query.Where(da => da.ReturnedDate != null);
+                }
+            }
+
+            // Sort: Priority to "Đang cấp phát" (returnedDate == null) first, then by AssignedDate DESC
+            query = query.OrderBy(da => da.ReturnedDate != null ? 1 : 0)
+                        .ThenByDescending(da => da.AssignedDate);
+
+            // Get total count before pagination
+            var total = await query.CountAsync();
+
+            // Apply pagination
+            var assignments = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var assignmentDtos = assignments.Select(MapToDto).ToList();
+
+            return new
+            {
+                items = assignmentDtos,
+                total,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)total / pageSize)
+            };
+        }
+
         public async Task<DeviceAssignmentDto?> GetByIdAsync(Guid id)
         {
             var assignment = await _context.DeviceAssignments
@@ -91,16 +139,16 @@ namespace backend.Services.Implementations
                     : null;
                     
                 var assignedToInfo = assignedUser != null 
-                    ? $"user {assignedUser.FullName}"
+                    ? $"người dùng {assignedUser.FullName}"
                     : assignedDept != null 
-                        ? $"department {assignedDept.DepartmentName}"
-                        : "unknown";
+                        ? $"phòng ban {assignedDept.DepartmentName}"
+                        : "đối tượng không xác định";
                         
                 await _deviceHistoryService.LogActionAsync(
                     device.Id,
-                    "Device Assigned",
+                    "Cấp phát thiết bị",
                     currentUserId,
-                    $"Device '{device.DeviceName}' was assigned to {assignedToInfo}",
+                    $"Thiết bị '{device.DeviceName}' được cấp phát cho {assignedToInfo}",
                     "ASSIGNMENT");
             }
 
@@ -168,9 +216,9 @@ namespace backend.Services.Implementations
             {
                 await _deviceHistoryService.LogActionAsync(
                     device.Id,
-                    "Device Assignment Revoked",
+                    "Thu hồi thiết bị",
                     currentUserId,
-                    $"Device '{device.DeviceName}' assignment was revoked and device is now available",
+                    $"Thiết bị '{device.DeviceName}' đã được thu hồi và chuyển về trạng thái sẵn sàng",
                     "REVOCATION");
             }
             

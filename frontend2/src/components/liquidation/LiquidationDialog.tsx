@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -128,7 +129,7 @@ export default function LiquidationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Thanh lý thiết bị ({selectedDevices.length} thiết bị)</DialogTitle>
           <DialogDescription>
@@ -136,7 +137,7 @@ export default function LiquidationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh] pr-4">
+        <ScrollArea className="flex-1 max-h-[70vh] pr-4">
           <div className="space-y-6">
             {/* Warning Alert */}
             <Alert variant="destructive">
@@ -220,7 +221,7 @@ export default function LiquidationDialog({
           </div>
         </ScrollArea>
 
-        <div className="flex items-center justify-end gap-2 border-t pt-4">
+        <DialogFooter className="mt-4 border-t pt-4 gap-2">
           <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
             Hủy
           </Button>
@@ -239,7 +240,7 @@ export default function LiquidationDialog({
               'Xác nhận thanh lý'
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

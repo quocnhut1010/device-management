@@ -34,12 +34,12 @@ export function FrequentDevicesChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Most Repaired Devices</CardTitle>
-          <CardDescription>Devices I've repaired most frequently</CardDescription>
+          <CardTitle>Thiết bị sửa chữa nhiều nhất</CardTitle>
+          <CardDescription>Thiết bị tôi đã sửa chữa thường xuyên nhất</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">No data available</p>
+            <p className="text-muted-foreground">Không có dữ liệu</p>
           </div>
         </CardContent>
       </Card>
@@ -49,19 +49,19 @@ export function FrequentDevicesChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Most Repaired Devices</CardTitle>
-        <CardDescription>Devices I've repaired most frequently</CardDescription>
+        <CardTitle>Thiết bị sửa chữa nhiều nhất</CardTitle>
+        <CardDescription>Thiết bị tôi đã sửa chữa thường xuyên nhất</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <ChartContainer
             config={{
               repairs: {
-                label: 'Repairs',
+                label: 'Sửa chữa',
                 color: '#f59e0b',
               },
             }}

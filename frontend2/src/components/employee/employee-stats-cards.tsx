@@ -35,25 +35,25 @@ export function EmployeeStatsCards() {
 
   const cards = [
     {
-      title: 'My Devices',
+      title: 'Thiết bị của tôi',
       value: stats.myDevices,
       icon: Package,
       color: 'text-blue-500',
     },
     {
-      title: 'Active Issues',
+      title: 'Sự cố đang hoạt động',
       value: stats.activeIssues,
       icon: AlertCircle,
       color: 'text-orange-500',
     },
     {
-      title: 'Pending Review',
+      title: 'Chờ duyệt',
       value: stats.pendingReview,
       icon: Clock,
       color: 'text-yellow-500',
     },
     {
-      title: 'Resolved',
+      title: 'Đã giải quyết',
       value: stats.resolved,
       icon: CheckCircle,
       color: 'text-green-500',

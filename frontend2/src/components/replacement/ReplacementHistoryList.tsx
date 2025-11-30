@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { formatDateForTable } from '@/lib/dateUtils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, ArrowRight, Eye } from 'lucide-react'
 import type { ReplacementDto, ReplacementFilters } from '@/types'
@@ -106,8 +107,8 @@ export default function ReplacementHistoryList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Replacements</CardTitle>
-          <CardDescription>Device replacement and liquidation history</CardDescription>
+          <CardTitle>Lịch sử thay thế</CardTitle>
+          <CardDescription>Lịch sử thay thế và thanh lý thiết bị</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -153,8 +154,8 @@ export default function ReplacementHistoryList({
       {filteredReplacements.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Replacements</CardTitle>
-            <CardDescription>Device replacement and liquidation history</CardDescription>
+            <CardTitle>Lịch sử thay thế</CardTitle>
+            <CardDescription>Lịch sử thay thế và thanh lý thiết bị</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12">
@@ -175,21 +176,21 @@ export default function ReplacementHistoryList({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Replacements</CardTitle>
-            <CardDescription>Device replacement and liquidation history</CardDescription>
+            <CardTitle>Lịch sử thay thế</CardTitle>
+            <CardDescription>Lịch sử thay thế và thanh lý thiết bị</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Old Device</TableHead>
+                  <TableHead>Thiết bị cũ</TableHead>
                   <TableHead></TableHead>
-                  <TableHead>New Device</TableHead>
-                  <TableHead>Performed By</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Thiết bị mới</TableHead>
+                  <TableHead>Người thực hiện</TableHead>
+                  <TableHead>Ngày</TableHead>
+                  <TableHead>Lý do</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -205,11 +206,11 @@ export default function ReplacementHistoryList({
                       {replacement.newDeviceCode || 'N/A'}
                     </TableCell>
                     <TableCell>
-                      {replacement.userFullName || 'N/A'}
+                      {replacement.performedByFullName || replacement.userFullName || 'N/A'}
                     </TableCell>
                     <TableCell>
                       {replacement.replacementDate
-                        ? new Date(replacement.replacementDate).toLocaleDateString()
+                        ? formatDateForTable(replacement.replacementDate)
                         : 'N/A'}
                     </TableCell>
                     <TableCell>
@@ -243,7 +244,7 @@ export default function ReplacementHistoryList({
                         onClick={() => handleViewDetails(replacement)}
                       >
                         <Eye className="h-4 w-4 mr-2" />
-                        View
+                        Xem
                       </Button>
                     </TableCell>
                   </TableRow>

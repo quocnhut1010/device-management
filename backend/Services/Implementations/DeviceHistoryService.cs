@@ -103,11 +103,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })
@@ -144,11 +144,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })
@@ -195,11 +195,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })
@@ -235,11 +235,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })
@@ -293,12 +293,12 @@ namespace backend.Services.Implementations
 
                 var eventsByType = await query
                     .GroupBy(h => h.ActionType)
-                    .Select(g => new { Type = g.Key ?? "Unknown", Count = g.Count() })
+                    .Select(g => new { Type = g.Key ?? "Không xác định", Count = g.Count() })
                     .ToDictionaryAsync(x => x.Type, x => x.Count);
 
                 var eventsByAction = await query
                     .GroupBy(h => h.Action)
-                    .Select(g => new { Action = g.Key ?? "Unknown", Count = g.Count() })
+                    .Select(g => new { Action = g.Key ?? "Không xác định", Count = g.Count() })
                     .ToDictionaryAsync(x => x.Action, x => x.Count);
 
                 var recentActivities = await query
@@ -309,11 +309,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })
@@ -351,11 +351,11 @@ namespace backend.Services.Implementations
                     {
                         Id = h.Id,
                         DeviceId = h.DeviceId ?? Guid.Empty,
-                        DeviceName = h.Device != null ? h.Device.DeviceName : "Unknown Device",
+                        DeviceName = h.Device != null ? h.Device.DeviceName : "Thiết bị không xác định",
                         Action = h.Action ?? string.Empty,
                         Description = h.Description ?? string.Empty,
                         ActionBy = h.ActionBy ?? Guid.Empty,
-                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Unknown User",
+                        ActionByName = h.ActionByNavigation != null ? h.ActionByNavigation.FullName : "Người dùng không xác định",
                         ActionDate = h.ActionDate ?? DateTime.Now,
                         ActionType = h.ActionType ?? "SYSTEM"
                     })

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
-import { Text, Card, ActivityIndicator } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import apiClient from '../../services/api';
-import { Repair, RootStackParamList } from '../../types';
+import { Repair, RootStackParamList, getRepairStatusColor, getRepairStatusText, RepairStatus } from '../../types';
+import repairService from '../../services/repair';
+import RejectRepairModal from '../../components/technician/RejectRepairModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 type RepairListNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -13,25 +15,30 @@ const RepairListScreen: React.FC = () => {
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<RepairListNavigationProp>();
+  const { user } = useAuth();
+  const currentUserId = user?.nameid;
 
-  useEffect(() => {
-    loadRepairs();
-  }, []);
-
-  const loadRepairs = async () => {
+  const loadRepairs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/Repair/mine');
-      
-      if (response.data) {
-        setRepairs(response.data);
-      }
+      const repairList = await repairService.getMyRepairs();
+      setRepairs(repairList);
     } catch (error) {
       console.error('Error loading repairs:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadRepairs();
+  }, [loadRepairs]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRepairs();
+    }, [loadRepairs])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -43,35 +50,40 @@ const RepairListScreen: React.FC = () => {
     navigation.navigate('RepairDetail', { repair });
   };
 
-  const getRepairStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      '0': 'Chờ tiếp nhận',
-      '1': 'Đang sửa',
-      '2': 'Chờ duyệt hoàn tất',
-      '3': 'Đã hoàn tất',
-      '4': 'Từ chối',
-      '5': 'Không cần sửa',
-    };
-    return statusMap[status] || 'Không xác định';
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
+
+  const handleAcceptRepair = async (repairId: string) => {
+    try {
+      setActionLoadingId(repairId);
+      await repairService.acceptRepair(repairId);
+      await loadRepairs();
+    } catch (error) {
+      console.error('Error accepting repair:', error);
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
-  const getRepairStatusColor = (status: string) => {
-    switch (status) {
-      case '0':
-        return '#ff9800';
-      case '1':
-        return '#2196f3';
-      case '2':
-        return '#9c27b0';
-      case '3':
-        return '#4caf50';
-      case '4':
-        return '#f44336';
-      case '5':
-        return '#757575';
-      default:
-        return '#757575';
+  const canRejectOrNotNeeded = (repair: Repair) => {
+    if (repair.status !== RepairStatus.ChoThucHien && repair.status !== RepairStatus.DangSua) {
+      return false;
     }
+    if (!currentUserId) return false;
+    if (!repair.technicianId) {
+      return true;
+    }
+    return repair.technicianId === currentUserId;
+  };
+
+  const handleOpenRejectModal = (repair: Repair) => {
+    setSelectedRepair(repair);
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectSuccess = async () => {
+    await loadRepairs();
   };
 
   if (loading && repairs.length === 0) {
@@ -112,11 +124,11 @@ const RepairListScreen: React.FC = () => {
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: getRepairStatusColor(item.status.toString()) },
+                    { backgroundColor: getRepairStatusColor(item.status) },
                   ]}
                 >
                   <Text style={styles.statusText}>
-                    {getRepairStatusText(item.status.toString())}
+                    {getRepairStatusText(item.status)}
                   </Text>
                 </View>
               </View>
@@ -130,12 +142,37 @@ const RepairListScreen: React.FC = () => {
                   Ngày hoàn tất: {formatDate(item.endDate)}
                 </Text>
               )}
+              {item.status === RepairStatus.ChoThucHien && (
+                <Button
+                  mode="contained"
+                  style={styles.actionButton}
+                  onPress={() => handleAcceptRepair(item.id)}
+                  loading={actionLoadingId === item.id}
+                >
+                  Tiếp nhận
+                </Button>
+              )}
+              {canRejectOrNotNeeded(item) && (
+                <Button
+                  mode="outlined"
+                  style={styles.rejectButton}
+                  onPress={() => handleOpenRejectModal(item)}
+                >
+                  Từ chối / Không cần sửa
+                </Button>
+              )}
             </Card.Content>
           </Card>
         )}
         refreshing={refreshing}
         onRefresh={handleRefresh}
         contentContainerStyle={styles.listContent}
+      />
+      <RejectRepairModal
+        visible={rejectModalVisible}
+        repair={selectedRepair}
+        onDismiss={() => setRejectModalVisible(false)}
+        onSuccess={handleRejectSuccess}
       />
     </View>
   );
@@ -202,6 +239,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  actionButton: {
+    marginTop: 10,
+    alignSelf: 'flex-end',
+  },
+  rejectButton: {
+    marginTop: 10,
   },
   statusText: {
     color: '#fff',

@@ -18,7 +18,11 @@ public partial class Replacement
 
     public string? Reason { get; set; }
 
+    public Guid? PerformedById { get; set; }
+
     public virtual Device? NewDevice { get; set; }
 
     public virtual Device? OldDevice { get; set; }
+
+    public virtual User? PerformedBy { get; set; }
 }

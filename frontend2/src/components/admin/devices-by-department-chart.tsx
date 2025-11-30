@@ -34,8 +34,8 @@ export function DevicesByDepartmentChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Devices by Department</CardTitle>
-          <CardDescription>Top 10 departments by device count</CardDescription>
+          <CardTitle>Thiết bị theo phòng ban</CardTitle>
+          <CardDescription>Top 10 phòng ban có nhiều thiết bị nhất</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
@@ -49,8 +49,8 @@ export function DevicesByDepartmentChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Devices by Department</CardTitle>
-        <CardDescription>Top 10 departments by device count</CardDescription>
+        <CardTitle>Thiết bị theo phòng ban</CardTitle>
+        <CardDescription>Top 10 phòng ban có nhiều thiết bị nhất</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -61,7 +61,7 @@ export function DevicesByDepartmentChart() {
           <ChartContainer
             config={{
               count: {
-                label: 'Devices',
+                label: 'Số lượng thiết bị',
                 color: '#3b82f6',
               },
             }}

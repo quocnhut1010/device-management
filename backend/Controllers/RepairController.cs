@@ -38,8 +38,19 @@ namespace backend.Controllers
         // GET: api/repair - Admin xem tất cả lệnh sửa chữa
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int? page = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int? status = null)
         {
+            // If pagination params are provided, use paginated endpoint
+            if (page.HasValue && pageSize.HasValue)
+            {
+                var pagedResult = await _repairService.GetAllPagedAsync(page.Value, pageSize.Value, status);
+                return Ok(pagedResult);
+            }
+
+            // Backward compatibility: return all if no pagination params
             var result = await _repairService.GetAllAsync();
             return Ok(result);
         }
@@ -47,7 +58,10 @@ namespace backend.Controllers
         // GET: api/repair/mine - Kỹ thuật viên xem lệnh sửa của mình
         [HttpGet("mine")]
         [Authorize(Roles = "User")]
-        public async Task<IActionResult> GetMyRepairs()
+        public async Task<IActionResult> GetMyRepairs(
+            [FromQuery] int? page = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int? status = null)
         {
             var position = GetPosition();
             if (position != "Kỹ thuật viên")
@@ -56,6 +70,14 @@ namespace backend.Controllers
             var userId = GetUserId();
             if (userId == null) return Unauthorized();
 
+            // If pagination params are provided, use paginated endpoint
+            if (page.HasValue && pageSize.HasValue)
+            {
+                var pagedResult = await _repairService.GetMyRepairsPagedAsync(userId.Value, page.Value, pageSize.Value, status);
+                return Ok(pagedResult);
+            }
+
+            // Backward compatibility: return all if no pagination params
             var result = await _repairService.GetMyRepairsAsync(userId.Value);
             return Ok(result);
         }

@@ -416,6 +416,11 @@ public partial class DeviceManagementDbContext : DbContext
             entity.HasOne(d => d.OldDevice).WithMany(p => p.ReplacementOldDevices)
                 .HasForeignKey(d => d.OldDeviceId)
                 .HasConstraintName("FK__Replaceme__OldDe__5535A963");
+
+            entity.HasOne(d => d.PerformedBy)
+                .WithMany()
+                .HasForeignKey(d => d.PerformedById)
+                .HasConstraintName("FK_Replacements_Users_PerformedById");
         });
 
         modelBuilder.Entity<ReportExport>(entity =>

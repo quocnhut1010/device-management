@@ -25,23 +25,72 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int? page = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] string? status = null)
         {
-            // Nếu là user thường → chỉ xem thiết bị mình được cấp
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var result = await _service.GetAllAsync();
+            // If pagination params are provided, use paginated endpoint
+            if (page.HasValue && pageSize.HasValue)
+            {
+                var pagedResult = await _service.GetAllPagedAsync(page.Value, pageSize.Value, status);
+                
+                // For non-admin users, we need to filter by their userId
+                // Since pagination is already applied, we filter after getting paged results
+                // Note: This means non-admin users might see fewer items per page than requested
+                if (role != "Admin" && Guid.TryParse(userIdStr, out var currentUserId))
+                {
+                    // Use dynamic to access properties of anonymous type
+                    dynamic pagedData = pagedResult;
+                    var items = (List<DeviceAssignmentDto>)pagedData.items;
+                    var filteredItems = items.Where(x => x.AssignedToUserId == currentUserId).ToList();
+                    
+                    // Get total count for this user's assignments
+                    var allUserAssignments = await _service.GetAllAsync();
+                    var userTotal = allUserAssignments.Count(x => x.AssignedToUserId == currentUserId);
+                    
+                    // Apply status filter to total count
+                    if (!string.IsNullOrEmpty(status) && status.ToLower() != "all")
+                    {
+                        if (status.ToLower() == "active")
+                        {
+                            userTotal = allUserAssignments.Count(x => x.AssignedToUserId == currentUserId && x.ReturnedDate == null);
+                        }
+                        else if (status.ToLower() == "returned")
+                        {
+                            userTotal = allUserAssignments.Count(x => x.AssignedToUserId == currentUserId && x.ReturnedDate != null);
+                        }
+                    }
+                    
+                    return Ok(new
+                    {
+                        items = filteredItems,
+                        total = userTotal,
+                        page = page.Value,
+                        pageSize = pageSize.Value,
+                        totalPages = (int)Math.Ceiling((double)userTotal / pageSize.Value)
+                    });
+                }
+
+                // Admin sees all
+                return Ok(pagedResult);
+            }
+
+            // Backward compatibility: return all if no pagination params
+            var allResults = await _service.GetAllAsync();
             
-            if (role != "Admin" && Guid.TryParse(userIdStr, out var userId))
+            if (role != "Admin" && Guid.TryParse(userIdStr, out var currentUserId2))
             {
                 // Lọc theo user hiện tại
-                var filtered = result.Where(x => x.AssignedToUserId == userId);
+                var filtered = allResults.Where(x => x.AssignedToUserId == currentUserId2);
                 return Ok(filtered);
             }
 
             // Admin thấy tất cả
-            return Ok(result);
+            return Ok(allResults);
         }
 
         [HttpGet("unassigned")]

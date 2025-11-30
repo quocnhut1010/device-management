@@ -370,6 +370,34 @@ ALTER TABLE Users
 ADD ResetPasswordToken NVARCHAR(MAX) NULL,
     ResetPasswordTokenExpiry DATETIME2 NULL;
 
+UPDATE DeviceHistories
+SET Action = N'Cập nhật thiết bị'
+WHERE Action = 'Device Updated';
+
+UPDATE DeviceHistories
+SET Action = N'Xóa thiết bị'
+WHERE Action = 'Device Deleted';
+
+UPDATE DeviceHistories
+SET Action = N'Cấp phát thiết bị'
+WHERE Action = 'Assigned';
+
+UPDATE DeviceHistories
+SET Action = N'Thu hồi thiết bị'
+WHERE Action = 'Revoked';
+
+UPDATE DeviceHistories
+SET Action = N'Thiết bị được gán làm thay thế'
+WHERE Action = 'Device Assigned as Replacement';
+
+UPDATE DeviceHistories
+SET Action = N'Thiết bị được trả lại sau thay thế'
+WHERE Action = 'Device Returned for Replacement';
+
+UPDATE DeviceHistories
+SET Action = N'Thay thế thiết bị'
+WHERE Action = 'Device Replaced';
+
 select * from DeviceQrTokens
 select * from Departments
 select * from Users

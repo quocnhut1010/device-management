@@ -35,30 +35,30 @@ export function DepartmentDevicesTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Department Devices</CardTitle>
-        <CardDescription>All devices assigned to your department</CardDescription>
+        <CardTitle>Thiết bị phòng ban</CardTitle>
+        <CardDescription>Tất cả thiết bị được gán cho phòng ban của bạn</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Warranty Expiry</TableHead>
+                <TableHead>Mã</TableHead>
+                <TableHead>Tên</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Được gán cho</TableHead>
+                <TableHead>Hết hạn bảo hành</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No devices found
+                    Không tìm thấy thiết bị
                   </TableCell>
                 </TableRow>
               ) : (
@@ -69,11 +69,11 @@ export function DepartmentDevicesTable() {
                     <TableCell>
                       <Badge variant="outline">{device.status}</Badge>
                     </TableCell>
-                    <TableCell>{device.assignedTo || 'Unassigned'}</TableCell>
+                    <TableCell>{device.assignedTo || 'Chưa gán'}</TableCell>
                     <TableCell>
                       {device.warrantyExpiry
                         ? new Date(device.warrantyExpiry).toLocaleDateString()
-                        : 'N/A'}
+                        : 'Không có'}
                     </TableCell>
                   </TableRow>
                 ))

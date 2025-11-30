@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Edit, Trash2, RotateCcw, Package, Eye } from 'lucide-react'
 import type { DeviceDto } from '@/types'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 interface DeviceTableProps {
   data: DeviceDto[]
@@ -85,7 +86,7 @@ export default function DeviceTable({
       </TableCell>
       <TableCell>
         {row.warrantyExpiry
-          ? new Date(row.warrantyExpiry).toLocaleDateString('vi-VN')
+          ? formatDateForTable(row.warrantyExpiry)
           : '-'}
       </TableCell>
       {isAdmin && (

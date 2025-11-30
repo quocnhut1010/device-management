@@ -189,9 +189,9 @@ namespace backend.Services.Implementations
             // Log device creation - using system user since CreatedBy field not available
             await _deviceHistoryService.LogActionAsync(
                 device.Id,
-                "Device Created",
+                "Tạo thiết bị",
                 Guid.Empty, // Will be replaced with actual user ID when available
-                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was created",
+                $"Thiết bị '{device.DeviceName}' (Mã: {device.DeviceCode}) đã được tạo mới",
                 "CREATE");
             
             return true;
@@ -222,9 +222,9 @@ namespace backend.Services.Implementations
             // Log device creation - using system user since CreatedBy field not available
             await _deviceHistoryService.LogActionAsync(
                 device.Id,
-                "Device Created",
+                "Tạo thiết bị",
                 dto.CreatedBy ?? Guid.Empty, // Will be replaced with actual user ID when available
-                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was created",
+                $"Thiết bị '{device.DeviceName}' (Mã: {device.DeviceCode}) đã được tạo mới",
                 "CREATE");
             
             // Return the created device with all generated fields
@@ -287,9 +287,9 @@ namespace backend.Services.Implementations
             {
                 await _deviceHistoryService.LogActionAsync(
                     device.Id,
-                    "Device Updated",
+                    "Cập nhật thiết bị",
                     device.UpdatedBy.Value,
-                    $"Device '{oldDeviceName}' was updated to '{device.DeviceName}'",
+                    $"Thiết bị '{oldDeviceName}' đã được cập nhật thành '{device.DeviceName}'",
                     "UPDATE");
             }
             
@@ -309,9 +309,9 @@ namespace backend.Services.Implementations
             // Log device deletion
             await _deviceHistoryService.LogActionAsync(
                 device.Id,
-                "Device Deleted",
+            "Xoá thiết bị",
                 userId,
-                $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was deleted",
+            $"Thiết bị '{device.DeviceName}' (Mã: {device.DeviceCode}) đã bị xoá",
                 "DELETE");
             
             return true;
@@ -319,12 +319,19 @@ namespace backend.Services.Implementations
 
         public async Task<object> GetPagedDevicesAsync(int page, int pageSize, string? search, string? status, Guid? modelId)
         {
-            var allDevices = await _repository.GetAllAsync();
-            var query = allDevices.Where(d => d.IsDeleted != true);
+            var query = _context.Devices
+                .Include(d => d.Model).ThenInclude(m => m!.DeviceType)
+                .Include(d => d.Supplier)
+                .Include(d => d.CurrentUser)
+                .Include(d => d.CurrentDepartment)
+                .Where(d => d.IsDeleted != true)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(d => d.DeviceName.Contains(search) || d.DeviceCode.Contains(search));
+                query = query.Where(d => 
+                    (d.DeviceName != null && d.DeviceName.Contains(search)) || 
+                    (d.DeviceCode != null && d.DeviceCode.Contains(search)));
             }
 
             if (!string.IsNullOrEmpty(status))
@@ -337,8 +344,12 @@ namespace backend.Services.Implementations
                 query = query.Where(d => d.ModelId == modelId.Value);
             }
 
-            var total = query.Count();
-            var devices = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var total = await query.CountAsync();
+            var devices = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            
             var deviceDtos = _mapper.Map<IEnumerable<DeviceDto>>(devices);
 
             return new
@@ -372,9 +383,9 @@ namespace backend.Services.Implementations
             {
                 await _deviceHistoryService.LogActionAsync(
                     device.Id,
-                    "Device Restored",
+                    "Khôi phục thiết bị",
                     device.UpdatedBy.Value,
-                    $"Device '{device.DeviceName}' (Code: {device.DeviceCode}) was restored from deletion",
+                    $"Thiết bị '{device.DeviceName}' (Mã: {device.DeviceCode}) đã được khôi phục",
                     "RESTORE");
             }
             

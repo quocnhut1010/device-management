@@ -7,6 +7,7 @@ import { MoreHorizontal, ChevronUp } from 'lucide-react'
 import { getManagerTables } from '@/services/dashboardService'
 import { getUserProfile } from '@/services/userService'
 import type { DepartmentIncidentDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 const getStatusLabel = (status: number): string => {
   switch (status) {
@@ -71,8 +72,8 @@ export function DepartmentIncidentsTable() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Department Incidents</CardTitle>
-            <CardDescription>Incident reports from your department</CardDescription>
+            <CardTitle>Sự cố phòng ban</CardTitle>
+            <CardDescription>Báo cáo sự cố từ phòng ban của bạn</CardDescription>
           </div>
           {incidents.length > 5 && (
             <Button
@@ -99,24 +100,24 @@ export function DepartmentIncidentsTable() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Reported By</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Báo cáo bởi</TableHead>
+                <TableHead>Ngày</TableHead>
+                <TableHead>Loại</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedIncidents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No incidents found
+                    Không tìm thấy sự cố
                   </TableCell>
                 </TableRow>
               ) : (
@@ -126,8 +127,8 @@ export function DepartmentIncidentsTable() {
                       {incident.deviceName} ({incident.deviceCode})
                     </TableCell>
                     <TableCell>{incident.reportedBy}</TableCell>
-                    <TableCell>{new Date(incident.reportDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{incident.reportType || 'N/A'}</TableCell>
+                    <TableCell>{formatDateForTable(incident.reportDate)}</TableCell>
+                    <TableCell>{incident.reportType || 'Không có'}</TableCell>
                     <TableCell>{getStatusBadge(incident.status)}</TableCell>
                   </TableRow>
                 ))

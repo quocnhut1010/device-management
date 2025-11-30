@@ -30,7 +30,19 @@ namespace backend
             }
 
             var random = new Random();
-            var actions = new[] { "CREATED", "UPDATED", "DELETED", "ASSIGNED", "UNASSIGNED", "ACTIVATED", "DEACTIVATED", "MAINTENANCE", "REPAIRED", "REPLACED" };
+            var actions = new[]
+            {
+                "Tạo thiết bị",
+                "Cập nhật thiết bị",
+                "Xoá thiết bị",
+                "Cấp phát thiết bị",
+                "Thu hồi thiết bị",
+                "Kích hoạt thiết bị",
+                "Vô hiệu hoá thiết bị",
+                "Bảo trì định kỳ",
+                "Hoàn tất sửa chữa",
+                "Thay thế thiết bị"
+            };
             var actionTypes = new[] { "SYSTEM", "USER", "MAINTENANCE", "ADMIN" };
 
             var historyEntries = new List<DeviceHistory>();
@@ -50,7 +62,7 @@ namespace backend
                     Action = action,
                     ActionBy = user.Id,
                     ActionDate = DateTime.Now.AddDays(-random.Next(0, 30)).AddHours(-random.Next(0, 24)),
-                    Description = $"Sample {action.ToLower()} action for {device.DeviceName}",
+                    Description = $"Log minh hoạ: {action.ToLower()} cho thiết bị {device.DeviceName}",
                     ActionType = actionType
                 });
             }

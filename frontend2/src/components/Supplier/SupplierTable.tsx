@@ -152,12 +152,12 @@ export default function SupplierTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Supplier Name</TableHead>
-            <TableHead>Contact Person</TableHead>
-            <TableHead>Contact Info</TableHead>
-            <TableHead className="text-center">Devices Supplied</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-            {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+            <TableHead>Tên nhà cung cấp</TableHead>
+            <TableHead>Người liên hệ</TableHead>
+            <TableHead>Thông tin liên hệ</TableHead>
+            <TableHead className="text-center">Số thiết bị đã cung cấp</TableHead>
+            <TableHead className="text-center">Trạng thái</TableHead>
+            {isAdmin && <TableHead className="text-right">Hành động</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>

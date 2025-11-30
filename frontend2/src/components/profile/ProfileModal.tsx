@@ -11,8 +11,7 @@ import { updateUserProfile } from '@/services/userService'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import type { UserDto } from '@/types'
-import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { formatDateTime } from '@/lib/dateUtils'
 
 interface ProfileModalProps {
   open: boolean
@@ -169,8 +168,7 @@ export default function ProfileModal({ open, onClose, user, onSuccess }: Profile
 
           {user.updatedAt && (
             <div className="text-sm text-muted-foreground text-center pt-2">
-              Lần cập nhật:{' '}
-              {format(new Date(user.updatedAt), "dd/MM/yyyy 'lúc' HH:mm", { locale: vi })}
+              Lần cập nhật: {formatDateTime(user.updatedAt)}
             </div>
           )}
 

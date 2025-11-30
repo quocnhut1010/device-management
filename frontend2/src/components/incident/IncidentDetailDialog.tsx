@@ -17,6 +17,7 @@ import { repairService, type Repair, getRepairStatusText, getRepairStatusBadge }
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import DeviceReplacementDialog from '@/components/replacement/DeviceReplacementDialog'
+import { formatDate, formatDateOnly, formatDateTime } from '@/lib/dateUtils'
 
 interface IncidentDetailDialogProps {
   open: boolean
@@ -84,20 +85,6 @@ export default function IncidentDetailDialog({
     window.location.reload()
   }
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    try {
-      return new Date(dateString).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return dateString
-    }
-  }
   
   const getStatusBadgeVariant = () => {
     if (statusColor === 'destructive') return 'destructive'
@@ -197,7 +184,7 @@ export default function IncidentDetailDialog({
                 <p className="text-sm text-muted-foreground">Ngày báo cáo</p>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <p className="font-medium">{new Date(report.reportDate).toLocaleDateString('vi-VN')}</p>
+                  <p className="font-medium">{formatDateOnly(report.reportDate)}</p>
                 </div>
               </div>
             </div>
@@ -258,7 +245,7 @@ export default function IncidentDetailDialog({
                   <p className="font-medium">Báo cáo được tạo</p>
                   <p className="text-xs text-muted-foreground">bởi {report.reportedByUser?.fullName || 'N/A'}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{new Date(report.reportDate).toLocaleString('vi-VN')}</p>
+                <p className="text-xs text-muted-foreground">{formatDateTime(report.reportDate)}</p>
               </div>
               {report.status === 1 && (
                 <div className="flex justify-between items-start p-2 bg-muted rounded">
@@ -266,7 +253,7 @@ export default function IncidentDetailDialog({
                     <p className="font-medium">Trạng thái cập nhật: Đã tạo lệnh sửa</p>
                     <p className="text-xs text-muted-foreground">bởi Admin</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{report.updatedAt ? new Date(report.updatedAt).toLocaleString('vi-VN') : 'N/A'}</p>
+                  <p className="text-xs text-muted-foreground">{report.updatedAt ? formatDateTime(report.updatedAt) : 'N/A'}</p>
                 </div>
               )}
               {report.status === 2 && report.rejectedAt && (
@@ -278,7 +265,7 @@ export default function IncidentDetailDialog({
                       <p className="text-xs text-muted-foreground mt-1">Lý do: {report.rejectedReason}</p>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{new Date(report.rejectedAt).toLocaleString('vi-VN')}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(report.rejectedAt)}</p>
                 </div>
               )}
             </div>
@@ -315,7 +302,7 @@ export default function IncidentDetailDialog({
                         </div>
                         {(repair.repairDate || repair.startDate) && (
                           <span className="text-sm text-muted-foreground">
-                            {formatDate(repair.repairDate || repair.startDate)}
+                            {formatDate(repair.repairDate || repair.startDate, { withTime: false })}
                           </span>
                         )}
                       </div>
@@ -348,7 +335,7 @@ export default function IncidentDetailDialog({
                           <p>
                             <span className="text-muted-foreground font-medium">Thời gian:</span>{' '}
                             <span>
-                              {formatDate(repair.startDate)} - {formatDate(repair.endDate)}
+                              {formatDate(repair.startDate, { withTime: false })} - {repair.endDate ? formatDate(repair.endDate, { withTime: false }) : '—'}
                             </span>
                           </p>
                         )}

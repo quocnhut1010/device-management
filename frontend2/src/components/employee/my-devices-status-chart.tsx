@@ -44,19 +44,19 @@ export function MyDevicesStatusChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Devices Status</CardTitle>
-        <CardDescription>Status distribution of devices assigned to me</CardDescription>
+        <CardTitle>Trạng thái thiết bị của tôi</CardTitle>
+        <CardDescription>Phân bố trạng thái thiết bị được gán cho tôi</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <ChartContainer
             config={{
               value: {
-                label: 'Count',
+                label: 'Số lượng',
               },
             }}
             className="h-[300px]"

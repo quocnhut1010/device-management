@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, Image } from 'react-native';
 import { Text, Card, Divider } from 'react-native-paper';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { format } from 'date-fns';
+import { getApiBaseUrl } from '../utils/baseUrl';
 
 type DeviceDetailRouteProp = RouteProp<RootStackParamList, 'DeviceDetail'>;
 
@@ -13,6 +14,27 @@ interface Props {
 
 const DeviceDetailScreen: React.FC<Props> = ({ route }) => {
   const { device } = route.params;
+  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadBaseUrl = async () => {
+      const base = await getApiBaseUrl();
+      setApiBaseUrl(base);
+    };
+    loadBaseUrl();
+  }, []);
+
+  const resolvedImageUrl = useMemo(() => {
+    const url = device.deviceImageUrl;
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+    if (!apiBaseUrl) return null;
+    const normalizedBase = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return `${normalizedBase}${normalizedPath}`;
+  }, [device.deviceImageUrl, apiBaseUrl]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Chưa có';
@@ -25,10 +47,10 @@ const DeviceDetailScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {device.deviceImageUrl && (
+      {resolvedImageUrl && (
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: device.deviceImageUrl.startsWith('http') ? device.deviceImageUrl : `http://localhost:5264${device.deviceImageUrl}` }}
+            source={{ uri: resolvedImageUrl }}
             style={styles.image}
             resizeMode="contain"
           />

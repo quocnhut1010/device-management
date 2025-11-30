@@ -16,6 +16,12 @@ export default function AssignmentsPage() {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'returned'>('all')
+  
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const [assignOpen, setAssignOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -24,11 +30,23 @@ export default function AssignmentsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [allResponse, inUseResponse] = await Promise.all([
-        deviceAssignmentService.getAssignments(),
+      const [pagedResponse, inUseResponse] = await Promise.all([
+        deviceAssignmentService.getAssignments(page, pageSize, statusFilter),
         deviceAssignmentService.getInUseAssignments(),
       ])
-      setAssignments(allResponse.data)
+      
+      // Check if response is paged or array
+      if ('items' in pagedResponse.data) {
+        setAssignments(pagedResponse.data.items)
+        setTotal(pagedResponse.data.total)
+        setTotalPages(pagedResponse.data.totalPages)
+      } else {
+        // Fallback for backward compatibility
+        setAssignments(pagedResponse.data as DeviceAssignmentDto[])
+        setTotal((pagedResponse.data as DeviceAssignmentDto[]).length)
+        setTotalPages(1)
+      }
+      
       setInUseAssignments(inUseResponse.data)
     } catch (e: any) {
       toast({
@@ -40,30 +58,23 @@ export default function AssignmentsPage() {
       setLoading(false)
     }
   }
-
+  
+  // Reload when page, pageSize, or statusFilter changes
   useEffect(() => {
     loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [page, pageSize, statusFilter])
+  
+  // Reset to page 1 when status filter changes
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter])
 
   const filteredAssignments = useMemo(() => {
-    // Determine which source to use based on status filter
-    let source: DeviceAssignmentDto[] = []
-    
-    if (statusFilter === 'active') {
-      // Use inUseAssignments from API when filtering for active
-      source = inUseAssignments
-    } else if (statusFilter === 'returned') {
-      // Filter returned assignments from all assignments
-      source = assignments.filter((a) => !!a.returnedDate)
-    } else {
-      // Use all assignments when filter is 'all'
-      source = assignments
-    }
-
-    // Apply search filter
+    // Apply search filter on current page assignments
+    // Note: Backend already handles status filter and pagination
     if (searchTerm) {
-      return source.filter((a) => {
+      return assignments.filter((a) => {
         const matchesSearch =
           (a.deviceName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
           (a.assignedToUserName?.toLowerCase() || '').includes(searchTerm.toLowerCase())
@@ -71,8 +82,8 @@ export default function AssignmentsPage() {
       })
     }
 
-    return source
-  }, [assignments, inUseAssignments, searchTerm, statusFilter])
+    return assignments
+  }, [assignments, searchTerm])
 
   const handleSubmitAssign = async (payload: CreateDeviceAssignmentDto) => {
     try {
@@ -108,12 +119,28 @@ export default function AssignmentsPage() {
     }
   }
 
-  // Calculate statistics
+  // Calculate statistics - load all for accurate stats
+  const [statsData, setStatsData] = useState<DeviceAssignmentDto[]>([])
+  
+  useEffect(() => {
+    // Load all assignments for statistics calculation
+    deviceAssignmentService.getAssignments().then((response) => {
+      if ('items' in response.data) {
+        setStatsData((response.data as any).items)
+      } else {
+        setStatsData(response.data as DeviceAssignmentDto[])
+      }
+    }).catch(() => {
+      // Fallback: use current assignments if stats load fails
+      setStatsData(assignments)
+    })
+  }, [])
+  
   const statistics = useMemo(() => {
-    const total = assignments.length
-    const active = assignments.filter((a) => !a.returnedDate).length
-    const returned = assignments.filter((a) => !!a.returnedDate).length
-    const thisMonth = assignments.filter((a) => {
+    const total = statsData.length
+    const active = statsData.filter((a) => !a.returnedDate).length
+    const returned = statsData.filter((a) => !!a.returnedDate).length
+    const thisMonth = statsData.filter((a) => {
       if (!a.assignedDate) return false
       const assignedDate = new Date(a.assignedDate)
       const now = new Date()
@@ -124,18 +151,18 @@ export default function AssignmentsPage() {
     }).length
 
     return { total, active, returned, thisMonth }
-  }, [assignments])
+  }, [statsData])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Device Assignments</h1>
-          <p className="text-muted-foreground">Track device assignment and return history</p>
+          <h1 className="text-3xl font-bold tracking-tight">Cấp phát thiết bị</h1>
+          <p className="text-muted-foreground">Theo dõi lịch sử cấp phát và thu hồi thiết bị</p>
         </div>
         <Button onClick={() => setAssignOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
-          New Assignment
+          Tạo cấp phát mới
         </Button>
       </div>
 
@@ -143,7 +170,7 @@ export default function AssignmentsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số lượt cấp phát</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.total}</div>
@@ -151,7 +178,7 @@ export default function AssignmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active Assignments</CardTitle>
+            <CardTitle className="text-sm font-medium">Đang cấp phát</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.active}</div>
@@ -159,7 +186,7 @@ export default function AssignmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Returned</CardTitle>
+            <CardTitle className="text-sm font-medium">Đã thu hồi</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.returned}</div>
@@ -167,7 +194,7 @@ export default function AssignmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Trong tháng này</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.thisMonth}</div>
@@ -182,10 +209,17 @@ export default function AssignmentsPage() {
         onView={handleView}
         onSearchChange={setSearchTerm}
         onStatusChange={setStatusFilter}
-        totalCount={assignments.length}
+        totalCount={total}
         loading={loading}
         searchValue={searchTerm}
         statusValue={statusFilter}
+        pagination={{
+          page: page - 1, // Convert to 0-based for UI
+          pageSize,
+          totalCount: total,
+          onPageChange: (newPage) => setPage(newPage + 1), // Convert back to 1-based
+          onPageSizeChange: setPageSize,
+        }}
       />
 
       {/* Assignment Dialog */}

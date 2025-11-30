@@ -35,12 +35,12 @@ export function RepairTrendChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>My Repair Trend</CardTitle>
-          <CardDescription>Repair orders assigned vs completed per week</CardDescription>
+          <CardTitle>Xu hướng sửa chữa của tôi</CardTitle>
+          <CardDescription>Lệnh sửa chữa được gán vs hoàn thành mỗi tuần</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">No data available</p>
+            <p className="text-muted-foreground">Không có dữ liệu</p>
           </div>
         </CardContent>
       </Card>
@@ -50,23 +50,23 @@ export function RepairTrendChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Repair Trend</CardTitle>
-        <CardDescription>Repair orders assigned vs completed per week</CardDescription>
+        <CardTitle>Xu hướng sửa chữa của tôi</CardTitle>
+        <CardDescription>Lệnh sửa chữa được gán vs hoàn thành mỗi tuần</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <ChartContainer
             config={{
               assigned: {
-                label: 'Assigned',
+                label: 'Được gán',
                 color: '#3b82f6',
               },
               completed: {
-                label: 'Completed',
+                label: 'Đã hoàn thành',
                 color: '#10b981',
               },
             }}

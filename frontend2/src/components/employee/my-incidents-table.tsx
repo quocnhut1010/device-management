@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getEmployeeTables } from '@/services/dashboardService'
 import type { MyIncidentDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 const getStatusLabel = (status: number): string => {
   switch (status) {
@@ -64,8 +65,8 @@ export function MyIncidentsTable() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>My Incident Reports</CardTitle>
-            <CardDescription>Issues I've reported and their status</CardDescription>
+            <CardTitle>Báo cáo sự cố của tôi</CardTitle>
+            <CardDescription>Sự cố tôi đã báo cáo và trạng thái của chúng</CardDescription>
           </div>
           {incidents.length > 5 && (
             <Button
@@ -81,24 +82,24 @@ export function MyIncidentsTable() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Loại</TableHead>
+                <TableHead>Mô tả</TableHead>
+                <TableHead>Ngày</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedIncidents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No incidents found
+                    Không tìm thấy sự cố
                   </TableCell>
                 </TableRow>
               ) : (
@@ -107,11 +108,11 @@ export function MyIncidentsTable() {
                     <TableCell className="font-medium">
                       {incident.deviceName} ({incident.deviceCode})
                     </TableCell>
-                    <TableCell>{incident.reportType || 'N/A'}</TableCell>
+                    <TableCell>{incident.reportType || 'Không có'}</TableCell>
                     <TableCell className="max-w-[200px] truncate">
-                      {incident.description || 'N/A'}
+                      {incident.description || 'Không có'}
                     </TableCell>
-                    <TableCell>{new Date(incident.reportDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDateForTable(incident.reportDate)}</TableCell>
                     <TableCell>{getStatusBadge(incident.status)}</TableCell>
                   </TableRow>
                 ))

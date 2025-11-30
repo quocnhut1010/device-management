@@ -1,5 +1,6 @@
 using AutoMapper;
 using backend.Data;
+using backend.Helpers;
 using backend.Models.DTOs;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
@@ -20,7 +21,15 @@ namespace backend.Services.Implementations
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<UserDto>> GetAllAsync(bool? isDeleted = null)
+        private static UserDto NormalizeUserDates(UserDto dto)
+        {
+            dto.CreatedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.CreatedAt);
+            dto.UpdatedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.UpdatedAt);
+            dto.DeletedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.DeletedAt);
+            return dto;
+        }
+
+        public async Task<IEnumerable<UserDto>> GetAllAsync(bool? isDeleted = null)
     {
         var query = _context.Users
             .Include(u => u.Department)
@@ -31,13 +40,13 @@ namespace backend.Services.Implementations
         return _mapper.Map<IEnumerable<UserDto>>(users);
     }
 
-    public async Task<UserDto?> GetByIdAsync(Guid id)
+        public async Task<UserDto?> GetByIdAsync(Guid id)
     {
         var user = await _context.Users
             .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted != true);
 
-        return user is null ? null : _mapper.Map<UserDto>(user);
+            return user is null ? null : NormalizeUserDates(_mapper.Map<UserDto>(user));
     }
 
     public async Task<UserDto?> UpdateAsync(Guid id, UserDto dto)
@@ -70,7 +79,7 @@ namespace backend.Services.Implementations
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
 
-        return _mapper.Map<UserDto>(user);
+        return NormalizeUserDates(_mapper.Map<UserDto>(user));
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -108,7 +117,7 @@ namespace backend.Services.Implementations
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        return _mapper.Map<UserDto>(user);
+        return NormalizeUserDates(_mapper.Map<UserDto>(user));
     }
 
 
@@ -134,7 +143,7 @@ namespace backend.Services.Implementations
                 .Where(u => u.DepartmentId == departmentId && u.IsDeleted != true)
                 .ToListAsync();
             
-            return _mapper.Map<IEnumerable<UserDto>>(users);
+            return _mapper.Map<IEnumerable<UserDto>>(users).Select(NormalizeUserDates);
         }
     }
 }

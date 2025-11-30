@@ -33,24 +33,13 @@ import {
 } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { formatDate, formatDateOnly, formatDateTime } from '@/lib/dateUtils'
 
 interface RepairDetailDialogProps {
   open: boolean
   onClose: () => void
   repair: Repair | null
   onRequestReplacement?: (repair: Repair) => void
-}
-
-function formatDate(value?: string, withTime = true) {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    ...(withTime && { hour: '2-digit', minute: '2-digit' }),
-  }).format(date)
 }
 
 function formatCurrency(value?: number) {
@@ -137,6 +126,21 @@ export default function RepairDetailDialog({
 
         <ScrollArea className="h-[75vh] px-6">
           <div className="space-y-8 py-6">
+            {repair.rejectedReason && (
+              <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  Lý do từ chối gần nhất
+                </div>
+                <p className="text-sm text-destructive">{repair.rejectedReason}</p>
+                {repair.rejectedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Cập nhật: {formatDateTime(repair.rejectedAt)}
+                  </p>
+                )}
+              </section>
+            )}
+
             <section className="space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -164,14 +168,14 @@ export default function RepairDetailDialog({
                   <p className="text-sm text-muted-foreground">Ngày bắt đầu</p>
                   <p className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {formatDate(repair.startDate)}
+                    {formatDate(repair.startDate, { withTime: false })}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Ngày kết thúc</p>
                   <p className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {repair.endDate ? formatDate(repair.endDate) : '—'}
+                    {repair.endDate ? formatDate(repair.endDate, { withTime: false }) : '—'}
                   </p>
                 </div>
               </div>
@@ -272,7 +276,7 @@ export default function RepairDetailDialog({
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Lần sửa gần nhất</p>
-                      <p className="font-medium">{formatDate(analysis.lastRepairDate || undefined)}</p>
+                      <p className="font-medium">{formatDate(analysis.lastRepairDate || undefined, { withTime: false })}</p>
                     </div>
                   </div>
 
@@ -334,8 +338,8 @@ export default function RepairDetailDialog({
                     <TableBody>
                       {history.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{formatDate(item.startDate)}</TableCell>
-                          <TableCell>{item.endDate ? formatDate(item.endDate) : '—'}</TableCell>
+                          <TableCell>{formatDate(item.startDate, { withTime: false })}</TableCell>
+                          <TableCell>{item.endDate ? formatDate(item.endDate, { withTime: false }) : '—'}</TableCell>
                           <TableCell>{formatCurrency(item.cost)}</TableCell>
                           <TableCell>{item.technicianName || '—'}</TableCell>
                           <TableCell>

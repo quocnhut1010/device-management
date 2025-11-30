@@ -7,6 +7,7 @@ import { MoreHorizontal, ChevronUp } from 'lucide-react'
 import { getManagerTables } from '@/services/dashboardService'
 import { getUserProfile } from '@/services/userService'
 import type { DepartmentRepairDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 const getStatusLabel = (status: number): string => {
   switch (status) {
@@ -68,8 +69,8 @@ export function DepartmentRepairsTable() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Department Repair Orders</CardTitle>
-            <CardDescription>Repair orders for department devices</CardDescription>
+            <CardTitle>Lệnh sửa chữa phòng ban</CardTitle>
+            <CardDescription>Lệnh sửa chữa cho thiết bị phòng ban</CardDescription>
           </div>
           {repairs.length > 5 && (
             <Button
@@ -96,24 +97,24 @@ export function DepartmentRepairsTable() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Technician</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Kỹ thuật viên</TableHead>
+                <TableHead>Ngày bắt đầu</TableHead>
+                <TableHead>Ngày kết thúc</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedRepairs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No repairs found
+                    Không tìm thấy lệnh sửa
                   </TableCell>
                 </TableRow>
               ) : (
@@ -122,12 +123,12 @@ export function DepartmentRepairsTable() {
                     <TableCell className="font-medium">
                       {repair.deviceName} ({repair.deviceCode})
                     </TableCell>
-                    <TableCell>{repair.technicianName || 'Unassigned'}</TableCell>
+                    <TableCell>{repair.technicianName || 'Chưa gán'}</TableCell>
                     <TableCell>
-                      {repair.startDate ? new Date(repair.startDate).toLocaleDateString() : 'N/A'}
+                      {formatDateForTable(repair.startDate)}
                     </TableCell>
                     <TableCell>
-                      {repair.endDate ? new Date(repair.endDate).toLocaleDateString() : 'N/A'}
+                      {formatDateForTable(repair.endDate)}
                     </TableCell>
                     <TableCell>{getStatusBadge(repair.status)}</TableCell>
                   </TableRow>

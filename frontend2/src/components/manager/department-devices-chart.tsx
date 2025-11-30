@@ -41,12 +41,12 @@ export function DepartmentDevicesChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Department Devices by Status</CardTitle>
-          <CardDescription>Device distribution in your department</CardDescription>
+          <CardTitle>Thiết bị phòng ban theo trạng thái</CardTitle>
+          <CardDescription>Phân bố thiết bị trong phòng ban của bạn</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">No data available</p>
+            <p className="text-muted-foreground">Không có dữ liệu</p>
           </div>
         </CardContent>
       </Card>
@@ -56,19 +56,19 @@ export function DepartmentDevicesChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Department Devices by Status</CardTitle>
-        <CardDescription>Device distribution in your department</CardDescription>
+        <CardTitle>Thiết bị phòng ban theo trạng thái</CardTitle>
+        <CardDescription>Phân bố thiết bị trong phòng ban của bạn</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <ChartContainer
             config={{
               count: {
-                label: 'Devices',
+                label: 'Thiết bị',
                 color: '#8b5cf6',
               },
             }}

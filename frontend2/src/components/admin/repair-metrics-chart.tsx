@@ -35,9 +35,9 @@ export function RepairMetricsChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Repair Metrics (MTTR/MTBF)</CardTitle>
+          <CardTitle>Chỉ số sửa chữa (MTTR/MTBF)</CardTitle>
           <CardDescription>
-            Mean Time To Repair and Mean Time Between Failures by device category
+            Thời gian sửa trung bình và thời gian trung bình giữa hai lần hỏng theo nhóm thiết bị
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -52,9 +52,9 @@ export function RepairMetricsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Repair Metrics (MTTR/MTBF)</CardTitle>
+        <CardTitle>Chỉ số sửa chữa (MTTR/MTBF)</CardTitle>
         <CardDescription>
-          Mean Time To Repair and Mean Time Between Failures by device category
+          Thời gian sửa trung bình và thời gian trung bình giữa hai lần hỏng theo nhóm thiết bị
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -66,11 +66,11 @@ export function RepairMetricsChart() {
           <ChartContainer
             config={{
               mttr: {
-                label: 'MTTR (hours)',
+                label: 'MTTR (giờ)',
                 color: '#ef4444',
               },
               mtbf: {
-                label: 'MTBF (days)',
+                label: 'MTBF (ngày)',
                 color: '#10b981',
               },
             }}

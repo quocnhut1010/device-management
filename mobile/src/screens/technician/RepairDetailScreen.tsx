@@ -1,8 +1,13 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card } from 'react-native-paper';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, ScrollView, Image } from 'react-native';
+import { Text, Card, Button, ActivityIndicator } from 'react-native-paper';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
+import { RootStackParamList, Repair, getRepairStatusColor, getRepairStatusText, RepairStatus } from '../../types';
+import repairService from '../../services/repair';
+import CompleteRepairModal from '../../components/technician/CompleteRepairModal';
+import { getApiBaseUrl } from '../../utils/baseUrl';
+import RejectRepairModal from '../../components/technician/RejectRepairModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 type RepairDetailRouteProp = RouteProp<RootStackParamList, 'RepairDetail'>;
 
@@ -11,38 +16,93 @@ interface Props {
 }
 
 const RepairDetailScreen: React.FC<Props> = ({ route }) => {
-  const { repair } = route.params;
+  const initialRepair = route.params.repair;
+  const [repair, setRepair] = useState<Repair | null>(initialRepair);
+  const [loading, setLoading] = useState(!initialRepair);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [completeModalVisible, setCompleteModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null);
+  const { user } = useAuth();
+  const currentUserId = user?.nameid;
 
-  const getRepairStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      '0': 'Chờ tiếp nhận',
-      '1': 'Đang sửa',
-      '2': 'Chờ duyệt hoàn tất',
-      '3': 'Đã hoàn tất',
-      '4': 'Từ chối',
-      '5': 'Không cần sửa',
+  const loadRepairDetail = useCallback(async () => {
+    try {
+      setLoading(true);
+      const latest = await repairService.getRepairById(initialRepair.id);
+      setRepair(latest);
+    } catch (error) {
+      console.error('Error loading repair detail:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [initialRepair.id]);
+
+  useEffect(() => {
+    loadRepairDetail();
+  }, [loadRepairDetail]);
+
+  useEffect(() => {
+    const loadBaseUrl = async () => {
+      const base = await getApiBaseUrl();
+      setApiBaseUrl(base);
     };
-    return statusMap[status] || 'Không xác định';
-  };
+    loadBaseUrl();
+  }, []);
 
-  const getRepairStatusColor = (status: string) => {
-    switch (status) {
-      case '0':
-        return '#ff9800';
-      case '1':
-        return '#2196f3';
-      case '2':
-        return '#9c27b0';
-      case '3':
-        return '#4caf50';
-      case '4':
-        return '#f44336';
-      case '5':
-        return '#757575';
-      default:
-        return '#757575';
+  const handleAccept = async () => {
+    if (!repair) return;
+    try {
+      setActionLoading(true);
+      await repairService.acceptRepair(repair.id);
+      await loadRepairDetail();
+    } catch (error) {
+      console.error('Error accepting repair:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  const handleOpenCompleteModal = () => {
+    setCompleteModalVisible(true);
+  };
+
+  const handleCloseCompleteModal = () => {
+    setCompleteModalVisible(false);
+  };
+
+  const handleCompleteSuccess = () => {
+    loadRepairDetail();
+  };
+
+  const canRejectOrNotNeeded = !!(
+    repair &&
+    (repair.status === RepairStatus.ChoThucHien || repair.status === RepairStatus.DangSua) &&
+    (!!repair.technicianId ? repair.technicianId === currentUserId : !!currentUserId)
+  );
+
+  const handleRejectSuccess = () => {
+    loadRepairDetail();
+  };
+
+  const staticBaseUrl = useMemo(() => {
+    if (!apiBaseUrl) return null;
+    return apiBaseUrl.replace(/\/api\/?$/, '');
+  }, [apiBaseUrl]);
+
+  const buildImageUrl = useCallback(
+    (url?: string) => {
+      if (!url) return undefined;
+      if (/^https?:\/\//i.test(url)) {
+        return url;
+      }
+      if (!staticBaseUrl) return undefined;
+      const normalizedBase = staticBaseUrl.replace(/\/$/, '');
+      const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+      return `${normalizedBase}${normalizedPath}`;
+    },
+    [staticBaseUrl]
+  );
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Chưa có';
@@ -54,8 +114,33 @@ const RepairDetailScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${hours}:${minutes}`;
+  } catch {
+    return dateString;
+  }
+};
+
+  if (loading || !repair) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       <Card style={styles.card}>
         <Card.Content>
           <Text style={styles.title}>Thông tin thiết bị</Text>
@@ -73,13 +158,25 @@ const RepairDetailScreen: React.FC<Props> = ({ route }) => {
       <Card style={styles.card}>
         <Card.Content>
           <Text style={styles.title}>Trạng thái</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getRepairStatusColor(repair.status.toString()) }]}>
+          <View style={[styles.statusBadge, { backgroundColor: getRepairStatusColor(repair.status) }]}>
             <Text style={styles.statusText}>
-              {getRepairStatusText(repair.status.toString())}
+              {getRepairStatusText(repair.status)}
             </Text>
           </View>
         </Card.Content>
       </Card>
+
+      {repair.rejectedReason && (
+        <Card style={[styles.card, styles.rejectedCard]}>
+          <Card.Content>
+            <Text style={styles.rejectedTitle}>Lý do từ chối gần nhất</Text>
+            <Text style={styles.rejectedReason}>{repair.rejectedReason}</Text>
+            {repair.rejectedAt && (
+              <Text style={styles.rejectedMeta}>Cập nhật: {formatDateTime(repair.rejectedAt)}</Text>
+            )}
+          </Card.Content>
+        </Card>
+      )}
 
       <Card style={styles.card}>
         <Card.Content>
@@ -89,6 +186,21 @@ const RepairDetailScreen: React.FC<Props> = ({ route }) => {
           </Text>
         </Card.Content>
       </Card>
+
+      {repair.repairImages && repair.repairImages.length > 0 && (
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.title}>Ảnh sau sửa chữa</Text>
+            <View style={styles.imagesGrid}>
+              {repair.repairImages.map((image) => {
+                const absoluteUrl = buildImageUrl(image.imageUrl);
+                if (!absoluteUrl) return null;
+                return <Image key={image.id} source={{ uri: absoluteUrl }} style={styles.repairImage} />;
+              })}
+            </View>
+          </Card.Content>
+        </Card>
+      )}
 
       <Card style={styles.card}>
         <Card.Content>
@@ -126,8 +238,52 @@ const RepairDetailScreen: React.FC<Props> = ({ route }) => {
         </Card.Content>
       </Card>
 
-      <View style={styles.footer} />
-    </ScrollView>
+      <View style={styles.footer}>
+        {repair.status === RepairStatus.ChoThucHien && (
+          <Button
+            mode="contained"
+            onPress={handleAccept}
+            loading={actionLoading}
+            style={styles.footerButton}
+          >
+            Tiếp nhận lệnh
+          </Button>
+        )}
+        {repair.status === RepairStatus.DangSua && (
+          <Button
+            mode="contained"
+            onPress={handleOpenCompleteModal}
+            style={styles.footerButton}
+          >
+            Hoàn thành sửa chữa
+          </Button>
+        )}
+        {canRejectOrNotNeeded && (
+          <Button
+            mode="outlined"
+            onPress={() => setRejectModalVisible(true)}
+            style={styles.footerButton}
+          >
+            Từ chối / Không cần sửa
+          </Button>
+        )}
+      </View>
+
+      </ScrollView>
+
+      <CompleteRepairModal
+        visible={completeModalVisible}
+        repair={repair}
+        onDismiss={handleCloseCompleteModal}
+        onSuccess={handleCompleteSuccess}
+      />
+      <RejectRepairModal
+        visible={rejectModalVisible}
+        repair={repair}
+        onDismiss={() => setRejectModalVisible(false)}
+        onSuccess={handleRejectSuccess}
+      />
+    </>
   );
 };
 
@@ -135,6 +291,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  content: {
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   card: {
     margin: 10,
@@ -183,7 +347,39 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   footer: {
-    height: 20,
+    padding: 16,
+  },
+  footerButton: {
+    marginTop: 8,
+  },
+  imagesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  repairImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+  },
+  rejectedCard: {
+    borderColor: '#f44336',
+  },
+  rejectedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#f44336',
+    marginBottom: 8,
+  },
+  rejectedReason: {
+    fontSize: 14,
+    color: '#d32f2f',
+    marginBottom: 4,
+  },
+  rejectedMeta: {
+    fontSize: 12,
+    color: '#757575',
   },
 });
 

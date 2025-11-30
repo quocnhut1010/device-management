@@ -7,7 +7,9 @@ namespace backend.Services.Interfaces
     {
         Task<RepairDto?> GetByIdAsync(Guid id);
         Task<IEnumerable<RepairDto>> GetAllAsync();
+        Task<object> GetAllPagedAsync(int page, int pageSize, int? status = null);
         Task<IEnumerable<RepairDto>> GetMyRepairsAsync(Guid technicianId);
+        Task<object> GetMyRepairsPagedAsync(Guid technicianId, int page, int pageSize, int? status = null);
         
         // Lấy danh sách kỹ thuật viên để phân công
         Task<IEnumerable<UserDto>> GetAvailableTechniciansAsync();

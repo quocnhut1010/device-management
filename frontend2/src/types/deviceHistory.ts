@@ -93,3 +93,22 @@ export const ACTION_TYPE_LABELS: ActionTypeColor = {
   SYSTEM: 'Hệ thống',
 }
 
+// Mapping raw action strings from backend to Vietnamese labels for UI (Thống kê theo hành động)
+export const ACTION_LABELS: Record<string, string> = {
+  'Tạo thiết bị': 'Tạo thiết bị',
+  'Cập nhật thiết bị': 'Cập nhật thiết bị',
+  'Xoá thiết bị': 'Xóa thiết bị',
+  'Khôi phục thiết bị': 'Khôi phục thiết bị',
+  'Cấp phát thiết bị': 'Cấp phát thiết bị',
+  'Thu hồi thiết bị': 'Thu hồi thiết bị',
+  'Phân công kỹ thuật viên sửa chữa': 'Phân công kỹ thuật viên sửa chữa',
+  'Hoàn tất sửa chữa': 'Hoàn tất sửa chữa',
+  'Từ chối sửa chữa': 'Từ chối sửa chữa',
+  'Không cần sửa chữa': 'Không cần sửa chữa',
+  'Thay thế thiết bị': 'Thay thế thiết bị',
+  'Cấp phát thiết bị thay thế': 'Cấp phát thiết bị thay thế',
+  'Thay thế trước khi thanh lý': 'Thay thế trước khi thanh lý',
+  'Đã xử lý sự cố bằng thay thế': 'Đã xử lý sự cố bằng thay thế',
+  'Thanh lý thiết bị': 'Thanh lý thiết bị',
+}
+

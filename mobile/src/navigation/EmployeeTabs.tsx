@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IconButton } from 'react-native-paper';
+import DashboardScreen from '../screens/DashboardScreen';
 import MyDevicesScreen from '../screens/employee/MyDevicesScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import { EmployeeTabParamList } from '../types';
@@ -47,12 +48,12 @@ const EmployeeTabs: React.FC = () => {
       }}
     >
       <Tab.Screen
-        name="MyDevices"
-        component={MyDevicesScreen}
+        name="Dashboard"
+        component={DashboardScreen}
         options={({ navigation }) => ({
-          title: 'Thiết bị của tôi',
+          title: 'Tổng quan',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="devices" color={color} size={size} />
+            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
           ),
           headerRight: () => (
             <IconButton
@@ -63,6 +64,16 @@ const EmployeeTabs: React.FC = () => {
             />
           ),
         })}
+      />
+      <Tab.Screen
+        name="MyDevices"
+        component={MyDevicesScreen}
+        options={{
+          title: 'Thiết bị của tôi',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="devices" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="QRScanner"

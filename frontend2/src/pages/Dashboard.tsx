@@ -52,8 +52,8 @@ export default function Dashboard() {
       <>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Complete overview of device management system</p>
+            <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển quản trị</h1>
+            <p className="text-muted-foreground">Tổng quan hệ thống quản lý thiết bị</p>
           </div>
 
           <StatsCards />
@@ -114,8 +114,8 @@ export default function Dashboard() {
       <>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Department Manager Dashboard</h1>
-            <p className="text-muted-foreground">Overview of your department's devices and incidents</p>
+            <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển trưởng phòng</h1>
+            <p className="text-muted-foreground">Tổng quan thiết bị và sự cố của phòng ban bạn quản lý</p>
           </div>
 
           <ManagerStatsCards />
@@ -168,8 +168,8 @@ export default function Dashboard() {
       <>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Technician Dashboard</h1>
-            <p className="text-muted-foreground">Manage your repair queue and track performance</p>
+            <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển kỹ thuật viên</h1>
+            <p className="text-muted-foreground">Quản lý lệnh sửa chữa và theo dõi hiệu suất làm việc</p>
           </div>
 
           <TechnicianStatsCards />
@@ -220,8 +220,8 @@ export default function Dashboard() {
       <>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Employee Dashboard</h1>
-            <p className="text-muted-foreground">Manage your devices and track incident reports</p>
+            <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển nhân viên</h1>
+            <p className="text-muted-foreground">Quản lý thiết bị và theo dõi các sự cố bạn đã báo cáo</p>
           </div>
 
           <EmployeeStatsCards />
@@ -270,13 +270,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user?.email || 'User'}!
+          Chào mừng quay lại, {user?.email || 'Người dùng'}!
         </p>
       </div>
       <div className="text-muted-foreground">
-        Please contact your administrator to assign a role and position.
+        Vui lòng liên hệ quản trị viên để được gán vai trò và chức vụ phù hợp.
       </div>
     </div>
   )

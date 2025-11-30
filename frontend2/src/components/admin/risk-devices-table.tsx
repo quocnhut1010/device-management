@@ -31,10 +31,10 @@ export function RiskDevicesTable() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-orange-500" />
-          High-Risk Devices
+          Thiết bị rủi ro cao
         </CardTitle>
         <CardDescription>
-          Devices requiring attention based on incident history and age
+          Thiết bị cần chú ý dựa trên lịch sử sự cố và thời gian sử dụng
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -46,17 +46,17 @@ export function RiskDevicesTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Incident Count</TableHead>
-                <TableHead>Age</TableHead>
-                <TableHead>Recommendation</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Số sự cố</TableHead>
+                <TableHead>Tuổi đời</TableHead>
+                <TableHead>Khuyến nghị</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No risk devices found
+                    Không có thiết bị rủi ro nào
                   </TableCell>
                 </TableRow>
               ) : (

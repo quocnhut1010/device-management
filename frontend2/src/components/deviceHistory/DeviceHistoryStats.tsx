@@ -23,7 +23,7 @@ import {
   Info,
 } from 'lucide-react'
 import type { DeviceHistoryStats as StatsData, ActionType } from '@/types/deviceHistory'
-import { ACTION_TYPE_COLORS, ACTION_TYPE_LABELS } from '@/types/deviceHistory'
+import { ACTION_TYPE_COLORS, ACTION_TYPE_LABELS, ACTION_LABELS } from '@/types/deviceHistory'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -240,11 +240,12 @@ const DeviceHistoryStats: React.FC<DeviceHistoryStatsProps> = ({
                   .map(([action, count]) => {
                     const percentage =
                       (count / getMaxCount(stats.eventsByAction)) * 100
+                    const label = ACTION_LABELS[action] || action
                     return (
                       <div key={action} className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm truncate max-w-[70%]">
-                            {action}
+                          <span className="text-sm truncate max-w-[75%]">
+                            {label}
                           </span>
                           <span className="text-sm font-bold">{count}</span>
                         </div>

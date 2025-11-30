@@ -6,8 +6,25 @@ import type {
   TransferDeviceAssignmentDto 
 } from '@/types'
 
-export const getAssignments = () => 
-  api.get<DeviceAssignmentDto[]>('/DeviceAssignment')
+export interface PagedDeviceAssignmentResponse {
+  items: DeviceAssignmentDto[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export const getAssignments = (page?: number, pageSize?: number, status?: string) => {
+  const params: Record<string, string> = {}
+  if (page !== undefined) params.page = page.toString()
+  if (pageSize !== undefined) params.pageSize = pageSize.toString()
+  if (status) params.status = status
+  
+  if (Object.keys(params).length > 0) {
+    return api.get<PagedDeviceAssignmentResponse>('/DeviceAssignment', { params })
+  }
+  return api.get<DeviceAssignmentDto[]>('/DeviceAssignment')
+}
 
 export const getInUseAssignments = () =>
   api.get<DeviceAssignmentDto[]>('/DeviceAssignment/inuse')

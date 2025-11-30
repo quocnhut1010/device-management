@@ -35,25 +35,25 @@ export function TechnicianStatsCards() {
 
   const cards = [
     {
-      title: 'Pending Queue',
+      title: 'Hàng chờ xử lý',
       value: stats.pendingRepairs,
       icon: ClipboardList,
       color: 'text-blue-500',
     },
     {
-      title: 'In Progress',
+      title: 'Đang thực hiện',
       value: stats.inProgress,
       icon: Clock,
       color: 'text-orange-500',
     },
     {
-      title: 'Completed This Week',
+      title: 'Đã hoàn thành tuần này',
       value: stats.completedToday,
       icon: CheckCircle,
       color: 'text-green-500',
     },
     {
-      title: 'Avg Repair Time',
+      title: 'Thời gian sửa TB',
       value: stats.avgTime,
       icon: TrendingUp,
       color: 'text-purple-500',

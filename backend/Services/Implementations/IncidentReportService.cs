@@ -1,5 +1,6 @@
 using AutoMapper;
 using backend.Data;
+using backend.Helpers;
 using backend.Models.Dtos.IncidentReports;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
@@ -17,6 +18,16 @@ namespace backend.Services.Implementations
             _mapper = mapper;
         }
 
+        private static IncidentReportDto NormalizeIncidentDates(IncidentReportDto dto)
+        {
+            if (dto == null) return null!;
+
+            dto.ReportDate = TimeZoneHelper.ConvertUtcToVietnam(dto.ReportDate);
+            dto.RejectedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.RejectedAt);
+            dto.UpdatedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.UpdatedAt);
+            return dto;
+        }
+
         public async Task<IEnumerable<IncidentReportDto>> GetAllAsync()
         {
             var reports = await _context.IncidentReports
@@ -25,7 +36,9 @@ namespace backend.Services.Implementations
                 .OrderByDescending(r => r.ReportDate) // ✅ Sắp xếp mới nhất
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<IncidentReportDto>>(reports);
+            return _mapper.Map<IEnumerable<IncidentReportDto>>(reports)
+                .Select(NormalizeIncidentDates)
+                .ToList();
         }
 
         public async Task<IEnumerable<IncidentReportDto>> GetMyReportsAsync(Guid userId)
@@ -36,7 +49,9 @@ namespace backend.Services.Implementations
                 .Where(r => r.ReportedByUserId == userId)
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<IncidentReportDto>>(reports);
+            return _mapper.Map<IEnumerable<IncidentReportDto>>(reports)
+                .Select(NormalizeIncidentDates)
+                .ToList();
         }
 
         public async Task<IncidentReportDto?> GetByIdAsync(Guid id)
@@ -46,7 +61,7 @@ namespace backend.Services.Implementations
                 .Include(r => r.ReportedByUser)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
-            return report == null ? null : _mapper.Map<IncidentReportDto>(report);
+            return report == null ? null : NormalizeIncidentDates(_mapper.Map<IncidentReportDto>(report));
         }
 
        public async Task<IncidentReportDto> CreateAsync(CreateIncidentReportDto dto, Guid userId)
@@ -90,7 +105,7 @@ namespace backend.Services.Implementations
                 .Include(r => r.ReportedByUser)
                 .FirstOrDefaultAsync(r => r.Id == report.Id);
 
-            return _mapper.Map<IncidentReportDto>(createdReport);
+            return NormalizeIncidentDates(_mapper.Map<IncidentReportDto>(createdReport));
         }
 
 
@@ -105,7 +120,7 @@ namespace backend.Services.Implementations
 
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<IncidentReportDto>(report);
+            return NormalizeIncidentDates(_mapper.Map<IncidentReportDto>(report));
         }
 
         public async Task<(bool Success, string Message, object? Data)> ApproveAndCreateRepairAsync(Guid reportId, string updatedBy)

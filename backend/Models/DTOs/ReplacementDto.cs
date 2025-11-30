@@ -24,5 +24,10 @@ namespace backend.Models.DTOs
         public string? UserEmail { get; set; }
         public UserDto? OldDeviceUser { get; set; }
 
+        // Thông tin người thực hiện thay thế
+        public Guid? PerformedById { get; set; }
+        public string? PerformedByFullName { get; set; }
+        public string? PerformedByEmail { get; set; }
+
     }
 }

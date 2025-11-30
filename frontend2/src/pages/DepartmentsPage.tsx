@@ -245,7 +245,7 @@ export default function DepartmentsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số phòng ban</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDepartments}</div>
@@ -253,7 +253,7 @@ export default function DepartmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số nhân viên</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalEmployees}</div>
@@ -261,7 +261,7 @@ export default function DepartmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số thiết bị</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDevices}</div>
@@ -269,7 +269,7 @@ export default function DepartmentsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg. Devices/Dept</CardTitle>
+            <CardTitle className="text-sm font-medium">TB thiết bị / phòng ban</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgDevicesPerDept}</div>
@@ -310,11 +310,11 @@ export default function DepartmentsPage() {
                   </div>
                 )}
               </div>
-              <CardDescription>Code: {dept.departmentCode || '-'}</CardDescription>
+              <CardDescription>Mã: {dept.departmentCode || '-'}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm text-muted-foreground">Manager</p>
+                <p className="text-sm text-muted-foreground">Trưởng phòng</p>
                 <p className="font-medium">{getManagerName(dept.id)}</p>
               </div>
               <div className="flex justify-between pt-2 border-t">

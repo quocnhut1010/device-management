@@ -53,8 +53,8 @@ export function ActiveRepairsTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Repair Orders</CardTitle>
-        <CardDescription>Repair orders currently in progress</CardDescription>
+        <CardTitle>Lệnh sửa chữa đang hoạt động</CardTitle>
+        <CardDescription>Các lệnh sửa chữa đang được thực hiện</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -65,17 +65,17 @@ export function ActiveRepairsTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Technician</TableHead>
-                <TableHead>SLA Remaining</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Kỹ thuật viên</TableHead>
+                <TableHead>Thời gian SLA còn lại</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {repairs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No active repairs found
+                    Không có lệnh sửa chữa nào đang hoạt động
                   </TableCell>
                 </TableRow>
               ) : (

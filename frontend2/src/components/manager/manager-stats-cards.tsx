@@ -42,25 +42,25 @@ export function ManagerStatsCards() {
 
   const cards = [
     {
-      title: 'Department Devices',
+      title: 'Thiết bị phòng ban',
       value: stats.departmentDevices,
       icon: Package,
       color: 'text-blue-500',
     },
     {
-      title: 'Active Incidents',
+      title: 'Sự cố đang hoạt động',
       value: stats.activeIncidents,
       icon: AlertCircle,
       color: 'text-orange-500',
     },
     {
-      title: 'Ongoing Repairs',
+      title: 'Đang sửa chữa',
       value: stats.ongoingRepairs,
       icon: Wrench,
       color: 'text-purple-500',
     },
     {
-      title: 'Available',
+      title: 'Khả dụng',
       value: stats.availableDevices,
       icon: CheckCircle,
       color: 'text-green-500',

@@ -35,25 +35,25 @@ export function StatsCards() {
 
   const cards = [
     {
-      title: 'Total Devices',
+      title: 'Tổng số thiết bị',
       value: stats.totalDevices,
       icon: Package,
       color: 'text-blue-500',
     },
     {
-      title: 'Active Incidents',
+      title: 'Sự cố đang mở',
       value: stats.activeIncidents,
       icon: AlertCircle,
       color: 'text-orange-500',
     },
     {
-      title: 'Active Repairs',
+      title: 'Lệnh sửa đang hoạt động',
       value: stats.activeRepairs,
       icon: Wrench,
       color: 'text-purple-500',
     },
     {
-      title: 'Available Devices',
+      title: 'Thiết bị sẵn sàng',
       value: stats.availableDevices,
       icon: TrendingUp,
       color: 'text-green-500',

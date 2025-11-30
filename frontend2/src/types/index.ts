@@ -308,6 +308,9 @@ export interface ReplacementDto {
   userId?: string
   userFullName?: string
   userEmail?: string
+  performedById?: string
+  performedByFullName?: string
+  performedByEmail?: string
 }
 
 export interface CreateReplacementDto {

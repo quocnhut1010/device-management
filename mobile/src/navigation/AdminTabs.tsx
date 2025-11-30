@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IconButton } from 'react-native-paper';
-import DashboardScreen from '../screens/admin/DashboardScreen';
+import DashboardScreen from '../screens/DashboardScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import { AdminTabParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';

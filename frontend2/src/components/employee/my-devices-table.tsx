@@ -38,30 +38,30 @@ export function MyDevicesTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>My Devices</CardTitle>
-        <CardDescription>Devices assigned to me</CardDescription>
+        <CardTitle>Thiết bị của tôi</CardTitle>
+        <CardDescription>Thiết bị được gán cho tôi</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Warranty</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Mã</TableHead>
+                <TableHead>Tên</TableHead>
+                <TableHead>Phòng ban</TableHead>
+                <TableHead>Bảo hành</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No devices found
+                    Không tìm thấy thiết bị
                   </TableCell>
                 </TableRow>
               ) : (
@@ -69,15 +69,15 @@ export function MyDevicesTable() {
                   <TableRow key={device.id}>
                     <TableCell className="font-medium">{device.deviceCode}</TableCell>
                     <TableCell>{device.deviceName}</TableCell>
-                    <TableCell>{device.departmentName || 'N/A'}</TableCell>
+                    <TableCell>{device.departmentName || 'Không có'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {device.warrantyExpiry
                           ? new Date(device.warrantyExpiry).toLocaleDateString()
-                          : 'N/A'}
+                          : 'Không có'}
                         {isWarrantyExpiringSoon(device.warrantyExpiry) && (
                           <Badge variant="outline" className="text-orange-500 border-orange-500">
-                            Expiring Soon
+                            Sắp hết hạn
                           </Badge>
                         )}
                       </div>

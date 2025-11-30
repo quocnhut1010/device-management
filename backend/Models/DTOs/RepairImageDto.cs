@@ -4,4 +4,5 @@ public class RepairImageDto
     public Guid Id { get; set; }
     public string ImageUrl { get; set; } = null!;
     public string? Description { get; set; }  // nếu có
+    public DateTime? UploadedAt { get; set; }
 }

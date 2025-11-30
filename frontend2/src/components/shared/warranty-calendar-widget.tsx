@@ -5,6 +5,7 @@ import { Calendar, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAllDevices, getMyDevices, getManagedDevices } from '@/services/deviceService'
 import type { DeviceDto } from '@/types'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 export function WarrantyCalendarWidget() {
   const { user } = useAuth()
@@ -112,7 +113,7 @@ export function WarrantyCalendarWidget() {
                       <span className="font-medium">{device.deviceName}</span>
                       <span className="text-muted-foreground">
                         {' '}
-                        - {device.warrantyExpiry && new Date(device.warrantyExpiry).toLocaleDateString()}
+                        - {device.warrantyExpiry && formatDateForTable(device.warrantyExpiry)}
                       </span>
                     </div>
                   ))}
@@ -135,7 +136,7 @@ export function WarrantyCalendarWidget() {
                       <span className="font-medium">{device.deviceName}</span>
                       <span className="text-muted-foreground">
                         {' '}
-                        - {device.warrantyExpiry && new Date(device.warrantyExpiry).toLocaleDateString()}
+                        - {device.warrantyExpiry && formatDateForTable(device.warrantyExpiry)}
                       </span>
                     </div>
                   ))}
@@ -158,7 +159,7 @@ export function WarrantyCalendarWidget() {
                       <span className="font-medium">{device.deviceName}</span>
                       <span className="text-muted-foreground">
                         {' '}
-                        - {device.warrantyExpiry && new Date(device.warrantyExpiry).toLocaleDateString()}
+                        - {device.warrantyExpiry && formatDateForTable(device.warrantyExpiry)}
                       </span>
                     </div>
                   ))}

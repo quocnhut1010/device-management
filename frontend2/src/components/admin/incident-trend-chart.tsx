@@ -34,8 +34,8 @@ export function IncidentTrendChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Incident Trend</CardTitle>
-          <CardDescription>Monthly incident reports over the last 6 months</CardDescription>
+          <CardTitle>Xu hướng sự cố</CardTitle>
+          <CardDescription>Báo cáo sự cố theo tháng trong 6 tháng gần nhất</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
@@ -49,8 +49,8 @@ export function IncidentTrendChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Incident Trend</CardTitle>
-        <CardDescription>Monthly incident reports over the last 6 months</CardDescription>
+        <CardTitle>Xu hướng sự cố</CardTitle>
+        <CardDescription>Báo cáo sự cố theo tháng trong 6 tháng gần nhất</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (

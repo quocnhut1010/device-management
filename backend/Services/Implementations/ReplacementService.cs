@@ -51,7 +51,7 @@ namespace backend.Services.Implementations
                 .Include(d => d.Model)
                 .ThenInclude(m => m!.DeviceType)
                 .Where(d => d.ModelId == oldDevice.ModelId 
-                           && d.Status == "Sẵn sàng" || d.Status == "Chưa cấp phát"
+                           && (d.Status == "Sẵn sàng" || d.Status == "Chưa cấp phát")
                            && d.Id != oldDeviceId
                            && d.IsDeleted == false)
                 .OrderBy(d => d.PurchaseDate)
@@ -82,7 +82,7 @@ namespace backend.Services.Implementations
             var availableDevices = await _context.Devices
                 .Include(d => d.Model)
                 .ThenInclude(m => m!.DeviceType)
-                .Where(d => d.Status == "Sẵn sàng" || d.Status == "Chưa cấp phát" && d.IsDeleted == false)
+                .Where(d => (d.Status == "Sẵn sàng" || d.Status == "Chưa cấp phát") && d.IsDeleted == false)
                 .OrderBy(d => d.Model.DeviceType.TypeName)
                 .ThenBy(d => d.Model.ModelName)
                 .ThenBy(d => d.PurchaseDate)
@@ -155,17 +155,18 @@ namespace backend.Services.Implementations
                     OldDeviceId = createReplacementDto.OldDeviceId,
                     NewDeviceId = createReplacementDto.NewDeviceId,
                     ReplacementDate = DateTime.Now,
-                    Reason = createReplacementDto.Reason
+                    Reason = createReplacementDto.Reason,
+                    PerformedById = performedBy
                 };
                 _context.Replacements.Add(replacement);
 
                 // 6️⃣ Cập nhật trạng thái thiết bị cũ
-                if (oldDevice.Status == "Chờ thanh lý")
+                if (oldDevice.Status == DeviceStatus.PendingLiquidation)
                 {
                     // Giữ nguyên trạng thái — chỉ log thêm lịch sử
                     await _deviceHistoryService.LogActionAsync(
                         oldDevice.Id,
-                        "Device Replacement Before Liquidation",
+                        "Thay thế trước khi thanh lý",
                         performedBy,
                         $"Thiết bị đang chờ thanh lý được thay thế bằng {newDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}"
                     );
@@ -187,7 +188,7 @@ namespace backend.Services.Implementations
 
                     await _deviceHistoryService.LogActionAsync(
                         oldDevice.Id,
-                        "Device Returned for Replacement",
+                        "Thu hồi để thay thế",
                         performedBy,
                         $"Thiết bị {oldDevice.DeviceCode} được thu hồi để thay thế. Lý do: {createReplacementDto.Reason}"
                     );
@@ -196,6 +197,7 @@ namespace backend.Services.Implementations
                 // 8️⃣ Cấp phát thiết bị mới
                 if (currentAssignment != null)
                 {
+                    // Có assignment record → dùng thông tin từ assignment
                     var newAssignment = new DeviceAssignment
                     {
                         Id = Guid.NewGuid(),
@@ -204,7 +206,7 @@ namespace backend.Services.Implementations
                         AssignedToDepartmentId = currentAssignment.AssignedToDepartmentId,
                         AssignedByUserId = performedBy,
                         AssignedDate = DateTime.Now,
-                        Note = $"Device replacement. Old device: {oldDevice.DeviceCode}. Reason: {createReplacementDto.Reason}",
+                        Note = $"Thay thế thiết bị. Thiết bị cũ: {oldDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}",
                         CreatedAt = DateTime.Now,
                         CreatedBy = performedBy
                     };
@@ -215,9 +217,39 @@ namespace backend.Services.Implementations
                     newDevice.CurrentUserId = currentAssignment.AssignedToUserId;
                     newDevice.CurrentDepartmentId = currentAssignment.AssignedToDepartmentId;
                 }
+                else if (oldDevice.CurrentUserId != null)
+                {
+                    // Không có assignment record nhưng device đang được gán cho user → dùng thông tin từ device
+                    var newAssignment = new DeviceAssignment
+                    {
+                        Id = Guid.NewGuid(),
+                        DeviceId = createReplacementDto.NewDeviceId,
+                        AssignedToUserId = oldDevice.CurrentUserId.Value,
+                        AssignedToDepartmentId = oldDevice.CurrentDepartmentId,
+                        AssignedByUserId = performedBy,
+                        AssignedDate = DateTime.Now,
+                        Note = $"Thay thế thiết bị. Thiết bị cũ: {oldDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}",
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = performedBy
+                    };
+
+                    _context.DeviceAssignments.Add(newAssignment);
+
+                    newDevice.Status = "Đang sử dụng";
+                    newDevice.CurrentUserId = oldDevice.CurrentUserId.Value;
+                    newDevice.CurrentDepartmentId = oldDevice.CurrentDepartmentId;
+
+                    // Log việc trả lại thiết bị cũ (vì không có assignment record để update)
+                    await _deviceHistoryService.LogActionAsync(
+                        oldDevice.Id,
+                        "Thu hồi để thay thế",
+                        performedBy,
+                        $"Thiết bị {oldDevice.DeviceCode} được thu hồi để thay thế. Lý do: {createReplacementDto.Reason}"
+                    );
+                }
                 else
                 {
-                    // Nếu không có cấp phát cũ, chỉ đánh dấu sẵn sàng
+                    // Không có assignment và device cũ cũng không được gán cho ai → chỉ đánh dấu sẵn sàng
                     newDevice.Status = "Sẵn sàng";
                 }
 
@@ -226,14 +258,14 @@ namespace backend.Services.Implementations
                 // 9️⃣ Ghi lịch sử thay thế
                 await _deviceHistoryService.LogActionAsync(
                     oldDevice.Id,
-                    "Device Replaced",
+                    "Thay thế thiết bị",
                     performedBy,
                     $"Thiết bị {oldDevice.DeviceCode} được thay bằng {newDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}"
                 );
 
                 await _deviceHistoryService.LogActionAsync(
                     newDevice.Id,
-                    "Device Assigned as Replacement",
+                    "Cấp phát thiết bị thay thế",
                     performedBy,
                     $"Thiết bị {newDevice.DeviceCode} được gán thay thế cho {oldDevice.DeviceCode}."
                 );
@@ -249,7 +281,7 @@ namespace backend.Services.Implementations
                         incidentReport.Status = 3; // "Resolved"
                         await _deviceHistoryService.LogActionAsync(
                             oldDevice.Id,
-                            "Incident Resolved by Replacement",
+                            "Đã xử lý sự cố bằng thay thế",
                             performedBy,
                             $"Báo cáo sự cố {incidentReport.Id} được xử lý bằng việc thay thế thiết bị."
                         );
@@ -281,6 +313,7 @@ namespace backend.Services.Implementations
             var query = _context.Replacements
                 .Include(r => r.OldDevice).ThenInclude(d => d!.CurrentUser)
                 .Include(r => r.NewDevice)
+                .Include(r => r.PerformedBy)
                 .AsQueryable();
 
             // 🔒 Nếu không phải Admin, chỉ hiển thị thiết bị thuộc user này
@@ -310,7 +343,10 @@ namespace backend.Services.Implementations
                 NewDeviceName = r.NewDevice?.DeviceName,
                 UserId = r.OldDevice?.CurrentUserId,
                 UserFullName = r.OldDevice?.CurrentUser?.FullName,
-                UserEmail = r.OldDevice?.CurrentUser?.Email
+                UserEmail = r.OldDevice?.CurrentUser?.Email,
+                PerformedById = r.PerformedById,
+                PerformedByFullName = r.PerformedBy?.FullName,
+                PerformedByEmail = r.PerformedBy?.Email
             }).ToList();
         }
 
@@ -323,6 +359,7 @@ namespace backend.Services.Implementations
                 .Include(r => r.OldDevice)
                 .ThenInclude(d => d!.CurrentUser)
                 .Include(r => r.NewDevice)
+                .Include(r => r.PerformedBy)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (replacement == null)
@@ -344,7 +381,10 @@ namespace backend.Services.Implementations
                 NewDeviceName = replacement.NewDevice?.DeviceName,
                 UserId = replacement.OldDevice?.CurrentUserId,
                 UserFullName = replacement.OldDevice?.CurrentUser?.FullName,
-                UserEmail = replacement.OldDevice?.CurrentUser?.Email
+                UserEmail = replacement.OldDevice?.CurrentUser?.Email,
+                PerformedById = replacement.PerformedById,
+                PerformedByFullName = replacement.PerformedBy?.FullName,
+                PerformedByEmail = replacement.PerformedBy?.Email
             };
 
             _logger.LogInformation("Found replacement {ReplacementId}", id);

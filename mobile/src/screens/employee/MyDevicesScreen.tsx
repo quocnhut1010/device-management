@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Text, Card, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../../services/api';
-import { DeviceListItem, RootStackParamList } from '../../types';
+import { DeviceListItem, DeviceQrScanResult, RootStackParamList } from '../../types';
 
 type MyDevicesNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -12,6 +12,7 @@ const MyDevicesScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<DeviceListItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const navigation = useNavigation<MyDevicesNavigationProp>();
 
   useEffect(() => {
@@ -39,10 +40,28 @@ const MyDevicesScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleDevicePress = (device: DeviceListItem) => {
-    // Navigate to device detail (will need to fetch full device data)
-    // For now, just show a message
-    // In a real app, you might want to navigate to a simplified detail view
+  const handleDevicePress = async (device: DeviceListItem) => {
+    if (selectedDeviceId) return;
+
+    try {
+      setSelectedDeviceId(device.id);
+      const encodedCode = encodeURIComponent(device.deviceCode);
+      const response = await apiClient.get<DeviceQrScanResult>(`/Device/by-code/${encodedCode}`);
+
+      if (response.status === 200 && response.data) {
+        navigation.navigate('DeviceDetail', { device: response.data });
+      }
+    } catch (error: any) {
+      console.error('Error loading device detail:', error);
+      const status = error?.response?.status;
+      const message =
+        status === 404
+          ? 'Không tìm thấy thiết bị. Vui lòng thử lại sau.'
+          : 'Không thể tải thông tin thiết bị. Vui lòng thử lại.';
+      Alert.alert('Lỗi', message);
+    } finally {
+      setSelectedDeviceId(null);
+    }
   };
 
   if (loading && devices.length === 0) {
@@ -67,10 +86,7 @@ const MyDevicesScreen: React.FC = () => {
         data={devices}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Card
-            style={styles.deviceCard}
-            onPress={() => handleDevicePress(item)}
-          >
+          <Card style={styles.deviceCard} onPress={() => handleDevicePress(item)}>
             <Card.Content>
               <Text style={styles.deviceName}>{item.deviceName}</Text>
               <Text style={styles.deviceCode}>Mã: {item.deviceCode}</Text>
@@ -91,6 +107,12 @@ const MyDevicesScreen: React.FC = () => {
                 <Text style={styles.deviceDept}>
                   Phòng ban: {item.departmentName}
                 </Text>
+              )}
+              {selectedDeviceId === item.id && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator animating size="small" color="#fff" />
+                  <Text style={styles.loadingText}>Đang mở...</Text>
+                </View>
               )}
             </Card.Content>
           </Card>
@@ -145,6 +167,7 @@ const styles = StyleSheet.create({
   deviceCard: {
     marginBottom: 10,
     elevation: 2,
+    overflow: 'hidden',
   },
   deviceName: {
     fontSize: 16,
@@ -182,6 +205,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#757575',
     marginTop: 5,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  loadingText: {
+    marginTop: 6,
+    color: '#fff',
+    fontWeight: '600',
   },
 });
 

@@ -44,8 +44,8 @@ export function DeviceStatusChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Device Status Distribution</CardTitle>
-        <CardDescription>Current status of all devices</CardDescription>
+        <CardTitle>Phân bố trạng thái thiết bị</CardTitle>
+        <CardDescription>Trạng thái hiện tại của tất cả thiết bị</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -56,7 +56,7 @@ export function DeviceStatusChart() {
           <ChartContainer
             config={{
               value: {
-                label: 'Count',
+                label: 'Số lượng',
               },
             }}
             className="h-[300px]"

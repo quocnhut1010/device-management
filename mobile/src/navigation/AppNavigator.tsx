@@ -9,6 +9,7 @@ import EmployeeTabs from './EmployeeTabs';
 import TechnicianTabs from './TechnicianTabs';
 import DeviceDetailScreen from '../screens/DeviceDetailScreen';
 import RepairDetailScreen from '../screens/technician/RepairDetailScreen';
+import IncidentReportScreen from '../screens/employee/IncidentReportScreen';
 import { RootStackParamList } from '../types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -99,6 +100,11 @@ const AppNavigator: React.FC = () => {
           name="RepairDetail" 
           component={RepairDetailScreen}
           options={{ title: 'Chi tiết lệnh sửa' }}
+        />
+        <Stack.Screen 
+          name="IncidentReport"
+          component={IncidentReportScreen}
+          options={{ title: 'Báo cáo sự cố' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

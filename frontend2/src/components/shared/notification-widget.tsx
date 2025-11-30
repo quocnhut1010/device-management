@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bell, Info, AlertTriangle, XCircle, CheckCircle } from 'lucide-react'
 import { notificationService } from '@/services/notificationService'
 import type { NotificationData } from '@/types/notification'
+import { formatDateTime } from '@/lib/dateUtils'
 
 export function NotificationWidget() {
   const [notifications, setNotifications] = useState<NotificationData[]>([])
@@ -81,7 +82,7 @@ export function NotificationWidget() {
                     <p className="text-sm text-muted-foreground">{notification.content}</p>
                     {notification.createdAt && (
                       <p className="text-xs text-muted-foreground">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {formatDateTime(notification.createdAt)}
                       </p>
                     )}
                   </div>

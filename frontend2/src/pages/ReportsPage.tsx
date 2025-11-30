@@ -170,12 +170,12 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Reports</h1>
-          <p className="text-muted-foreground">Generate and manage system reports</p>
+          <h1 className="text-3xl font-bold">Báo cáo</h1>
+          <p className="text-muted-foreground">Tạo và quản lý các báo cáo của hệ thống</p>
         </div>
         <Button onClick={handleGenerateReport}>
           <Plus className="h-4 w-4 mr-2" />
-          Generate Report
+          Tạo báo cáo
         </Button>
       </div>
 
@@ -183,7 +183,7 @@ export default function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng số báo cáo</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalReports}</div>
@@ -191,7 +191,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Trong tháng này</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{thisMonthReports}</div>
@@ -199,7 +199,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium">Đã hoàn thành</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completedReports}</div>
@@ -207,7 +207,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Processing</CardTitle>
+            <CardTitle className="text-sm font-medium">Đang xử lý</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{processingReports}</div>
@@ -219,8 +219,8 @@ export default function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="cursor-pointer hover:bg-accent transition-colors">
           <CardHeader>
-            <CardTitle className="text-lg">Device Inventory Report</CardTitle>
-            <CardDescription>Complete list of all devices with status</CardDescription>
+            <CardTitle className="text-lg">Báo cáo tồn kho thiết bị</CardTitle>
+            <CardDescription>Danh sách đầy đủ thiết bị kèm trạng thái</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => handleExportClick('Device Inventory')}>
@@ -231,8 +231,8 @@ export default function ReportsPage() {
         </Card>
         <Card className="cursor-pointer hover:bg-accent transition-colors">
           <CardHeader>
-            <CardTitle className="text-lg">Incident Summary Report</CardTitle>
-            <CardDescription>Analysis of incidents by department and priority</CardDescription>
+            <CardTitle className="text-lg">Báo cáo tổng hợp sự cố</CardTitle>
+            <CardDescription>Phân tích sự cố theo phòng ban và mức độ ưu tiên</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => handleExportClick('Incident Summary')}>
@@ -243,8 +243,8 @@ export default function ReportsPage() {
         </Card>
         <Card className="cursor-pointer hover:bg-accent transition-colors">
           <CardHeader>
-            <CardTitle className="text-lg">Repair Metrics Report</CardTitle>
-            <CardDescription>MTTR, MTBF, and repair performance metrics</CardDescription>
+            <CardTitle className="text-lg">Báo cáo hiệu suất sửa chữa</CardTitle>
+            <CardDescription>MTTR, MTBF và các chỉ số hiệu suất sửa chữa</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => handleExportClick('Repair Metrics')}>
@@ -255,18 +255,18 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* Report History */}
+      {/* Lịch sử báo cáo */}
       <Card>
         <CardHeader>
-          <CardTitle>Report History</CardTitle>
-          <CardDescription>Previously generated reports and exports</CardDescription>
+          <CardTitle>Lịch sử báo cáo</CardTitle>
+          <CardDescription>Các báo cáo đã được xuất trước đó</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by report type or generated by..."
+              placeholder="Tìm theo loại báo cáo hoặc người tạo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -274,10 +274,10 @@ export default function ReportsPage() {
             </div>
             <Select value={formatFilter || 'all'} onValueChange={(value) => setFormatFilter(value === 'all' ? 'all' : value)}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by format" />
+                <SelectValue placeholder="Lọc theo định dạng" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Formats</SelectItem>
+                <SelectItem value="all">Tất cả định dạng</SelectItem>
                 <SelectItem value="pdf">PDF</SelectItem>
                 <SelectItem value="excel">Excel</SelectItem>
               </SelectContent>
@@ -303,14 +303,14 @@ export default function ReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Report Type</TableHead>
-                  <TableHead>Generated By</TableHead>
-                  <TableHead>Generated Date</TableHead>
-                  <TableHead>Format</TableHead>
-                  <TableHead>Parameters</TableHead>
-                  <TableHead>File Size</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Loại báo cáo</TableHead>
+                  <TableHead>Người tạo</TableHead>
+                  <TableHead>Thời gian tạo</TableHead>
+                  <TableHead>Định dạng</TableHead>
+                  <TableHead>Tham số</TableHead>
+                  <TableHead>Kích thước file</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -346,7 +346,7 @@ export default function ReportsPage() {
                         <span className="text-muted-foreground">-</span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="default">completed</Badge>
+                        <Badge variant="default">Hoàn tất</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         {item.fileUrl ? (
@@ -356,10 +356,10 @@ export default function ReportsPage() {
                             onClick={() => window.open(item.fileUrl, '_blank')}
                           >
                             <Download className="h-4 w-4 mr-2" />
-                            Download
+                            Tải xuống
                           </Button>
                         ) : (
-                          <span className="text-sm text-muted-foreground">No file</span>
+                          <span className="text-sm text-muted-foreground">Không có file</span>
                         )}
                       </TableCell>
                     </TableRow>

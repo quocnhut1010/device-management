@@ -41,12 +41,12 @@ export function DepartmentIncidentsChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Department Incidents Trend</CardTitle>
-          <CardDescription>Monthly incidents over the last 6 months</CardDescription>
+          <CardTitle>Xu hướng sự cố phòng ban</CardTitle>
+          <CardDescription>Sự cố theo tháng trong 6 tháng gần đây</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">No data available</p>
+            <p className="text-muted-foreground">Không có dữ liệu</p>
           </div>
         </CardContent>
       </Card>
@@ -56,19 +56,19 @@ export function DepartmentIncidentsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Department Incidents Trend</CardTitle>
-        <CardDescription>Monthly incidents over the last 6 months</CardDescription>
+        <CardTitle>Xu hướng sự cố phòng ban</CardTitle>
+        <CardDescription>Sự cố theo tháng trong 6 tháng gần đây</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <ChartContainer
             config={{
               incidents: {
-                label: 'Incidents',
+                label: 'Sự cố',
                 color: '#8b5cf6',
               },
             }}

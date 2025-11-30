@@ -58,8 +58,8 @@ export function RecentIncidentsTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Incidents</CardTitle>
-        <CardDescription>Latest incident reports requiring attention</CardDescription>
+        <CardTitle>Sự cố gần đây</CardTitle>
+        <CardDescription>Các báo cáo sự cố mới nhất cần được xử lý</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -70,18 +70,18 @@ export function RecentIncidentsTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Reported By</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Người báo cáo</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Loại</TableHead>
+                <TableHead>Trạng thái</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {incidents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No incidents found
+                    Không có sự cố nào
                   </TableCell>
                 </TableRow>
               ) : (

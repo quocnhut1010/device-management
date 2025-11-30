@@ -6,6 +6,7 @@ import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/n
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../services/api';
 import { DeviceQrScanResult, RootStackParamList } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 type QRScannerNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -15,8 +16,16 @@ const QRScannerScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [scanningEnabled, setScanningEnabled] = useState(true);
   const navigation = useNavigation<QRScannerNavigationProp>();
+  const { user } = useAuth();
   const isFocused = useIsFocused();
   const alertShownRef = useRef(false);
+  const processingRef = useRef(false);
+
+  const resetScannerState = useCallback(() => {
+    processingRef.current = false;
+    setScanned(false);
+    setScanningEnabled(true);
+  }, []);
 
   React.useEffect(() => {
     (async () => {
@@ -26,11 +35,12 @@ const QRScannerScreen: React.FC = () => {
   }, []);
 
   const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
-    if (!scanningEnabled || scanned || loading) return;
+    if (!scanningEnabled || scanned || loading || processingRef.current) return;
 
     setScanningEnabled(false);
     setScanned(true);
     setLoading(true);
+    processingRef.current = true;
 
     try {
       // Determine if payload looks like a GUID token
@@ -43,8 +53,41 @@ const QRScannerScreen: React.FC = () => {
       const response = await apiClient.get<DeviceQrScanResult>(url);
       
       if (response.status === 200 && response.data) {
-        // Navigate to device detail screen
-        navigation.navigate('DeviceDetail', { device: response.data });
+        setLoading(false);
+        const device = response.data;
+        const isEmployee = user?.role === 'User' && user?.position === 'Nhân viên';
+
+        if (isEmployee) {
+          Alert.alert(
+            'Thiết bị của bạn',
+            'Bạn muốn thực hiện hành động nào?',
+            [
+              {
+                text: 'Xem chi tiết',
+                onPress: () => {
+                  resetScannerState();
+                  navigation.navigate('DeviceDetail', { device });
+                },
+              },
+              {
+                text: 'Báo cáo sự cố',
+                onPress: () => {
+                  resetScannerState();
+                  navigation.navigate('IncidentReport', { device });
+                },
+              },
+              {
+                text: 'Huỷ',
+                style: 'cancel',
+                onPress: () => resetScannerState(),
+              },
+            ],
+            { cancelable: true }
+          );
+        } else {
+          resetScannerState();
+          navigation.navigate('DeviceDetail', { device });
+        }
       }
     } catch (error: any) {
       console.log('QR Scan error:', error);
@@ -60,7 +103,8 @@ const QRScannerScreen: React.FC = () => {
               {
                 text: 'OK',
                 onPress: () => {
-                  setTimeout(() => (alertShownRef.current = false), 300);
+                  alertShownRef.current = false;
+                  resetScannerState();
                 },
               },
             ]
@@ -69,16 +113,20 @@ const QRScannerScreen: React.FC = () => {
       } else {
         Alert.alert(
           'Lỗi',
-          'Có lỗi xảy ra khi quét mã QR. Vui lòng thử lại.'
+          'Có lỗi xảy ra khi quét mã QR. Vui lòng thử lại.',
+          [
+            {
+              text: 'Quét lại',
+              onPress: () => resetScannerState(),
+            },
+          ]
         );
       }
     } finally {
       setLoading(false);
-      // Allow scanning again after 2 seconds
-      setTimeout(() => {
-        setScanned(false);
-        setScanningEnabled(true);
-      }, 2000);
+      if (!processingRef.current) {
+        resetScannerState();
+      }
     }
   };
 

@@ -196,7 +196,7 @@ export default function UsersPage() {
   const getStatusBadge = (isDeleted: boolean) => {
     return (
       <Badge variant={isDeleted ? "secondary" : "default"}>
-        {isDeleted ? "Inactive" : "Active"}
+        {isDeleted ? "Ngưng hoạt động" : "Đang hoạt động"}
       </Badge>
     )
   }
@@ -213,7 +213,7 @@ export default function UsersPage() {
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Access Denied</h2>
+          <h2 className="text-2xl font-bold">Từ chối truy cập</h2>
           <p className="text-muted-foreground mt-2">
             Bạn không có quyền truy cập trang này.
           </p>
@@ -232,11 +232,11 @@ export default function UsersPage() {
         <div className="flex gap-2">
           <Button variant="outline">
             <Upload className="h-4 w-4 mr-2" />
-            Import
+            Nhập
           </Button>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Xuất
           </Button>
           <Button onClick={handleAdd}>
             <Plus className="h-4 w-4 mr-2" />

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle } from 'lucide-react'
 import { getTechnicianTables } from '@/services/dashboardService'
 import type { RepairHistoryDto } from '@/services/dashboardService'
+import { formatDateForTable } from '@/lib/dateUtils'
 
 const getStatusLabel = (status: number): string => {
   switch (status) {
@@ -54,7 +55,7 @@ export function RepairHistoryTable() {
   }, [])
 
   const calculateDuration = (startDate?: string, endDate?: string): string => {
-    if (!startDate || !endDate) return 'N/A'
+    if (!startDate || !endDate) return 'Không có'
     const start = new Date(startDate)
     const end = new Date(endDate)
     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
@@ -64,30 +65,30 @@ export function RepairHistoryTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Repair History</CardTitle>
-        <CardDescription>My completed repairs and outcomes</CardDescription>
+        <CardTitle>Lịch sử sửa chữa gần đây</CardTitle>
+        <CardDescription>Các lần sửa chữa đã hoàn thành và kết quả của tôi</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Đang tải...</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Device</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Completed</TableHead>
+                <TableHead>Thiết bị</TableHead>
+                <TableHead>Mô tả</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Chi phí</TableHead>
+                <TableHead>Hoàn thành</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {repairs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No repair history found
+                    Không tìm thấy lịch sử sửa chữa
                   </TableCell>
                 </TableRow>
               ) : (
@@ -96,7 +97,7 @@ export function RepairHistoryTable() {
                     <TableCell className="font-medium">
                       {repair.deviceName} ({repair.deviceCode})
                     </TableCell>
-                    <TableCell>{repair.description || 'N/A'}</TableCell>
+                    <TableCell>{repair.description || 'Không có'}</TableCell>
                     <TableCell>{calculateDuration(repair.startDate, repair.endDate)}</TableCell>
                     <TableCell>
                       {repair.cost ? `${repair.cost.toLocaleString()} VNĐ` : 'N/A'}
@@ -105,7 +106,7 @@ export function RepairHistoryTable() {
                       {repair.endDate ? (
                         <Badge variant="default" className="bg-green-500">
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {new Date(repair.endDate).toLocaleDateString()}
+                          {formatDateForTable(repair.endDate)}
                         </Badge>
                       ) : (
                         <Badge variant="outline">{getStatusLabel(repair.status)}</Badge>

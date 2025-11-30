@@ -1,5 +1,6 @@
 using AutoMapper;
 using backend.Data;
+using backend.Helpers;
 using backend.Models.Dtos;
 using backend.Models.DTOs;
 using backend.Models.Entities;
@@ -19,6 +20,29 @@ namespace backend.Services.Implementations
             _mapper = mapper;
         }
 
+        private static RepairDto NormalizeRepairDates(RepairDto dto)
+        {
+            if (dto == null) return null!;
+
+            dto.StartDate = TimeZoneHelper.ConvertUtcToVietnam(dto.StartDate);
+            dto.EndDate = TimeZoneHelper.ConvertUtcToVietnam(dto.EndDate);
+            dto.RepairDate = TimeZoneHelper.ConvertUtcToVietnam(dto.RepairDate);
+            dto.RejectedAt = TimeZoneHelper.ConvertUtcToVietnam(dto.RejectedAt);
+
+            if (dto.RepairImages != null)
+            {
+                foreach (var image in dto.RepairImages)
+                {
+                    if (image is { UploadedAt: not null })
+                    {
+                        image.UploadedAt = TimeZoneHelper.ConvertUtcToVietnam(image.UploadedAt);
+                    }
+                }
+            }
+
+            return dto;
+        }
+
         public async Task<IEnumerable<RepairDto>> GetAllAsync()
         {
             var repairs = await _context.Repairs
@@ -28,7 +52,51 @@ namespace backend.Services.Implementations
                 .Include(r => r.RepairImages)
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<RepairDto>>(repairs);
+            return _mapper.Map<IEnumerable<RepairDto>>(repairs)
+                .Select(NormalizeRepairDates)
+                .ToList();
+        }
+
+        public async Task<object> GetAllPagedAsync(int page, int pageSize, int? status = null)
+        {
+            var query = _context.Repairs
+                .Include(r => r.Device)
+                .Include(r => r.IncidentReport)
+                .Include(r => r.AssignedToTechnician)
+                .Include(r => r.RepairImages)
+                .AsQueryable();
+
+            // Apply status filter
+            if (status.HasValue)
+            {
+                query = query.Where(r => r.Status == status.Value);
+            }
+
+            // Sort: Priority by status ASC (0,1,2,3,4,5) then by StartDate DESC
+            query = query.OrderBy(r => r.Status)
+                        .ThenByDescending(r => r.StartDate ?? DateTime.MinValue);
+
+            // Get total count before pagination
+            var total = await query.CountAsync();
+
+            // Apply pagination
+            var repairs = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var repairDtos = _mapper.Map<IEnumerable<RepairDto>>(repairs)
+                .Select(NormalizeRepairDates)
+                .ToList();
+
+            return new
+            {
+                items = repairDtos,
+                total,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)total / pageSize)
+            };
         }
 
         public async Task<IEnumerable<RepairDto>> GetMyRepairsAsync(Guid technicianId)
@@ -41,7 +109,52 @@ namespace backend.Services.Implementations
                 .Where(r => r.AssignedToTechnicianId == technicianId)
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<RepairDto>>(repairs);
+            return _mapper.Map<IEnumerable<RepairDto>>(repairs)
+                .Select(NormalizeRepairDates)
+                .ToList();
+        }
+
+        public async Task<object> GetMyRepairsPagedAsync(Guid technicianId, int page, int pageSize, int? status = null)
+        {
+            var query = _context.Repairs
+                .Include(r => r.Device)
+                .Include(r => r.IncidentReport)
+                .Include(r => r.AssignedToTechnician)
+                .Include(r => r.RepairImages)
+                .Where(r => r.AssignedToTechnicianId == technicianId)
+                .AsQueryable();
+
+            // Apply status filter
+            if (status.HasValue)
+            {
+                query = query.Where(r => r.Status == status.Value);
+            }
+
+            // Sort: Priority by status ASC (0,1,2,3,4,5) then by StartDate DESC
+            query = query.OrderBy(r => r.Status)
+                        .ThenByDescending(r => r.StartDate ?? DateTime.MinValue);
+
+            // Get total count before pagination
+            var total = await query.CountAsync();
+
+            // Apply pagination
+            var repairs = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var repairDtos = _mapper.Map<IEnumerable<RepairDto>>(repairs)
+                .Select(NormalizeRepairDates)
+                .ToList();
+
+            return new
+            {
+                items = repairDtos,
+                total,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)total / pageSize)
+            };
         }
 
         public async Task<IEnumerable<UserDto>> GetAvailableTechniciansAsync()
@@ -125,7 +238,10 @@ namespace backend.Services.Implementations
                 .Include(r => r.RepairImages)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
-            return repair == null ? null : _mapper.Map<RepairDto>(repair);
+            if (repair == null) return null;
+
+            var dto = _mapper.Map<RepairDto>(repair);
+            return NormalizeRepairDates(dto);
         }
 
         public async Task<RepairDto> CreateRepairFromIncidentAsync(Guid incidentReportId, Guid adminId)
@@ -272,15 +388,18 @@ namespace backend.Services.Implementations
                 if (repair.Status != RepairStatus.ChoThucHien && repair.Status != RepairStatus.DangSua)
                     return false;
 
-                // Cập nhật trạng thái repair - Từ chối
-                repair.Status = RepairStatus.TuChoi;
+                var technicianName = repair.AssignedToTechnician?.FullName;
+
                 repair.RejectedBy = technicianId;
                 repair.RejectedReason = reason;
                 repair.RejectedAt = DateTime.UtcNow;
-                repair.EndDate = DateTime.UtcNow;
 
-                // Thiết bị giữ nguyên trạng thái hiện tại (thường là "Hỏng" hoặc "Chờ sửa")
-                // Không thay đổi device.Status
+                // Đưa lệnh sửa về trạng thái chờ thực hiện để admin phân công lại
+                repair.Status = RepairStatus.ChoThucHien;
+                repair.AssignedToTechnicianId = null;
+                repair.AssignedToTechnician = null;
+                repair.StartDate = null;
+                repair.EndDate = null;
                 
                 // Ghi vào lịch sử thiết bị
                 var deviceHistory = new DeviceHistory
@@ -290,7 +409,7 @@ namespace backend.Services.Implementations
                     Action = "Từ chối sửa chữa",
                     ActionDate = DateTime.UtcNow,
                     ActionBy = technicianId,
-                    Description = $"Kỹ thuật viên từ chối sửa chữa. Lý do: {reason}"
+                    Description = $"Kỹ thuật viên {(technicianName ?? "không xác định")} từ chối sửa chữa. Lý do: {reason}. Lệnh được trả về trạng thái chờ phân công."
                 };
                 
                 _context.DeviceHistories.Add(deviceHistory);
@@ -298,7 +417,7 @@ namespace backend.Services.Implementations
                 // Cập nhật trạng thái incident report - Đóng báo cáo
                 if (repair.IncidentReport != null)
                 {
-                    repair.IncidentReport.Status = IncidentStatus.DaDong;
+                    repair.IncidentReport.Status = IncidentStatus.ChoThucHien;
                     repair.IncidentReport.UpdatedAt = DateTime.UtcNow;
                     repair.IncidentReport.UpdatedBy = technicianId.ToString();
                 }
@@ -427,7 +546,9 @@ namespace backend.Services.Implementations
             if (lastRepair?.EndDate != null && (DateTime.UtcNow - lastRepair.EndDate.Value).TotalDays < 30)
                 dtoList.First().Warning += "Thiết bị vừa mới được sửa gần đây (<30 ngày).";
 
-            return dtoList;
+            return dtoList
+                .Select(NormalizeRepairDates)
+                .ToList();
         }
         public async Task<DeviceRepairAnalysisDto> AnalyzeDeviceRepairHistoryAsync(Guid deviceId)
         {
@@ -471,6 +592,7 @@ namespace backend.Services.Implementations
             else
                 analysis.Suggestion = "Nên xem xét thay thế hoặc thanh lý thiết bị.";
 
+            analysis.LastRepairDate = TimeZoneHelper.ConvertUtcToVietnam(analysis.LastRepairDate);
             return analysis;
         }
 

@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IconButton } from 'react-native-paper';
+import DashboardScreen from '../screens/DashboardScreen';
 import RepairListScreen from '../screens/technician/RepairListScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import { TechnicianTabParamList } from '../types';
@@ -47,12 +48,12 @@ const TechnicianTabs: React.FC = () => {
       }}
     >
       <Tab.Screen
-        name="RepairList"
-        component={RepairListScreen}
+        name="Dashboard"
+        component={DashboardScreen}
         options={({ navigation }) => ({
-          title: 'Lệnh sửa chữa',
+          title: 'Tổng quan',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="tools" color={color} size={size} />
+            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
           ),
           headerRight: () => (
             <IconButton
@@ -63,6 +64,16 @@ const TechnicianTabs: React.FC = () => {
             />
           ),
         })}
+      />
+      <Tab.Screen
+        name="RepairList"
+        component={RepairListScreen}
+        options={{
+          title: 'Lệnh sửa chữa',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="tools" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="QRScanner"
