@@ -22,6 +22,82 @@ namespace backend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("backend.Models.Entities.AiChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getutcdate())");
+
+                    b.Property<string>("FileMimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("AiChatMessages");
+                });
+
+            modelBuilder.Entity("backend.Models.Entities.AiChatSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getutcdate())");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getutcdate())");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AiChatSessions");
+                });
+
             modelBuilder.Entity("backend.Models.Entities.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -852,6 +928,30 @@ namespace backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("backend.Models.Entities.AiChatMessage", b =>
+                {
+                    b.HasOne("backend.Models.Entities.AiChatSession", "Session")
+                        .WithMany("Messages")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_AiChatMessages_AiChatSessions");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("backend.Models.Entities.AiChatSession", b =>
+                {
+                    b.HasOne("backend.Models.Entities.User", "User")
+                        .WithMany("AiChatSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_AiChatSessions_Users");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("backend.Models.Entities.Department", b =>
                 {
                     b.HasOne("backend.Models.Entities.User", "DeletedByNavigation")
@@ -1195,6 +1295,11 @@ namespace backend.Migrations
                     b.Navigation("Department");
                 });
 
+            modelBuilder.Entity("backend.Models.Entities.AiChatSession", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
             modelBuilder.Entity("backend.Models.Entities.Department", b =>
                 {
                     b.Navigation("DeviceAssignments");
@@ -1254,6 +1359,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.Entities.User", b =>
                 {
+                    b.Navigation("AiChatSessions");
+
                     b.Navigation("Departments");
 
                     b.Navigation("DeviceAssignments");

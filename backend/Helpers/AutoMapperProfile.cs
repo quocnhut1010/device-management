@@ -162,6 +162,10 @@ namespace backend.Helpers
             CreateMap<CreateLiquidationDto, Liquidation>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.ApprovedBy, opt => opt.Ignore());
+
+            // AI Chat
+            CreateMap<AiChatSession, AiChatSessionDto>();
+            CreateMap<AiChatMessage, AiChatMessageDto>();
         }
     }
 }

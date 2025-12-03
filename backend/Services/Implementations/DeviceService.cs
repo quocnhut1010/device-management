@@ -2,6 +2,7 @@
 using AutoMapper;
 using backend.Models.DTOs;
 using backend.Models.Entities;
+using backend.Models;
 using backend.Repositories.Interfaces;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;

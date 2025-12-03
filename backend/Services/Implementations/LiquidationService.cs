@@ -2,6 +2,7 @@ using AutoMapper;
 using backend.Data;
 using backend.Models.DTOs;
 using backend.Models.Entities;
+using backend.Models;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -159,6 +160,12 @@ namespace backend.Services.Implementations
             if (device == null)
                 return false;
 
+            // Kiểm tra thiết bị đã được thanh lý chưa
+            var existingLiquidation = await _context.Liquidations
+                .AnyAsync(l => l.DeviceId == deviceId);
+            if (existingLiquidation)
+                return false;
+
             // Kiểm tra các điều kiện
             if (device.Status == "Đã thanh lý")
                 return false;
@@ -206,10 +213,21 @@ namespace backend.Services.Implementations
                 throw new InvalidOperationException("Thiết bị không tồn tại");
             }
 
+            // Validate ngày thanh lý
+            ValidateLiquidationDate(dto.LiquidationDate, device.PurchaseDate);
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Tạo bản ghi liquidation
+                // 1. Kiểm tra thiết bị đã được thanh lý chưa
+                var existingLiquidation = await _context.Liquidations
+                    .AnyAsync(l => l.DeviceId == dto.DeviceId);
+                if (existingLiquidation)
+                {
+                    throw new InvalidOperationException("Thiết bị đã được thanh lý trước đó");
+                }
+
+                // 2. Tạo bản ghi liquidation
                 var liquidation = new Liquidation
                 {
                     Id = Guid.NewGuid(),
@@ -221,14 +239,31 @@ namespace backend.Services.Implementations
 
                 _context.Liquidations.Add(liquidation);
 
-                // 2. Cập nhật device status
+                // 3. Đóng tất cả active assignments của thiết bị
+                var activeAssignments = await _context.DeviceAssignments
+                    .Where(da => da.DeviceId == dto.DeviceId && 
+                                 !da.IsDeleted && 
+                                 da.ReturnedDate == null)
+                    .ToListAsync();
+
+                foreach (var assignment in activeAssignments)
+                {
+                    assignment.ReturnedDate = DateTime.UtcNow;
+                    assignment.UpdatedAt = DateTime.UtcNow;
+                    assignment.UpdatedBy = approvedBy;
+                }
+
+                // 4. Cập nhật device status
                 device.Status = "Đã thanh lý";
                 device.CurrentUserId = null;
                 device.CurrentDepartmentId = null;
                 device.UpdatedAt = DateTime.UtcNow;
                 device.UpdatedBy = approvedBy;
 
-                // 3. Ghi log history
+                // 5. Đóng các IncidentReports liên quan đến thiết bị
+                await CloseRelatedIncidentReportsAsync(dto.DeviceId, approvedBy);
+
+                // 6. Ghi log history
                 var deviceHistory = new DeviceHistory
                 {
                     Id = Guid.NewGuid(),
@@ -265,16 +300,27 @@ namespace backend.Services.Implementations
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Validate tất cả thiết bị trước khi bắt đầu
                 foreach (var deviceId in dto.DeviceIds)
                 {
-                    var singleDto = new CreateLiquidationDto
+                    var device = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+                    if (device == null)
                     {
-                        DeviceId = deviceId,
-                        Reason = dto.Reason,
-                        LiquidationDate = dto.LiquidationDate
-                    };
+                        throw new InvalidOperationException($"Thiết bị {deviceId} không tồn tại");
+                    }
 
-                    // Validate each device
+                    // Validate ngày thanh lý
+                    ValidateLiquidationDate(dto.LiquidationDate, device.PurchaseDate);
+
+                    // Kiểm tra thiết bị đã thanh lý chưa
+                    var existingLiquidation = await _context.Liquidations
+                        .AnyAsync(l => l.DeviceId == deviceId);
+                    if (existingLiquidation)
+                    {
+                        throw new InvalidOperationException($"Thiết bị {deviceId} đã được thanh lý trước đó");
+                    }
+
+                    // Kiểm tra điều kiện thanh lý
                     var isEligible = await IsDeviceEligibleForLiquidationAsync(deviceId);
                     if (!isEligible)
                     {
@@ -282,7 +328,7 @@ namespace backend.Services.Implementations
                     }
                 }
 
-                // If all devices are eligible, proceed with liquidation
+                // Nếu tất cả thiết bị đều hợp lệ, tiến hành thanh lý
                 foreach (var deviceId in dto.DeviceIds)
                 {
                     var singleDto = new CreateLiquidationDto
@@ -296,7 +342,10 @@ namespace backend.Services.Implementations
                     results.Add(result);
                 }
 
+                // Save tất cả thay đổi một lần sau khi xử lý tất cả thiết bị
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+                
                 return results;
             }
             catch
@@ -312,6 +361,17 @@ namespace backend.Services.Implementations
             if (device == null)
                 throw new InvalidOperationException("Thiết bị không tồn tại");
 
+            // Validate ngày thanh lý
+            ValidateLiquidationDate(dto.LiquidationDate, device.PurchaseDate);
+
+            // Kiểm tra thiết bị đã được thanh lý chưa
+            var existingLiquidation = await _context.Liquidations
+                .AnyAsync(l => l.DeviceId == dto.DeviceId);
+            if (existingLiquidation)
+            {
+                throw new InvalidOperationException($"Thiết bị {device.DeviceCode} đã được thanh lý trước đó");
+            }
+
             // Create liquidation record
             var liquidation = new Liquidation
             {
@@ -324,12 +384,29 @@ namespace backend.Services.Implementations
 
             _context.Liquidations.Add(liquidation);
 
+            // Đóng tất cả active assignments của thiết bị
+            var activeAssignments = await _context.DeviceAssignments
+                .Where(da => da.DeviceId == dto.DeviceId && 
+                             !da.IsDeleted && 
+                             da.ReturnedDate == null)
+                .ToListAsync();
+
+            foreach (var assignment in activeAssignments)
+            {
+                assignment.ReturnedDate = DateTime.UtcNow;
+                assignment.UpdatedAt = DateTime.UtcNow;
+                assignment.UpdatedBy = approvedBy;
+            }
+
             // Update device
             device.Status = "Đã thanh lý";
             device.CurrentUserId = null;
             device.CurrentDepartmentId = null;
             device.UpdatedAt = DateTime.UtcNow;
             device.UpdatedBy = approvedBy;
+
+            // Đóng các IncidentReports liên quan đến thiết bị
+            await CloseRelatedIncidentReportsAsync(dto.DeviceId, approvedBy);
 
             // Add history
             var deviceHistory = new DeviceHistory
@@ -344,7 +421,7 @@ namespace backend.Services.Implementations
 
             _context.DeviceHistories.Add(deviceHistory);
 
-            await _context.SaveChangesAsync();
+            // Note: SaveChanges sẽ được gọi ở batch method để đảm bảo transaction
 
             var result = _mapper.Map<LiquidationDto>(liquidation);
             result.DeviceCode = device.DeviceCode;
@@ -398,6 +475,46 @@ namespace backend.Services.Implementations
                 DeviceName = liquidation.Device?.DeviceName,
                 ApprovedByName = liquidation.ApprovedByNavigation?.FullName
             };
+        }
+
+        /// <summary>
+        /// Validate ngày thanh lý
+        /// </summary>
+        private void ValidateLiquidationDate(DateTime liquidationDate, DateTime? purchaseDate)
+        {
+            var now = DateTime.Now;
+            var maxFutureDate = now.AddDays(30);
+
+            // Kiểm tra ngày không được quá xa trong tương lai (>30 ngày)
+            if (liquidationDate > maxFutureDate)
+            {
+                throw new ArgumentException("Ngày thanh lý không được quá 30 ngày trong tương lai");
+            }
+
+            // Kiểm tra ngày phải >= PurchaseDate (nếu có)
+            if (purchaseDate.HasValue && liquidationDate < purchaseDate.Value.Date)
+            {
+                throw new ArgumentException("Ngày thanh lý không thể sớm hơn ngày mua thiết bị");
+            }
+        }
+
+        /// <summary>
+        /// Đóng tất cả các IncidentReports liên quan đến thiết bị đang ở trạng thái mở
+        /// </summary>
+        private async Task CloseRelatedIncidentReportsAsync(Guid deviceId, Guid approvedBy)
+        {
+            var openIncidentReports = await _context.IncidentReports
+                .Where(ir => ir.DeviceId == deviceId &&
+                           (ir.Status == IncidentStatus.ChoDuyet ||
+                            ir.Status == IncidentStatus.DaTaoLenhSua))
+                .ToListAsync();
+
+            foreach (var report in openIncidentReports)
+            {
+                report.Status = IncidentStatus.DaDong;
+                report.UpdatedAt = DateTime.UtcNow;
+                report.UpdatedBy = approvedBy.ToString();
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ using backend.Data;
 using backend.Helpers;
 using backend.Models.Dtos.IncidentReports;
 using backend.Models.Entities;
+using backend.Models;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 

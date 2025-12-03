@@ -249,5 +249,38 @@ namespace backend.Services.Implementations
 
             return true;
         }
+
+        public async Task<bool> ChangePasswordAsync(ChangePasswordDto dto, Guid userId)
+        {
+            // Get user by ID
+            var user = await _userRepo.GetByIdAsync(userId);
+            if (user == null || user.IsDeleted == true || user.IsActive == false)
+            {
+                return false;
+            }
+
+            // Verify old password
+            var passwordVerification = _hasher.VerifyHashedPassword(user, user.PasswordHash!, dto.OldPassword);
+            if (passwordVerification == PasswordVerificationResult.Failed)
+            {
+                return false;
+            }
+
+            // Check if new password is different from old password
+            if (dto.OldPassword == dto.NewPassword)
+            {
+                throw new InvalidOperationException("Mật khẩu mới phải khác mật khẩu cũ.");
+            }
+
+            // Hash new password
+            user.PasswordHash = _hasher.HashPassword(user, dto.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            // Update user
+            await _userRepo.UpdateAsync(user);
+            await _userRepo.SaveChangesAsync();
+
+            return true;
+        }
     }
 }

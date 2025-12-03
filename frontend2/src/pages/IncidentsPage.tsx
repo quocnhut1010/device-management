@@ -29,12 +29,18 @@ export default function IncidentsPage() {
   const [rejectingReportId, setRejectingReportId] = useState<string>("")
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  // Pagination (client-side)
+  const [page, setPage] = useState(0) // 0-based index, giống pattern ở DeviceTable
+  const [pageSize, setPageSize] = useState(10)
+
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value)
+    setPage(0)
   }
 
   const handleStatusChange = (value: string) => {
     setStatus(value as typeof status)
+    setPage(0)
   }
 
   const getIsAdmin = (): boolean => {
@@ -86,9 +92,9 @@ export default function IncidentsPage() {
 
   const filtered = useMemo(() => {
     return reports.filter(r => {
-      const matchesSearch = (r.device?.deviceName || '').toLowerCase().includes(search.toLowerCase())
-        || (r.reportedByUser?.fullName || '').toLowerCase().includes(search.toLowerCase())
-        || (r.reportType || '').toLowerCase().includes(search.toLowerCase())
+      const matchesSearch = (r.device?.deviceName || "").toLowerCase().includes(search.toLowerCase())
+        || (r.reportedByUser?.fullName || "").toLowerCase().includes(search.toLowerCase())
+        || (r.reportType || "").toLowerCase().includes(search.toLowerCase())
       const statusMap: Record<typeof status, number[] | "all"> = {
         all: "all",
         pending: [0],
@@ -102,6 +108,20 @@ export default function IncidentsPage() {
       return matchesSearch && matchesStatus
     })
   }, [reports, search, status])
+
+  const totalCount = filtered.length
+  const totalPages = totalCount === 0 ? 1 : Math.ceil(totalCount / pageSize)
+
+  // Đảm bảo page luôn trong khoảng hợp lệ khi dữ liệu thay đổi
+  const currentPage = Math.min(page, totalPages - 1)
+
+  const paginatedReports = useMemo(() => {
+    if (totalCount === 0) return []
+
+    const start = currentPage * pageSize
+    const end = start + pageSize
+    return filtered.slice(start, end)
+  }, [filtered, currentPage, pageSize, totalCount])
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -320,7 +340,7 @@ export default function IncidentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((r) => (
+                {paginatedReports.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.id.slice(0, 8).toUpperCase()}</TableCell>
                     <TableCell>
@@ -399,6 +419,42 @@ export default function IncidentsPage() {
               </TableBody>
             </Table>
           </div>
+          {/* Pagination controls */}
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="text-sm text-muted-foreground">
+                Hiển thị{" "}
+                {currentPage * pageSize + 1} -{" "}
+                {Math.min((currentPage + 1) * pageSize, totalCount)}{" "}
+                trong tổng số {totalCount} sự cố
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(p - 1, 0))}
+                  disabled={currentPage === 0 || loading}
+                >
+                  Trước
+                </Button>
+                <span className="text-sm">
+                  Trang {currentPage + 1} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPage((p) =>
+                      p >= totalPages - 1 ? p : p + 1
+                    )
+                  }
+                  disabled={currentPage >= totalPages - 1 || loading}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

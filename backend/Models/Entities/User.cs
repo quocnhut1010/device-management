@@ -75,4 +75,6 @@ public partial class User
     public virtual ICollection<ReportExport> ReportExports { get; set; } = new List<ReportExport>();
 
     public virtual ICollection<Supplier> Suppliers { get; set; } = new List<Supplier>();
+
+    public virtual ICollection<AiChatSession> AiChatSessions { get; set; } = new List<AiChatSession>();
 }

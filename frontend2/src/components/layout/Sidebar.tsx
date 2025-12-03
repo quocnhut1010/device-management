@@ -206,12 +206,12 @@ export function Sidebar() {
             icon: Users,
             section: "Người dùng & Hệ thống",
           },
-          {
-            href: "/notifications",
-            label: "Thông báo",
-            icon: Bell,
-            section: "Người dùng & Hệ thống",
-          },
+          // {
+          //   href: "/notifications",
+          //   label: "Thông báo",
+          //   icon: Bell,
+          //   section: "Người dùng & Hệ thống",
+          // },
           {
             href: "/reports",
             label: "Báo cáo",
@@ -229,7 +229,7 @@ export function Sidebar() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <aside className="w-64 border-r bg-muted/40 min-h-screen">
+    <aside className="fixed top-0 left-0 w-64 h-screen border-r bg-muted/40 z-40">
       <div className="flex h-16 items-center border-b px-6">
         <Building2 className="h-6 w-6 mr-2" />
         <span className="font-semibold">Device Manager</span>
@@ -333,20 +333,6 @@ export function Sidebar() {
         ))}
 
         {/* Settings - Always visible at bottom */}
-        <div className="mt-auto pt-4 border-t">
-          <Link
-            to="/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              isActive("/settings")
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Cài đặt</span>
-          </Link>
-        </div>
       </nav>
     </aside>
   )

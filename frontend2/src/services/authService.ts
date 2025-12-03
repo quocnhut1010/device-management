@@ -73,6 +73,20 @@ export const resetPassword = async (token: string, email: string, newPassword: s
   return response.data
 }
 
+// Change password function (when user is logged in)
+export const changePassword = async (
+  oldPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/Auth/change-password', {
+    oldPassword,
+    newPassword,
+    confirmPassword,
+  })
+  return response.data
+}
+
 // Auth service object (for compatibility)
 export const authService = {
   login,
@@ -83,4 +97,5 @@ export const authService = {
   getUserRole,
   forgotPassword,
   resetPassword,
+  changePassword,
 }

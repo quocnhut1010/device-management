@@ -17,12 +17,11 @@ import {
   Send,
   Bot,
   User,
-  Settings,
   RefreshCw,
+  Download,
 } from 'lucide-react';
-import { aiChatService, AIChatService } from '@/services/aiChatService';
+import { aiChatService } from '@/services/aiChatService';
 import type { ChatMessage } from '@/services/aiChatService';
-import APIKeySettings from './APIKeySettings';
 import { cn } from '@/lib/utils';
 
 interface AIChatDialogProps {
@@ -34,19 +33,20 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const API_BASE = (import.meta.env.VITE_API_URL?.replace(/\/api$/, '') ?? 'http://localhost:5264').replace(/\/$/, '');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check if we have API key on mount
   useEffect(() => {
     if (open) {
-      const storedKey = AIChatService.getStoredApiKey();
-      if (!storedKey) {
-        setShowSettings(true);
-      }
+      bootstrapSession();
+    } else {
+      resetState();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Auto scroll to bottom when messages change
@@ -54,33 +54,55 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const bootstrapSession = async () => {
+    setIsBootstrapping(true);
+    setError(null);
+    try {
+      const response = await aiChatService.startOrResumeSession(sessionId || undefined);
+      setSessionId(response.session.id);
+      setMessages(response.messages);
+    } catch (err) {
+      console.error('Error loading chat session:', err);
+      setError('Không thể tải lịch sử trò chuyện. Vui lòng thử lại sau.');
+    } finally {
+      setIsBootstrapping(false);
+    }
+  };
+
+  const resetState = () => {
+    setMessages([]);
+    setInputMessage('');
+    setError(null);
+    setIsBootstrapping(false);
+  };
+
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    const messageToSend = inputMessage.trim();
+    if (!messageToSend || isLoading || !sessionId) return;
 
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: inputMessage.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
     setError(null);
 
+    // Hiển thị tin nhắn của người dùng ngay lập tức (optimistic UI)
+    const tempUserMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      sessionId,
+      role: 'user',
+      content: messageToSend,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, tempUserMessage]);
+
     try {
-      const response = await aiChatService.sendMessage([...messages, userMessage]);
-      
-      if (response.error) {
-        setError(response.error);
-      } else {
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: response.text,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      }
+      const response = await aiChatService.sendMessage(sessionId, messageToSend);
+
+      // Thay thế temp user message bằng userMessage thật từ server, rồi thêm assistant
+      setMessages(prev => {
+        const withoutTemp = prev.filter(m => m.id !== tempUserMessage.id);
+        return [...withoutTemp, response.userMessage, response.assistantMessage];
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.');
@@ -96,39 +118,22 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
     }
   };
 
-  const handleClearChat = () => {
-    setMessages([]);
-    setError(null);
+  const handleClearChat = async () => {
+    if (!sessionId) return;
+    try {
+      await aiChatService.clearSession(sessionId);
+      setSessionId(null);
+      setMessages([]);
+      await bootstrapSession();
+    } catch (error) {
+      console.error('Error clearing chat history:', error);
+      setError('Không thể xóa lịch sử chat. Vui lòng thử lại.');
+    }
   };
 
   const handleCloseDialog = () => {
-    setMessages([]);
-    setError(null);
-    setShowSettings(false);
+    resetState();
     onClose();
-  };
-
-  const handleSettingsClose = (apiKeySaved: boolean) => {
-    setShowSettings(false);
-    // Clear any existing errors when settings close
-    setError(null);
-    
-    if (apiKeySaved) {
-      // Initialize with new API key from localStorage
-      const storedKey = AIChatService.getStoredApiKey();
-      if (storedKey) {
-        aiChatService.setApiKey(storedKey);
-      }
-    } else {
-      // If not saved (e.g., "Use default" was clicked), try to use default from env
-      const defaultKey = import.meta.env.VITE_AI_API_KEY;
-      if (defaultKey) {
-        aiChatService.setApiKey(defaultKey);
-        console.log('✅ Default API key set from environment');
-      } else {
-        console.warn('⚠️ No default API key found in environment variables');
-      }
-    }
   };
 
   // Welcome messages for first time
@@ -167,17 +172,10 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
                   variant="ghost"
                   size="icon"
                   onClick={handleClearChat}
+                  disabled={!sessionId || isLoading}
                   title="Làm mới cuộc trò chuyện"
                 >
                   <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSettings(true)}
-                  title="Cài đặt API Key"
-                >
-                  <Settings className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -185,7 +183,14 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
 
           <ScrollArea className="flex-1 px-6 py-4">
             <div className="space-y-4">
-              {messages.length === 0 && (
+              {isBootstrapping && (
+                <div className="flex items-center justify-center py-10">
+                  <Spinner className="h-5 w-5 mr-2" />
+                  <span className="text-sm text-muted-foreground">Đang tải lịch sử trò chuyện...</span>
+                </div>
+              )}
+
+              {!isBootstrapping && messages.length === 0 && (
                 <div className="rounded-lg border bg-muted/50 p-6 mb-4">
                   <div className="space-y-2">
                     {welcomeMessages.map((msg, index) => (
@@ -204,9 +209,9 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
                 </div>
               )}
 
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <div
-                  key={index}
+                  key={message.id}
                   className={cn(
                     "flex",
                     message.role === 'user' ? "justify-end" : "justify-start"
@@ -242,7 +247,7 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
                     </Avatar>
                     <div
                       className={cn(
-                        "rounded-lg px-4 py-3",
+                        "rounded-lg px-4 py-3 space-y-2",
                         message.role === 'user'
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted border"
@@ -251,9 +256,52 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">
                         {message.content}
                       </p>
+
+                      {message.role === 'assistant' && message.fileName && (
+                        <div className="mt-1 border border-dashed border-primary/40 rounded-md bg-background/60 px-3 py-2 text-xs text-foreground flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-col">
+                              <span className="font-medium">File báo cáo:</span>
+                              <span className="truncate text-[11px] opacity-80">
+                                {message.fileName}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs gap-1"
+                              onClick={() => {
+                                if (message.fileUrl) {
+                                  window.open(`${API_BASE}${message.fileUrl}`, '_blank', 'noopener');
+                                } else {
+                                  setError('Không tìm thấy dữ liệu file để tải xuống. Vui lòng thử tạo lại báo cáo.');
+                                }
+                              }}
+                            >
+                              <Download className="h-3 w-3" />
+                              <span>Tải file</span>
+                            </Button>
+                          </div>
+
+                          {/* Simple description parsed from bullet lines in the response */}
+                          {typeof message.content === 'string' && message.content.includes('•') && (
+                            <div className="mt-1 text-[11px] text-muted-foreground border-t pt-1">
+                              {message.content
+                                .split('\n')
+                                .filter((line) => line.trim().startsWith('•'))
+                                .map((line, idx) => (
+                                  <div key={idx} className="truncate">
+                                    {line.replace(/^•\s*/,'')}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <p
                         className={cn(
-                          "text-xs mt-2 opacity-70",
+                          "text-xs mt-1 opacity-70",
                           message.role === 'user' ? "text-right" : "text-left"
                         )}
                       >
@@ -306,13 +354,13 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                disabled={isLoading}
+                disabled={isLoading || !sessionId}
                 className="min-h-[60px] max-h-[120px] resize-none"
                 rows={1}
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
+                disabled={!inputMessage.trim() || isLoading || !sessionId}
                 size="icon"
                 className="shrink-0"
               >
@@ -322,11 +370,6 @@ const AIChatDialog: React.FC<AIChatDialogProps> = ({ open, onClose }) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      <APIKeySettings
-        open={showSettings}
-        onClose={handleSettingsClose}
-      />
     </>
   );
 };

@@ -61,6 +61,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 // Repositories
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
+builder.Services.AddScoped<IAiChatRepository, AiChatRepository>();
 // Repository
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 // Service
@@ -97,8 +98,11 @@ builder.Services.AddScoped<IDeviceHistoryService, DeviceHistoryService>();
 builder.Services.AddScoped<ILiquidationService, LiquidationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
+builder.Services.AddScoped<IAIReportService, AIReportService>();
+builder.Services.AddScoped<IAIChatService, AIChatService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

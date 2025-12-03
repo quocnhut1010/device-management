@@ -370,6 +370,38 @@ ALTER TABLE Users
 ADD ResetPasswordToken NVARCHAR(MAX) NULL,
     ResetPasswordTokenExpiry DATETIME2 NULL;
 
+-- Bảng phiên chat
+CREATE TABLE [dbo].[AiChatSessions] (
+    [Id] UNIQUEIDENTIFIER NOT NULL,
+    [UserId] UNIQUEIDENTIFIER NOT NULL,
+    [Title] NVARCHAR(200) NULL,
+    [CreatedAt] DATETIME NOT NULL CONSTRAINT [DF_AiChatSessions_CreatedAt] DEFAULT (GETUTCDATE()),
+    [LastActivityAt] DATETIME NOT NULL CONSTRAINT [DF_AiChatSessions_LastActivityAt] DEFAULT (GETUTCDATE()),
+    [IsArchived] BIT NOT NULL CONSTRAINT [DF_AiChatSessions_IsArchived] DEFAULT (0),
+    [DeletedAt] DATETIME2 NULL,
+    CONSTRAINT [PK_AiChatSessions] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_AiChatSessions_Users] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users]([Id]) ON DELETE CASCADE
+);
+
+CREATE INDEX [IX_AiChatSessions_UserId] ON [dbo].[AiChatSessions]([UserId]);
+
+---------------------------------------------------------
+-- Bảng tin nhắn trong phiên chat
+CREATE TABLE [dbo].[AiChatMessages] (
+    [Id] UNIQUEIDENTIFIER NOT NULL,
+    [SessionId] UNIQUEIDENTIFIER NOT NULL,
+    [Role] NVARCHAR(20) NOT NULL,
+    [Content] NVARCHAR(MAX) NOT NULL,
+    [CreatedAt] DATETIME NOT NULL CONSTRAINT [DF_AiChatMessages_CreatedAt] DEFAULT (GETUTCDATE()),
+    [FileName] NVARCHAR(255) NULL,
+    [FileUrl] NVARCHAR(500) NULL,
+    [FileMimeType] NVARCHAR(100) NULL,
+    CONSTRAINT [PK_AiChatMessages] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_AiChatMessages_AiChatSessions] FOREIGN KEY ([SessionId]) REFERENCES [dbo].[AiChatSessions]([Id]) ON DELETE CASCADE
+);
+
+CREATE INDEX [IX_AiChatMessages_SessionId] ON [dbo].[AiChatMessages]([SessionId]);
+
 UPDATE DeviceHistories
 SET Action = N'Cập nhật thiết bị'
 WHERE Action = 'Device Updated';

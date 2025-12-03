@@ -9,6 +9,7 @@ namespace backend.Services.Interfaces
         Task<string?> AuthenticateAsync(LoginDto loginDto);
         Task<string?> ForgotPasswordAsync(ForgotPasswordDto dto);
         Task<bool> ResetPasswordAsync(ResetPasswordDto dto);
+        Task<bool> ChangePasswordAsync(ChangePasswordDto dto, Guid userId);
         string? GetCurrentUserPosition(ClaimsPrincipal user);
         Guid? GetCurrentUserId(ClaimsPrincipal user);
         bool IsAdmin(ClaimsPrincipal user);

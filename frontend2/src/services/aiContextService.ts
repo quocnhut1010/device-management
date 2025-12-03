@@ -166,11 +166,27 @@ export class AIContextService {
     }
     const lowerQuery = query.toLowerCase();
 
-    // Device count queries
+    // Device count queries (with optional department and device type)
     if (lowerQuery.includes('bao nhiêu thiết bị') || lowerQuery.includes('số lượng thiết bị')) {
+      const parameters: AIQuery['parameters'] = {};
+
+      // Status: in use
       if (lowerQuery.includes('đang sử dụng') || lowerQuery.includes('đang dùng')) {
-        return { type: 'device_count', parameters: { status: 'in_use' } };
+        parameters.status = 'in_use';
       }
+
+      // Device type extraction (e.g., "laptop", "máy in", "pc", "máy tính bàn")
+      if (lowerQuery.includes('laptop')) {
+        parameters.deviceType = 'laptop';
+      } else if (lowerQuery.includes('máy in')) {
+        parameters.deviceType = 'máy in';
+      } else if (lowerQuery.includes('pc') || lowerQuery.includes('máy tính bàn')) {
+        parameters.deviceType = 'pc';
+      } else if (lowerQuery.includes('máy chủ') || lowerQuery.includes('server')) {
+        parameters.deviceType = 'server';
+      }
+
+      // Department extraction
       if (lowerQuery.includes('phòng')) {
         // Try to extract full department name using improved regex
         const deptMatch = lowerQuery.match(/phòng\s+([a-zà-ỹ\s]+?)\s+(có|hiện|bao|đang)/) ||
@@ -179,12 +195,17 @@ export class AIContextService {
         
         const deptName = deptMatch && deptMatch[1] ? deptMatch[1].trim() : undefined;
         console.log('🔍 Regex match result:', { deptMatch, deptName });
+        if (deptName) {
+          parameters.departmentName = deptName;
+        }
+
         return { 
           type: 'department_devices', 
-          parameters: { departmentName: deptName }
+          parameters
         };
       }
-      return { type: 'device_count' };
+
+      return { type: 'device_count', parameters };
     }
 
     // Department-specific queries (asking about a specific department)
@@ -204,12 +225,22 @@ export class AIContextService {
     }
     
     // Supplier queries
-    if (lowerQuery.includes('nhà cung cấp')) {
-      return { type: 'supplier_devices' };
+    if (lowerQuery.includes('nhà cung cấp') || lowerQuery.includes('thiết bị của')) {
+      // Try to extract supplier name, e.g., "thiết bị của FPT", "nhà cung cấp Viettel"
+      const supplierMatch =
+        lowerQuery.match(/nhà cung cấp\s+([a-zà-ỹ0-9\s]+)/) ||
+        lowerQuery.match(/thiết bị\s+của\s+([a-zà-ỹ0-9\s]+)/);
+
+      const supplierName = supplierMatch && supplierMatch[1] ? supplierMatch[1].trim() : undefined;
+
+      return {
+        type: 'supplier_devices',
+        parameters: supplierName ? { supplierName } : undefined
+      };
     }
 
-    // Liquidation queries
-    if (lowerQuery.includes('thanh lý') || lowerQuery.includes('chờ thanh lý')) {
+    // Liquidation queries (including case-insensitive check for "chờ thanh lý")
+    if (lowerQuery.includes('thanh lý') || lowerQuery.includes('chờ thanh lý') || lowerQuery.includes('cho thanh ly')) {
       return { type: 'liquidation_devices' };
     }
 
@@ -278,9 +309,42 @@ export class AIContextService {
           
           if (found) {
             const [foundDeptName, deviceCount] = found;
+
+            // If a specific device type is requested (e.g., "laptop ở phòng nhân sự")
+            if (queryInfo.parameters?.deviceType) {
+              const typeKey = queryInfo.parameters.deviceType.toLowerCase();
+              const matchingDevices = devices.filter((device: any) => {
+                const deviceDept = device.departmentName || device.currentDepartmentName || '';
+                const deviceTypeName = (device.deviceTypeName || device.type || '').toLowerCase();
+
+                const sameDept =
+                  deviceDept &&
+                  foundDeptName &&
+                  deviceDept.toLowerCase().includes((foundDeptName as string).toLowerCase());
+
+                const matchesType =
+                  typeKey === 'laptop' ? deviceTypeName.includes('laptop') :
+                  typeKey === 'máy in' ? deviceTypeName.includes('máy in') || deviceTypeName.includes('printer') :
+                  typeKey === 'pc' ? deviceTypeName.includes('pc') || deviceTypeName.includes('desktop') :
+                  typeKey === 'server' ? deviceTypeName.includes('server') || deviceTypeName.includes('máy chủ') :
+                  deviceTypeName.includes(typeKey);
+
+                return sameDept && matchesType;
+              });
+
+              const count = matchingDevices.length;
+
+              if (count === 0) {
+                return `🏢 Phòng **${foundDeptName}** hiện không có thiết bị loại **${queryInfo.parameters.deviceType}** nào.`;
+              }
+
+              return `🏢 Phòng **${foundDeptName}** hiện có **${count}** thiết bị loại **${queryInfo.parameters.deviceType}**.`;
+            }
+
             if (deviceCount === 0) {
               return `🏢 Phòng **${foundDeptName}** hiện có **0** thiết bị (chưa được phân bổ thiết bị nào).`;
             }
+
             return `🏢 Phòng **${foundDeptName}** hiện có **${deviceCount}** thiết bị.`;
           }
           return `❌ Không tìm thấy phòng ban có tên "${deptName}".`;

@@ -7,7 +7,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen flex">
       <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 ml-64">
         <TopNav />
         <main className="container mx-auto p-6 max-w-7xl">
           <Outlet />

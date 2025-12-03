@@ -124,16 +124,49 @@ namespace backend.Services.Implementations
                 query = query.Where(d => d.CreatedAt <= request.ToDate.Value);
 
             // Apply custom filters
-            if (request.Filters != null)
+            if (request.Filters != null && request.Filters.Count > 0)
             {
-                if (request.Filters.ContainsKey("status") && !string.IsNullOrEmpty(request.Filters["status"]))
-                    query = query.Where(d => d.Status == request.Filters["status"]);
+                // Status (exact match)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(d => d.Status == status);
+                }
 
-                if (request.Filters.ContainsKey("modelId") && Guid.TryParse(request.Filters["modelId"], out var modelId))
+                // Model
+                if (request.Filters.TryGetValue("modelId", out var modelIdRaw) &&
+                    Guid.TryParse(modelIdRaw, out var modelId))
+                {
                     query = query.Where(d => d.ModelId == modelId);
+                }
 
-                if (request.Filters.ContainsKey("departmentId") && Guid.TryParse(request.Filters["departmentId"], out var departmentId))
+                // Department by Id
+                if (request.Filters.TryGetValue("departmentId", out var departmentIdRaw) &&
+                    Guid.TryParse(departmentIdRaw, out var departmentId))
+                {
                     query = query.Where(d => d.CurrentDepartmentId == departmentId);
+                }
+
+                // Department by Name (contains, case-insensitive)
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(d =>
+                        d.CurrentDepartment != null &&
+                        d.CurrentDepartment.DepartmentName != null &&
+                        d.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by Name
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(d =>
+                        d.Supplier != null &&
+                        d.Supplier.SupplierName != null &&
+                        d.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
             }
 
             return await query.ToListAsync();
@@ -156,13 +189,44 @@ namespace backend.Services.Implementations
                 query = query.Where(r => r.StartDate <= request.ToDate.Value);
 
             // Apply custom filters
-            if (request.Filters != null)
+            if (request.Filters != null && request.Filters.Count > 0)
             {
-                if (request.Filters.ContainsKey("status") && !string.IsNullOrEmpty(request.Filters["status"]))
-                    query = query.Where(r => r.Status.ToString() == request.Filters["status"]);
+                // Status (enum as string)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(r => r.Status.ToString() == status);
+                }
 
-                if (request.Filters.ContainsKey("technicianId") && Guid.TryParse(request.Filters["technicianId"], out var technicianId))
+                // Technician
+                if (request.Filters.TryGetValue("technicianId", out var technicianIdRaw) &&
+                    Guid.TryParse(technicianIdRaw, out var technicianId))
+                {
                     query = query.Where(r => r.AssignedToTechnicianId == technicianId);
+                }
+
+                // Department by name via device
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(r =>
+                        r.Device != null &&
+                        r.Device.CurrentDepartment != null &&
+                        r.Device.CurrentDepartment.DepartmentName != null &&
+                        r.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by name via device
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(r =>
+                        r.Device != null &&
+                        r.Device.Supplier != null &&
+                        r.Device.Supplier.SupplierName != null &&
+                        r.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
             }
 
             return await query.ToListAsync();
@@ -183,13 +247,55 @@ namespace backend.Services.Implementations
                 query = query.Where(i => i.ReportDate <= request.ToDate.Value);
 
             // Apply custom filters
-            if (request.Filters != null)
+            if (request.Filters != null && request.Filters.Count > 0)
             {
-                if (request.Filters.ContainsKey("status") && !string.IsNullOrEmpty(request.Filters["status"]))
-                    query = query.Where(i => i.Status.ToString() == request.Filters["status"]);
+                // Status (enum as string)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(i => i.Status.ToString() == status);
+                }
 
-                if (request.Filters.ContainsKey("reportType") && !string.IsNullOrEmpty(request.Filters["reportType"]))
-                    query = query.Where(i => i.ReportType == request.Filters["reportType"]);
+                // Report type
+                if (request.Filters.TryGetValue("reportType", out var reportType) &&
+                    !string.IsNullOrWhiteSpace(reportType))
+                {
+                    query = query.Where(i => i.ReportType == reportType);
+                }
+
+                // Department by name via device
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.Device != null &&
+                        i.Device.CurrentDepartment != null &&
+                        i.Device.CurrentDepartment.DepartmentName != null &&
+                        i.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by name via device
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.Device != null &&
+                        i.Device.Supplier != null &&
+                        i.Device.Supplier.SupplierName != null &&
+                        i.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+
+                // Reporter by name (case-insensitive, contains match)
+                if (request.Filters.TryGetValue("reporterName", out var reporterName) &&
+                    !string.IsNullOrWhiteSpace(reporterName))
+                {
+                    var reporterNameLower = reporterName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.ReportedByUser != null &&
+                        i.ReportedByUser.FullName != null &&
+                        i.ReportedByUser.FullName.ToLower().Contains(reporterNameLower));
+                }
             }
 
             return await query.ToListAsync();
@@ -199,6 +305,9 @@ namespace backend.Services.Implementations
         {
             var query = _context.Liquidations
                 .Include(l => l.Device)
+                .ThenInclude(d => d.CurrentDepartment)
+                .Include(l => l.Device)
+                .ThenInclude(d => d.Supplier)
                 .Include(l => l.ApprovedByNavigation)
                 .AsQueryable();
 
@@ -209,7 +318,259 @@ namespace backend.Services.Implementations
             if (request.ToDate.HasValue)
                 query = query.Where(l => l.LiquidationDate <= request.ToDate.Value);
 
+            // Apply custom filters via related device
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(l =>
+                        l.Device != null &&
+                        l.Device.CurrentDepartment != null &&
+                        l.Device.CurrentDepartment.DepartmentName != null &&
+                        l.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(l =>
+                        l.Device != null &&
+                        l.Device.Supplier != null &&
+                        l.Device.Supplier.SupplierName != null &&
+                        l.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+            }
+
             return await query.ToListAsync();
+        }
+
+        #endregion
+
+        #region Count Methods
+
+        public async Task<int> GetDevicesCountAsync(ExportRequestDto request)
+        {
+            var query = _context.Devices
+                .Where(d => d.IsDeleted != true);
+
+            // Apply date filters
+            if (request.FromDate.HasValue)
+                query = query.Where(d => d.CreatedAt >= request.FromDate.Value);
+
+            if (request.ToDate.HasValue)
+                query = query.Where(d => d.CreatedAt <= request.ToDate.Value);
+
+            // Apply custom filters
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                // Status (exact match)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(d => d.Status == status);
+                }
+
+                // Model
+                if (request.Filters.TryGetValue("modelId", out var modelIdRaw) &&
+                    Guid.TryParse(modelIdRaw, out var modelId))
+                {
+                    query = query.Where(d => d.ModelId == modelId);
+                }
+
+                // Department by Id
+                if (request.Filters.TryGetValue("departmentId", out var departmentIdRaw) &&
+                    Guid.TryParse(departmentIdRaw, out var departmentId))
+                {
+                    query = query.Where(d => d.CurrentDepartmentId == departmentId);
+                }
+
+                // Department by Name (contains, case-insensitive)
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(d =>
+                        d.CurrentDepartment != null &&
+                        d.CurrentDepartment.DepartmentName != null &&
+                        d.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by Name
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(d =>
+                        d.Supplier != null &&
+                        d.Supplier.SupplierName != null &&
+                        d.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<int> GetIncidentsCountAsync(ExportRequestDto request)
+        {
+            var query = _context.IncidentReports.AsQueryable();
+
+            // Apply date filters
+            if (request.FromDate.HasValue)
+                query = query.Where(i => i.ReportDate >= request.FromDate.Value);
+
+            if (request.ToDate.HasValue)
+                query = query.Where(i => i.ReportDate <= request.ToDate.Value);
+
+            // Apply custom filters
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                // Status (enum as string)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(i => i.Status.ToString() == status);
+                }
+
+                // Report type
+                if (request.Filters.TryGetValue("reportType", out var reportType) &&
+                    !string.IsNullOrWhiteSpace(reportType))
+                {
+                    query = query.Where(i => i.ReportType == reportType);
+                }
+
+                // Department by name via device
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.Device != null &&
+                        i.Device.CurrentDepartment != null &&
+                        i.Device.CurrentDepartment.DepartmentName != null &&
+                        i.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by name via device
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.Device != null &&
+                        i.Device.Supplier != null &&
+                        i.Device.Supplier.SupplierName != null &&
+                        i.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+
+                // Reporter by name (case-insensitive, contains match)
+                if (request.Filters.TryGetValue("reporterName", out var reporterName) &&
+                    !string.IsNullOrWhiteSpace(reporterName))
+                {
+                    var reporterNameLower = reporterName.Trim().ToLower();
+                    query = query.Where(i =>
+                        i.ReportedByUser != null &&
+                        i.ReportedByUser.FullName != null &&
+                        i.ReportedByUser.FullName.ToLower().Contains(reporterNameLower));
+                }
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<int> GetRepairsCountAsync(ExportRequestDto request)
+        {
+            var query = _context.Repairs.AsQueryable();
+
+            // Apply date filters
+            if (request.FromDate.HasValue)
+                query = query.Where(r => r.StartDate >= request.FromDate.Value);
+
+            if (request.ToDate.HasValue)
+                query = query.Where(r => r.StartDate <= request.ToDate.Value);
+
+            // Apply custom filters
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                // Status (enum as string)
+                if (request.Filters.TryGetValue("status", out var status) && !string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(r => r.Status.ToString() == status);
+                }
+
+                // Technician
+                if (request.Filters.TryGetValue("technicianId", out var technicianIdRaw) &&
+                    Guid.TryParse(technicianIdRaw, out var technicianId))
+                {
+                    query = query.Where(r => r.AssignedToTechnicianId == technicianId);
+                }
+
+                // Department by name via device
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(r =>
+                        r.Device != null &&
+                        r.Device.CurrentDepartment != null &&
+                        r.Device.CurrentDepartment.DepartmentName != null &&
+                        r.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                // Supplier by name via device
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(r =>
+                        r.Device != null &&
+                        r.Device.Supplier != null &&
+                        r.Device.Supplier.SupplierName != null &&
+                        r.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<int> GetLiquidationsCountAsync(ExportRequestDto request)
+        {
+            var query = _context.Liquidations.AsQueryable();
+
+            // Apply date filters
+            if (request.FromDate.HasValue)
+                query = query.Where(l => l.LiquidationDate >= request.FromDate.Value);
+
+            if (request.ToDate.HasValue)
+                query = query.Where(l => l.LiquidationDate <= request.ToDate.Value);
+
+            // Apply custom filters via related device
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                if (request.Filters.TryGetValue("departmentName", out var departmentName) &&
+                    !string.IsNullOrWhiteSpace(departmentName))
+                {
+                    var deptNameLower = departmentName.Trim().ToLower();
+                    query = query.Where(l =>
+                        l.Device != null &&
+                        l.Device.CurrentDepartment != null &&
+                        l.Device.CurrentDepartment.DepartmentName != null &&
+                        l.Device.CurrentDepartment.DepartmentName.ToLower().Contains(deptNameLower));
+                }
+
+                if (request.Filters.TryGetValue("supplierName", out var supplierName) &&
+                    !string.IsNullOrWhiteSpace(supplierName))
+                {
+                    var supplierLower = supplierName.Trim().ToLower();
+                    query = query.Where(l =>
+                        l.Device != null &&
+                        l.Device.Supplier != null &&
+                        l.Device.Supplier.SupplierName != null &&
+                        l.Device.Supplier.SupplierName.ToLower().Contains(supplierLower));
+                }
+            }
+
+            return await query.CountAsync();
         }
 
         #endregion
@@ -218,6 +579,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportDevicesToExcelAsync(IEnumerable<Device> devices)
         {
+            var deviceList = devices.ToList();
+
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Thiết bị");
 
@@ -233,19 +596,26 @@ namespace backend.Services.Implementations
 
             // Data
             int row = 2;
-            foreach (var device in devices)
+            if (deviceList.Count == 0)
             {
-                worksheet.Cell(row, 1).Value = device.DeviceCode;
-                worksheet.Cell(row, 2).Value = device.DeviceName;
-                worksheet.Cell(row, 3).Value = device.Model?.ModelName;
-                worksheet.Cell(row, 4).Value = device.Supplier?.SupplierName;
-                worksheet.Cell(row, 5).Value = device.Status;
-                worksheet.Cell(row, 6).Value = device.CurrentDepartment?.DepartmentName;
-                worksheet.Cell(row, 7).Value = device.CurrentUser?.FullName;
-                worksheet.Cell(row, 8).Value = device.PurchaseDate?.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 9).Value = device.PurchasePrice;
-                worksheet.Cell(row, 10).Value = device.WarrantyExpiry?.ToString("dd/MM/yyyy");
-                row++;
+                worksheet.Cell(row, 1).Value = "Không có bản ghi nào phù hợp với điều kiện lọc.";
+            }
+            else
+            {
+                foreach (var device in deviceList)
+                {
+                    worksheet.Cell(row, 1).Value = device.DeviceCode;
+                    worksheet.Cell(row, 2).Value = device.DeviceName;
+                    worksheet.Cell(row, 3).Value = device.Model?.ModelName;
+                    worksheet.Cell(row, 4).Value = device.Supplier?.SupplierName;
+                    worksheet.Cell(row, 5).Value = device.Status;
+                    worksheet.Cell(row, 6).Value = device.CurrentDepartment?.DepartmentName;
+                    worksheet.Cell(row, 7).Value = device.CurrentUser?.FullName;
+                    worksheet.Cell(row, 8).Value = device.PurchaseDate?.ToString("dd/MM/yyyy");
+                    worksheet.Cell(row, 9).Value = device.PurchasePrice;
+                    worksheet.Cell(row, 10).Value = device.WarrantyExpiry?.ToString("dd/MM/yyyy");
+                    row++;
+                }
             }
 
             worksheet.Columns().AdjustToContents();
@@ -257,6 +627,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportRepairsToExcelAsync(IEnumerable<Repair> repairs)
         {
+            var repairList = repairs.ToList();
+
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Sửa chữa");
 
@@ -270,18 +642,25 @@ namespace backend.Services.Implementations
             }
 
             int row = 2;
-            foreach (var repair in repairs)
+            if (repairList.Count == 0)
             {
-                worksheet.Cell(row, 1).Value = repair.Device?.DeviceCode;
-                worksheet.Cell(row, 2).Value = repair.Device?.DeviceName;
-                worksheet.Cell(row, 3).Value = repair.Status;
-                worksheet.Cell(row, 4).Value = repair.AssignedToTechnician?.FullName;
-                worksheet.Cell(row, 5).Value = repair.StartDate?.ToString("dd/MM/yyyy HH:mm");
-                worksheet.Cell(row, 6).Value = repair.EndDate?.ToString("dd/MM/yyyy HH:mm");
-                worksheet.Cell(row, 7).Value = repair.Cost;
-                worksheet.Cell(row, 8).Value = repair.RepairCompany;
-                worksheet.Cell(row, 9).Value = repair.Description;
-                row++;
+                worksheet.Cell(row, 1).Value = "Không có bản ghi nào phù hợp với điều kiện lọc.";
+            }
+            else
+            {
+                foreach (var repair in repairList)
+                {
+                    worksheet.Cell(row, 1).Value = repair.Device?.DeviceCode;
+                    worksheet.Cell(row, 2).Value = repair.Device?.DeviceName;
+                    worksheet.Cell(row, 3).Value = repair.Status;
+                    worksheet.Cell(row, 4).Value = repair.AssignedToTechnician?.FullName;
+                    worksheet.Cell(row, 5).Value = repair.StartDate?.ToString("dd/MM/yyyy HH:mm");
+                    worksheet.Cell(row, 6).Value = repair.EndDate?.ToString("dd/MM/yyyy HH:mm");
+                    worksheet.Cell(row, 7).Value = repair.Cost;
+                    worksheet.Cell(row, 8).Value = repair.RepairCompany;
+                    worksheet.Cell(row, 9).Value = repair.Description;
+                    row++;
+                }
             }
 
             worksheet.Columns().AdjustToContents();
@@ -293,6 +672,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportIncidentsToExcelAsync(IEnumerable<IncidentReport> incidents)
         {
+            var incidentList = incidents.ToList();
+
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Báo cáo sự cố");
 
@@ -306,17 +687,24 @@ namespace backend.Services.Implementations
             }
 
             int row = 2;
-            foreach (var incident in incidents)
+            if (incidentList.Count == 0)
             {
-                worksheet.Cell(row, 1).Value = incident.Device?.DeviceCode;
-                worksheet.Cell(row, 2).Value = incident.Device?.DeviceName;
-                worksheet.Cell(row, 3).Value = incident.ReportType;
-                worksheet.Cell(row, 4).Value = incident.Status;
-                worksheet.Cell(row, 5).Value = incident.ReportedByUser?.FullName;
-                worksheet.Cell(row, 6).Value = incident.ReportDate?.ToString("dd/MM/yyyy HH:mm") ?? "";
-                worksheet.Cell(row, 7).Value = incident.Description;
-                worksheet.Cell(row, 8).Value = incident.RejectedReason;
-                row++;
+                worksheet.Cell(row, 1).Value = "Không có bản ghi nào phù hợp với điều kiện lọc.";
+            }
+            else
+            {
+                foreach (var incident in incidentList)
+                {
+                    worksheet.Cell(row, 1).Value = incident.Device?.DeviceCode;
+                    worksheet.Cell(row, 2).Value = incident.Device?.DeviceName;
+                    worksheet.Cell(row, 3).Value = incident.ReportType;
+                    worksheet.Cell(row, 4).Value = incident.Status;
+                    worksheet.Cell(row, 5).Value = incident.ReportedByUser?.FullName;
+                    worksheet.Cell(row, 6).Value = incident.ReportDate?.ToString("dd/MM/yyyy HH:mm") ?? "";
+                    worksheet.Cell(row, 7).Value = incident.Description;
+                    worksheet.Cell(row, 8).Value = incident.RejectedReason;
+                    row++;
+                }
             }
 
             worksheet.Columns().AdjustToContents();
@@ -328,6 +716,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportLiquidationsToExcelAsync(IEnumerable<Liquidation> liquidations)
         {
+            var liquidationList = liquidations.ToList();
+
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Thanh lý");
 
@@ -341,14 +731,21 @@ namespace backend.Services.Implementations
             }
 
             int row = 2;
-            foreach (var liquidation in liquidations)
+            if (liquidationList.Count == 0)
             {
-                worksheet.Cell(row, 1).Value = liquidation.Device?.DeviceCode;
-                worksheet.Cell(row, 2).Value = liquidation.Device?.DeviceName;
-                worksheet.Cell(row, 3).Value = liquidation.LiquidationDate?.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 4).Value = liquidation.ApprovedByNavigation?.FullName;
-                worksheet.Cell(row, 5).Value = liquidation.Reason;
-                row++;
+                worksheet.Cell(row, 1).Value = "Không có bản ghi nào phù hợp với điều kiện lọc.";
+            }
+            else
+            {
+                foreach (var liquidation in liquidationList)
+                {
+                    worksheet.Cell(row, 1).Value = liquidation.Device?.DeviceCode;
+                    worksheet.Cell(row, 2).Value = liquidation.Device?.DeviceName;
+                    worksheet.Cell(row, 3).Value = liquidation.LiquidationDate?.ToString("dd/MM/yyyy");
+                    worksheet.Cell(row, 4).Value = liquidation.ApprovedByNavigation?.FullName;
+                    worksheet.Cell(row, 5).Value = liquidation.Reason;
+                    row++;
+                }
             }
 
             worksheet.Columns().AdjustToContents();
@@ -364,6 +761,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportDevicesToPdfAsync(IEnumerable<Device> devices)
         {
+            var deviceList = devices.ToList();
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -383,35 +782,43 @@ namespace backend.Services.Implementations
                         {
                             x.Spacing(20);
 
-                            x.Item().Table(table =>
+                            if (!deviceList.Any())
                             {
-                                table.ColumnsDefinition(columns =>
+                                x.Item().Text("Không có bản ghi nào phù hợp với điều kiện lọc.")
+                                    .FontSize(12);
+                            }
+                            else
+                            {
+                                x.Item().Table(table =>
                                 {
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                });
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                    });
 
-                                table.Header(header =>
-                                {
-                                    header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Tên TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Model").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Phòng ban").SemiBold();
-                                });
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Tên TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Model").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Phòng ban").SemiBold();
+                                    });
 
-                                foreach (var device in devices.Take(50)) // Limit for PDF
-                                {
-                                    table.Cell().Element(CellStyle).Text(device.DeviceCode ?? "");
-                                    table.Cell().Element(CellStyle).Text(device.DeviceName ?? "");
-                                    table.Cell().Element(CellStyle).Text(device.Model?.ModelName ?? "");
-                                    table.Cell().Element(CellStyle).Text(device.Status ?? "");
-                                    table.Cell().Element(CellStyle).Text(device.CurrentDepartment?.DepartmentName ?? "");
-                                }
-                            });
+                                    foreach (var device in deviceList.Take(50)) // Limit for PDF
+                                    {
+                                        table.Cell().Element(CellStyle).Text(device.DeviceCode ?? "");
+                                        table.Cell().Element(CellStyle).Text(device.DeviceName ?? "");
+                                        table.Cell().Element(CellStyle).Text(device.Model?.ModelName ?? "");
+                                        table.Cell().Element(CellStyle).Text(device.Status ?? "");
+                                        table.Cell().Element(CellStyle).Text(device.CurrentDepartment?.DepartmentName ?? "");
+                                    }
+                                });
+                            }
                         });
 
                     page.Footer()
@@ -431,6 +838,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportRepairsToPdfAsync(IEnumerable<Repair> repairs)
         {
+            var repairList = repairs.ToList();
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -450,32 +859,40 @@ namespace backend.Services.Implementations
                         {
                             x.Spacing(20);
 
-                            x.Item().Table(table =>
+                            if (!repairList.Any())
                             {
-                                table.ColumnsDefinition(columns =>
+                                x.Item().Text("Không có bản ghi nào phù hợp với điều kiện lọc.")
+                                    .FontSize(12);
+                            }
+                            else
+                            {
+                                x.Item().Table(table =>
                                 {
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                });
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                    });
 
-                                table.Header(header =>
-                                {
-                                    header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Kỹ thuật viên").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Ngày bắt đầu").SemiBold();
-                                });
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Kỹ thuật viên").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Ngày bắt đầu").SemiBold();
+                                    });
 
-                                foreach (var repair in repairs.Take(50))
-                                {
-                                    table.Cell().Element(CellStyle).Text(repair.Device?.DeviceCode ?? "");
-                                    table.Cell().Element(CellStyle).Text(repair.Status.ToString());
-                                    table.Cell().Element(CellStyle).Text(repair.AssignedToTechnician?.FullName ?? "");
-                                    table.Cell().Element(CellStyle).Text(repair.StartDate?.ToString("dd/MM/yyyy") ?? "");
-                                }
-                            });
+                                    foreach (var repair in repairList.Take(50))
+                                    {
+                                        table.Cell().Element(CellStyle).Text(repair.Device?.DeviceCode ?? "");
+                                        table.Cell().Element(CellStyle).Text(repair.Status.ToString());
+                                        table.Cell().Element(CellStyle).Text(repair.AssignedToTechnician?.FullName ?? "");
+                                        table.Cell().Element(CellStyle).Text(repair.StartDate?.ToString("dd/MM/yyyy") ?? "");
+                                    }
+                                });
+                            }
                         });
 
                     page.Footer()
@@ -495,6 +912,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportIncidentsToPdfAsync(IEnumerable<IncidentReport> incidents)
         {
+            var incidentList = incidents.ToList();
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -514,32 +933,40 @@ namespace backend.Services.Implementations
                         {
                             x.Spacing(20);
 
-                            x.Item().Table(table =>
+                            if (!incidentList.Any())
                             {
-                                table.ColumnsDefinition(columns =>
+                                x.Item().Text("Không có bản ghi nào phù hợp với điều kiện lọc.")
+                                    .FontSize(12);
+                            }
+                            else
+                            {
+                                x.Item().Table(table =>
                                 {
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                });
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                    });
 
-                                table.Header(header =>
-                                {
-                                    header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Loại báo cáo").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Ngày báo cáo").SemiBold();
-                                });
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Loại báo cáo").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Trạng thái").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Ngày báo cáo").SemiBold();
+                                    });
 
-                                foreach (var incident in incidents.Take(50))
-                                {
-                                    table.Cell().Element(CellStyle).Text(incident.Device?.DeviceCode ?? "");
-                                    table.Cell().Element(CellStyle).Text(incident.ReportType ?? "");
-                                    table.Cell().Element(CellStyle).Text(incident.Status.ToString());
-                                    table.Cell().Element(CellStyle).Text(incident.ReportDate?.ToString("dd/MM/yyyy") ?? "");
-                                }
-                            });
+                                    foreach (var incident in incidentList.Take(50))
+                                    {
+                                        table.Cell().Element(CellStyle).Text(incident.Device?.DeviceCode ?? "");
+                                        table.Cell().Element(CellStyle).Text(incident.ReportType ?? "");
+                                        table.Cell().Element(CellStyle).Text(incident.Status.ToString());
+                                        table.Cell().Element(CellStyle).Text(incident.ReportDate?.ToString("dd/MM/yyyy") ?? "");
+                                    }
+                                });
+                            }
                         });
 
                     page.Footer()
@@ -559,6 +986,8 @@ namespace backend.Services.Implementations
 
         private async Task<byte[]> ExportLiquidationsToPdfAsync(IEnumerable<Liquidation> liquidations)
         {
+            var liquidationList = liquidations.ToList();
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -578,32 +1007,40 @@ namespace backend.Services.Implementations
                         {
                             x.Spacing(20);
 
-                            x.Item().Table(table =>
+                            if (!liquidationList.Any())
                             {
-                                table.ColumnsDefinition(columns =>
+                                x.Item().Text("Không có bản ghi nào phù hợp với điều kiện lọc.")
+                                    .FontSize(12);
+                            }
+                            else
+                            {
+                                x.Item().Table(table =>
                                 {
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                    columns.RelativeColumn();
-                                });
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                    });
 
-                                table.Header(header =>
-                                {
-                                    header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Tên TB").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Ngày thanh lý").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Người duyệt").SemiBold();
-                                });
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("Mã TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Tên TB").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Ngày thanh lý").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Người duyệt").SemiBold();
+                                    });
 
-                                foreach (var liquidation in liquidations.Take(50))
-                                {
-                                    table.Cell().Element(CellStyle).Text(liquidation.Device?.DeviceCode ?? "");
-                                    table.Cell().Element(CellStyle).Text(liquidation.Device?.DeviceName ?? "");
-                                    table.Cell().Element(CellStyle).Text(liquidation.LiquidationDate?.ToString("dd/MM/yyyy") ?? "");
-                                    table.Cell().Element(CellStyle).Text(liquidation.ApprovedByNavigation?.FullName ?? "");
-                                }
-                            });
+                                    foreach (var liquidation in liquidationList.Take(50))
+                                    {
+                                        table.Cell().Element(CellStyle).Text(liquidation.Device?.DeviceCode ?? "");
+                                        table.Cell().Element(CellStyle).Text(liquidation.Device?.DeviceName ?? "");
+                                        table.Cell().Element(CellStyle).Text(liquidation.LiquidationDate?.ToString("dd/MM/yyyy") ?? "");
+                                        table.Cell().Element(CellStyle).Text(liquidation.ApprovedByNavigation?.FullName ?? "");
+                                    }
+                                });
+                            }
                         });
 
                     page.Footer()

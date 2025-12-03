@@ -52,6 +52,10 @@ public partial class DeviceManagementDbContext : DbContext
 
     public virtual DbSet<DeviceQrToken> DeviceQrTokens { get; set; }
 
+    public virtual DbSet<AiChatSession> AiChatSessions { get; set; }
+
+    public virtual DbSet<AiChatMessage> AiChatMessages { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Connection string đã được cấu hình trong Program.cs thông qua DI
@@ -480,6 +484,37 @@ public partial class DeviceManagementDbContext : DbContext
             entity.HasOne(d => d.Department).WithMany(p => p.Users)
                 .HasForeignKey(d => d.DepartmentId)
                 .HasConstraintName("FK__Users__Departmen__2E1BDC42");
+        });
+
+        modelBuilder.Entity<AiChatSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.LastActivityAt).HasColumnType("datetime").HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.AiChatSessions)
+                .HasForeignKey(e => e.UserId)
+                .HasConstraintName("FK_AiChatSessions_Users");
+        });
+
+        modelBuilder.Entity<AiChatMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Role).HasMaxLength(20);
+            entity.Property(e => e.Content).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.FileName).HasMaxLength(255);
+            entity.Property(e => e.FileUrl).HasMaxLength(500);
+            entity.Property(e => e.FileMimeType).HasMaxLength(100);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.Messages)
+                .HasForeignKey(e => e.SessionId)
+                .HasConstraintName("FK_AiChatMessages_AiChatSessions");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -22,7 +22,6 @@ interface ProfileModalProps {
 
 const profileSchema = z.object({
   fullName: z.string().min(1, 'Họ tên không được để trống'),
-  position: z.string().optional(),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
@@ -45,7 +44,6 @@ export default function ProfileModal({ open, onClose, user, onSuccess }: Profile
     if (user && open) {
       reset({
         fullName: user.fullName || '',
-        position: user.position || '',
       })
     }
   }, [user, open, reset])
@@ -57,7 +55,6 @@ export default function ProfileModal({ open, onClose, user, onSuccess }: Profile
       const updateData: Partial<UserDto> = {
         ...user,
         fullName: data.fullName,
-        position: data.position,
       }
 
       await updateUserProfile(updateData as UserDto)
@@ -158,12 +155,10 @@ export default function ProfileModal({ open, onClose, user, onSuccess }: Profile
             <Label htmlFor="position">Vị trí</Label>
             <Input
               id="position"
-              {...register('position')}
-              placeholder="Nhập vị trí"
+              value={user.position || ''}
+              readOnly
+              className="bg-muted"
             />
-            {errors.position && (
-              <p className="text-sm text-destructive">{errors.position.message}</p>
-            )}
           </div>
 
           {user.updatedAt && (

@@ -44,24 +44,82 @@ export default function LiquidationDialog({
   const [liquidationDate, setLiquidationDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   )
+  const [dateError, setDateError] = useState<string>('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
       setReason('')
       setLiquidationDate(new Date().toISOString().split('T')[0])
+      setDateError('')
     }
   }, [open])
+
+  // Tính toán max date (today + 30 days)
+  const getMaxDate = () => {
+    const maxDate = new Date()
+    maxDate.setDate(maxDate.getDate() + 30)
+    return maxDate.toISOString().split('T')[0]
+  }
+
+  // Validate ngày thanh lý
+  const validateLiquidationDate = (date: string): string => {
+    if (!date) {
+      return 'Vui lòng chọn ngày thanh lý'
+    }
+
+    const selectedDate = new Date(date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const maxDate = new Date()
+    maxDate.setDate(maxDate.getDate() + 30)
+    maxDate.setHours(23, 59, 59, 999)
+
+    // Kiểm tra ngày không được quá 30 ngày trong tương lai
+    if (selectedDate > maxDate) {
+      return 'Ngày thanh lý không được quá 30 ngày trong tương lai'
+    }
+
+    // Kiểm tra ngày không được sớm hơn hôm nay
+    if (selectedDate < today) {
+      return 'Ngày thanh lý không được ở quá khứ'
+    }
+
+    // Kiểm tra ngày không sớm hơn ngày mua (nếu có thông tin)
+    const earliestPurchaseDate = selectedDevices
+      .map(device => device.purchaseDate)
+      .filter(date => date != null)
+      .map(date => new Date(date!))
+      .sort((a, b) => a.getTime() - b.getTime())[0]
+
+    if (earliestPurchaseDate && selectedDate < earliestPurchaseDate) {
+      return 'Ngày thanh lý không thể sớm hơn ngày mua thiết bị'
+    }
+
+    return ''
+  }
 
   const handleClose = () => {
     if (!loading) {
       setReason('')
       setLiquidationDate(new Date().toISOString().split('T')[0])
+      setDateError('')
       onClose()
     }
   }
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value
+    setLiquidationDate(newDate)
+    
+    // Validate ngay khi người dùng chọn ngày
+    const error = validateLiquidationDate(newDate)
+    setDateError(error)
+  }
+
   const handleSubmit = async () => {
+    // Validate lý do
     if (!reason.trim()) {
       toast({
         title: 'Lỗi',
@@ -71,10 +129,23 @@ export default function LiquidationDialog({
       return
     }
 
+    // Validate thiết bị
     if (selectedDevices.length === 0) {
       toast({
         title: 'Lỗi',
         description: 'Vui lòng chọn thiết bị cần thanh lý',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate ngày thanh lý
+    const dateValidationError = validateLiquidationDate(liquidationDate)
+    if (dateValidationError) {
+      setDateError(dateValidationError)
+      toast({
+        title: 'Lỗi',
+        description: dateValidationError,
         variant: 'destructive',
       })
       return
@@ -115,9 +186,29 @@ export default function LiquidationDialog({
       handleClose()
     } catch (error: any) {
       console.error('Error liquidating devices:', error)
+      
+      // Cải thiện xử lý lỗi từ backend
+      let errorMessage = 'Có lỗi xảy ra khi thanh lý thiết bị'
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+        // Xử lý các lỗi cụ thể từ backend
+        if (errorMessage.includes('30 ngày')) {
+          errorMessage = 'Ngày thanh lý không được quá 30 ngày trong tương lai. Vui lòng chọn lại ngày.'
+          setDateError(errorMessage)
+        } else if (errorMessage.includes('sớm hơn ngày mua')) {
+          errorMessage = 'Ngày thanh lý không thể sớm hơn ngày mua thiết bị. Vui lòng chọn lại ngày.'
+          setDateError(errorMessage)
+        } else if (errorMessage.includes('đã được thanh lý')) {
+          errorMessage = 'Một hoặc nhiều thiết bị đã được thanh lý trước đó. Vui lòng làm mới danh sách.'
+        }
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
       toast({
         title: 'Lỗi',
-        description: error.response?.data?.message || 'Có lỗi xảy ra khi thanh lý thiết bị',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -196,11 +287,24 @@ export default function LiquidationDialog({
                   id="liquidationDate"
                   type="date"
                   value={liquidationDate}
-                  onChange={(e) => setLiquidationDate(e.target.value)}
+                  onChange={handleDateChange}
                   min={new Date().toISOString().split('T')[0]}
+                  max={getMaxDate()}
                   disabled={loading}
                   required
+                  className={dateError ? 'border-destructive' : ''}
                 />
+                {dateError && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {dateError}
+                  </p>
+                )}
+                {!dateError && liquidationDate && (
+                  <p className="text-sm text-muted-foreground">
+                    Ngày thanh lý không được quá 30 ngày trong tương lai
+                  </p>
+                )}
               </div>
             </div>
 
@@ -229,7 +333,7 @@ export default function LiquidationDialog({
             type="button"
             variant="destructive"
             onClick={handleSubmit}
-            disabled={loading || !reason.trim()}
+            disabled={loading || !reason.trim() || !!dateError}
           >
             {loading ? (
               <>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Settings, LogOut, Bell, Shield, Mail, Building, Calendar, Edit } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Settings, LogOut, Bell, Shield, Mail, Building, Calendar, Edit, Lock } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -12,13 +13,16 @@ import { getAllIncidents, getMyIncidents } from '@/services/incidentService'
 import { getAllRepairs, getMyRepairs, getDeviceRepairHistory } from '@/services/repairService'
 import type { UserDto } from '@/types'
 import ProfileModal from './ProfileModal'
+import ChangePasswordDialog from '@/components/settings/ChangePasswordDialog'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
 export function ProfilePopover() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<UserDto | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [stats, setStats] = useState({
     devices: 0,
@@ -333,9 +337,14 @@ export function ProfilePopover() {
               <Edit className="h-4 w-4 mr-2" />
               Chỉnh sửa hồ sơ
             </Button>
-            <Button variant="ghost" className="w-full justify-start" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Cài đặt
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              size="sm"
+              onClick={() => setIsChangePasswordDialogOpen(true)}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Đổi mật khẩu
             </Button>
             <Button variant="ghost" className="w-full justify-start" size="sm">
               <Bell className="h-4 w-4 mr-2" />
@@ -370,6 +379,11 @@ export function ProfilePopover() {
               .catch(console.error)
           }
         }}
+      />
+
+      <ChangePasswordDialog
+        open={isChangePasswordDialogOpen}
+        onClose={() => setIsChangePasswordDialogOpen(false)}
       />
     </>
   )
