@@ -12,10 +12,12 @@ namespace backend.Controllers;
 public class AIChatController : ControllerBase
 {
     private readonly IAIChatService _aiChatService;
+    private readonly IAuthService _authService;
 
-    public AIChatController(IAIChatService aiChatService)
+    public AIChatController(IAIChatService aiChatService, IAuthService authService)
     {
         _aiChatService = aiChatService;
+        _authService = authService;
     }
 
     [HttpPost("sessions")]
@@ -44,8 +46,9 @@ public class AIChatController : ControllerBase
     public async Task<IActionResult> SendMessage(Guid sessionId, [FromBody] SendAiChatMessageDto dto)
     {
         var userId = GetUserId();
+        var isAdmin = _authService.IsAdmin(User);
         dto.SessionId = sessionId;
-        var result = await _aiChatService.SendMessageAsync(userId, dto);
+        var result = await _aiChatService.SendMessageAsync(userId, dto, isAdmin);
         return Ok(result);
     }
 

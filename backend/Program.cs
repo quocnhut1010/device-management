@@ -100,6 +100,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
 builder.Services.AddScoped<IAIReportService, AIReportService>();
 builder.Services.AddScoped<IAIChatService, AIChatService>();
+builder.Services.AddSingleton<IChatIntentClassifier, NaiveBayesTextClassifier>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpClient();

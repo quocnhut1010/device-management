@@ -63,5 +63,11 @@ public class AiChatMessageResponseDto
     public AiChatMessageDto AssistantMessage { get; set; } = null!;
 
     public string? Error { get; set; }
+
+    /// <summary>
+    /// Kết quả phân loại intent cho câu hỏi hiện tại (nếu có).
+    /// Frontend có thể dùng để điều hướng tới API phù hợp.
+    /// </summary>
+    public ChatIntentClassificationResultDto? IntentClassification { get; set; }
 }
 

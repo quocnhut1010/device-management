@@ -8,7 +8,7 @@ public interface IAIChatService
 
     Task<AiChatHistoryResponseDto?> GetSessionHistoryAsync(Guid userId, Guid sessionId);
 
-    Task<AiChatMessageResponseDto> SendMessageAsync(Guid userId, SendAiChatMessageDto dto);
+    Task<AiChatMessageResponseDto> SendMessageAsync(Guid userId, SendAiChatMessageDto dto, bool isAdmin);
 
     Task<bool> ClearSessionAsync(Guid userId, Guid sessionId);
 }

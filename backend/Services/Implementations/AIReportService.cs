@@ -237,31 +237,45 @@ namespace backend.Services.Implementations
 
         private bool IsReportExportQuery(string query)
         {
+            // Từ khóa xuất báo cáo rõ ràng - yêu cầu bắt buộc
             var exportKeywords = new[]
             {
-                "xuất", "export", "báo cáo", "report", "tạo báo cáo", "tạo file",
+                "xuất", "export", "tạo báo cáo", "tạo file",
                 "xuất file", "download", "tải xuống", "export report"
             };
 
+            // Từ khóa báo cáo/thống kê (không bao gồm "danh sách" vì quá chung chung)
             var reportKeywords = new[]
             {
-                "báo cáo", "report", "thống kê", "danh sách", "list"
+                "báo cáo", "report", "thống kê"
             };
 
             var hasExportKeyword = exportKeywords.Any(keyword => query.Contains(keyword));
             var hasReportKeyword = reportKeywords.Any(keyword => query.Contains(keyword));
 
-            // Must have at least one export keyword or report keyword in combination with context
-            return hasExportKeyword || (hasReportKeyword && (
-                query.Contains("thiết bị") ||
-                query.Contains("sự cố") ||
-                query.Contains("incident") ||
-                query.Contains("sửa chữa") ||
-                query.Contains("repair") ||
-                query.Contains("thanh lý") ||
-                query.Contains("liquidation") ||
-                query.Contains("device")
-            ));
+            // Chỉ coi là yêu cầu xuất báo cáo nếu:
+            // 1. Có từ khóa xuất rõ ràng (xuất, export, tạo báo cáo, etc.)
+            // 2. HOẶC có từ khóa báo cáo/thống kê kết hợp với context thiết bị/sự cố
+            // KHÔNG coi "danh sách" + "thiết bị" là yêu cầu xuất báo cáo (chỉ là câu hỏi danh sách thông thường)
+            if (hasExportKeyword)
+            {
+                return true;
+            }
+
+            // Chỉ kiểm tra report keyword nếu có context và KHÔNG chỉ là "danh sách"
+            if (hasReportKeyword)
+            {
+                var hasContext = query.Contains("thiết bị") ||
+                                 query.Contains("sự cố") ||
+                                 query.Contains("incident") ||
+                                 query.Contains("thanh lý") ||
+                                 query.Contains("liquidation") ||
+                                 query.Contains("device");
+                
+                return hasContext;
+            }
+
+            return false;
         }
 
         private string ExtractReportType(string query)
