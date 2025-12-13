@@ -14,7 +14,7 @@ namespace backend.Models.DTOs
         [Required]
         public Guid AssignedToDepartmentId { get; set; }
 
-        public DateTime? AssignedDate { get; set; } = DateTime.UtcNow;
+        public DateTime? AssignedDate { get; set; } = DateTime.UtcNow.Date;
 
         public string? Note { get; set; }
     }

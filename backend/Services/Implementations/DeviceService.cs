@@ -318,7 +318,7 @@ namespace backend.Services.Implementations
             return true;
         }
 
-        public async Task<object> GetPagedDevicesAsync(int page, int pageSize, string? search, string? status, Guid? modelId)
+        public async Task<object> GetPagedDevicesAsync(int page, int pageSize, string? search, string? status, Guid? modelId, Guid? departmentId)
         {
             var query = _context.Devices
                 .Include(d => d.Model).ThenInclude(m => m!.DeviceType)
@@ -343,6 +343,11 @@ namespace backend.Services.Implementations
             if (modelId.HasValue)
             {
                 query = query.Where(d => d.ModelId == modelId.Value);
+            }
+
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.CurrentDepartmentId == departmentId.Value);
             }
 
             var total = await query.CountAsync();

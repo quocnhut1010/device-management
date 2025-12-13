@@ -41,6 +41,7 @@ export default function DevicesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [devices, setDevices] = useState<DeviceDto[]>([])
+  const [allDevicesForStats, setAllDevicesForStats] = useState<DeviceDto[]>([])
   const [selectedDevice, setSelectedDevice] = useState<DeviceDto | null>(null)
   const [viewingDevice, setViewingDevice] = useState<DeviceDto | null>(null)
   const [openDialog, setOpenDialog] = useState(false)
@@ -64,7 +65,7 @@ export default function DevicesPage() {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all')
   const [viewDeleted, setViewDeleted] = useState(false)
   const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(15)
   const [totalCount, setTotalCount] = useState(0)
 
   // Tabs for Manager
@@ -119,13 +120,16 @@ export default function DevicesPage() {
           const deletedDevices = await getDeletedDevices()
           setDevices(deletedDevices || [])
           setTotalCount(deletedDevices?.length || 0)
+          setAllDevicesForStats([]) // Clear stats data when viewing deleted
         } else {
+          // Fetch paginated devices for table
           const result = await getPagedDevices({
             page,
             pageSize,
             search: search || undefined,
             status: statusFilter !== 'all' ? statusFilter : undefined,
             modelId: modelFilter !== 'all' ? modelFilter : undefined,
+            departmentId: departmentFilter !== 'all' ? departmentFilter : undefined,
           })
           
           // Validate response before setting state
@@ -136,6 +140,15 @@ export default function DevicesPage() {
             console.warn('Unexpected response format from getPagedDevices:', result)
             setDevices([])
             setTotalCount(0)
+          }
+
+          // Fetch all devices for stats (without pagination/filters)
+          try {
+            const allDevices = await getAllDevices(false)
+            setAllDevicesForStats(allDevices || [])
+          } catch (err) {
+            console.error('Error fetching all devices for stats:', err)
+            setAllDevicesForStats([])
           }
         }
       } else {
@@ -231,11 +244,12 @@ export default function DevicesPage() {
     return matchSearch && matchStatus && matchModel && matchDepartment
   })
 
-  // Stats
-  const totalDevices = devices.length
-  const activeDevices = devices.filter((d) => !d.isDeleted && d.status === 'Đang sử dụng').length
-  const availableDevices = devices.filter((d) => !d.isDeleted && d.status === 'Chưa cấp phát').length
-  const devicesInUse = devices.filter((d) => !d.isDeleted && d.status === 'Đang sử dụng').length
+  // Stats - Calculate from all devices (not just current page)
+  const statsDevices = isAdmin && !viewDeleted ? allDevicesForStats : devices
+  const totalDevices = statsDevices.filter((d) => !d.isDeleted).length
+  const devicesInUse = statsDevices.filter((d) => !d.isDeleted && d.status === 'Đang sử dụng').length
+  const availableDevices = statsDevices.filter((d) => !d.isDeleted && d.status === 'Chưa cấp phát').length
+  const activeDevices = statsDevices.filter((d) => !d.isDeleted && d.status === 'Đang sử dụng').length
 
   // Handle submit (create/update)
   const handleSubmit = async (data: CreateDeviceDto & { file?: File | null }) => {

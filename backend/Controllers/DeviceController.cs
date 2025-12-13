@@ -29,9 +29,10 @@ namespace backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] string? status = null,
-            [FromQuery] Guid? modelId = null)
+            [FromQuery] Guid? modelId = null,
+            [FromQuery] Guid? departmentId = null)
         {
-            var result = await _deviceService.GetPagedDevicesAsync(page, pageSize, search, status, modelId);
+            var result = await _deviceService.GetPagedDevicesAsync(page, pageSize, search, status, modelId, departmentId);
             return Ok(result);
         }
 

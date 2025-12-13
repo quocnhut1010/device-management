@@ -183,7 +183,7 @@ namespace backend.Services.Implementations
                 // 7️⃣ Trả lại thiết bị cũ (nếu đang được gán)
                 if (currentAssignment != null)
                 {
-                    currentAssignment.ReturnedDate = DateTime.Now;
+                    currentAssignment.ReturnedDate = DateTime.Now.Date;
                     currentAssignment.UpdatedAt = DateTime.Now;
                     currentAssignment.UpdatedBy = performedBy;
 
@@ -206,7 +206,7 @@ namespace backend.Services.Implementations
                         AssignedToUserId = currentAssignment.AssignedToUserId,
                         AssignedToDepartmentId = currentAssignment.AssignedToDepartmentId,
                         AssignedByUserId = performedBy,
-                        AssignedDate = DateTime.Now,
+                        AssignedDate = DateTime.Now.Date,
                         Note = $"Thay thế thiết bị. Thiết bị cũ: {oldDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}",
                         CreatedAt = DateTime.Now,
                         CreatedBy = performedBy
@@ -228,7 +228,7 @@ namespace backend.Services.Implementations
                         AssignedToUserId = oldDevice.CurrentUserId.Value,
                         AssignedToDepartmentId = oldDevice.CurrentDepartmentId,
                         AssignedByUserId = performedBy,
-                        AssignedDate = DateTime.Now,
+                        AssignedDate = DateTime.Now.Date,
                         Note = $"Thay thế thiết bị. Thiết bị cũ: {oldDevice.DeviceCode}. Lý do: {createReplacementDto.Reason}",
                         CreatedAt = DateTime.Now,
                         CreatedBy = performedBy

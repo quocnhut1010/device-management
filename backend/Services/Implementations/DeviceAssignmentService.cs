@@ -107,7 +107,7 @@ namespace backend.Services.Implementations
                 DeviceId = createDto.DeviceId,
                 AssignedToUserId = createDto.AssignedToUserId,
                 AssignedToDepartmentId = createDto.AssignedToDepartmentId,
-                AssignedDate = createDto.AssignedDate ?? DateTime.UtcNow,
+                AssignedDate = createDto.AssignedDate?.Date ?? DateTime.UtcNow.Date,
                 Note = createDto.Note,
                 AssignedByUserId = currentUserId,
                 CreatedAt = DateTime.UtcNow,
@@ -194,7 +194,7 @@ namespace backend.Services.Implementations
             if (assignment == null || assignment.IsDeleted || assignment.ReturnedDate != null)
                 return false;
 
-            assignment.ReturnedDate = DateTime.UtcNow;
+            assignment.ReturnedDate = DateTime.UtcNow.Date;
             assignment.UpdatedAt = DateTime.UtcNow;
             assignment.UpdatedBy = currentUserId;
 
@@ -238,7 +238,7 @@ namespace backend.Services.Implementations
                 throw new InvalidOperationException("Assignment not found or not active");
 
             // Mark current assignment as returned
-            assignment.ReturnedDate = DateTime.UtcNow;
+            assignment.ReturnedDate = DateTime.UtcNow.Date;
             assignment.UpdatedAt = DateTime.UtcNow;
             assignment.UpdatedBy = currentUserId;
 
@@ -249,7 +249,7 @@ namespace backend.Services.Implementations
                 DeviceId = assignment.DeviceId,
                 AssignedToUserId = transferDto.AssignedToUserId,
                 AssignedToDepartmentId = transferDto.AssignedToDepartmentId,
-                AssignedDate = DateTime.UtcNow,
+                AssignedDate = DateTime.UtcNow.Date,
                 Note = transferDto.Note,
                 AssignedByUserId = currentUserId,
                 CreatedAt = DateTime.UtcNow,

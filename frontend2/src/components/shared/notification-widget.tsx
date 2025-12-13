@@ -50,15 +50,15 @@ export function NotificationWidget() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          Recent Notifications
+          Thông báo gần đây
         </CardTitle>
-        <CardDescription>Latest system notifications</CardDescription>
+        <CardDescription>Thông báo hệ thống mới nhất</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-sm text-muted-foreground text-center py-4">Loading...</div>
+          <div className="text-sm text-muted-foreground text-center py-4">Đang tải...</div>
         ) : notifications.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-4">No new notifications</div>
+          <div className="text-sm text-muted-foreground text-center py-4">Không có thông báo mới</div>
         ) : (
           <ScrollArea className="h-[300px]">
             <div className="space-y-4">
@@ -75,7 +75,7 @@ export function NotificationWidget() {
                       <p className="text-sm font-medium">{notification.title}</p>
                       {!notification.isRead && (
                         <Badge variant="default" className="h-5 px-1.5 text-xs">
-                          New
+                          Mới
                         </Badge>
                       )}
                     </div>

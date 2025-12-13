@@ -50,6 +50,14 @@ export default function IncidentsPage() {
   }
   const isAdmin = getIsAdmin()
 
+  // Check if user is an employee (nhân viên)
+  const isEmployee = (): boolean => {
+    if (!user) return false
+    const roleLower = user.role.toLowerCase()
+    const positionLower = user.position?.toLowerCase() || ""
+    return roleLower === "user" && positionLower === "nhân viên"
+  }
+
   // Check if user can create reports (only Employee or Manager)
   const canCreateReport = (): boolean => {
     if (!user) return false
@@ -91,7 +99,7 @@ export default function IncidentsPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    return reports.filter(r => {
+    const filteredReports = reports.filter(r => {
       const matchesSearch = (r.device?.deviceName || "").toLowerCase().includes(search.toLowerCase())
         || (r.reportedByUser?.fullName || "").toLowerCase().includes(search.toLowerCase())
         || (r.reportType || "").toLowerCase().includes(search.toLowerCase())
@@ -107,7 +115,19 @@ export default function IncidentsPage() {
       const matchesStatus = expect === "all" || expect.includes(r.status)
       return matchesSearch && matchesStatus
     })
-  }, [reports, search, status])
+
+    // Sort by reportDate descending (newest first) for employees only
+    if (isEmployee()) {
+      return filteredReports.sort((a, b) => {
+        const dateA = a.reportDate ? new Date(a.reportDate).getTime() : 0
+        const dateB = b.reportDate ? new Date(b.reportDate).getTime() : 0
+        // Descending order: newer dates first
+        return dateB - dateA
+      })
+    }
+
+    return filteredReports
+  }, [reports, search, status, user])
 
   const totalCount = filtered.length
   const totalPages = totalCount === 0 ? 1 : Math.ceil(totalCount / pageSize)

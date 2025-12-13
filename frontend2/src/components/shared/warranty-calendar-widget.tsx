@@ -87,16 +87,16 @@ export function WarrantyCalendarWidget() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Warranty Calendar
+          Lịch bảo hành
         </CardTitle>
-        <CardDescription>Devices with expiring warranties</CardDescription>
+        <CardDescription>Thiết bị có bảo hành sắp hết hạn</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-sm text-muted-foreground text-center py-4">Loading...</div>
+          <div className="text-sm text-muted-foreground text-center py-4">Đang tải...</div>
         ) : totalExpiring === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No warranties expiring in the next 90 days
+            Không có bảo hành nào hết hạn trong 90 ngày tới
           </p>
         ) : (
           <div className="space-y-4">
@@ -104,7 +104,7 @@ export function WarrantyCalendarWidget() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <h4 className="text-sm font-medium">Within 30 Days</h4>
+                  <h4 className="text-sm font-medium">Trong 30 ngày</h4>
                   <Badge variant="destructive">{expiringDevices.within30.length}</Badge>
                 </div>
                 <div className="space-y-1 pl-6">
@@ -125,7 +125,7 @@ export function WarrantyCalendarWidget() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-orange-500" />
-                  <h4 className="text-sm font-medium">Within 60 Days</h4>
+                  <h4 className="text-sm font-medium">Trong 60 ngày</h4>
                   <Badge variant="outline" className="border-orange-500 text-orange-500">
                     {expiringDevices.within60.length}
                   </Badge>
@@ -148,7 +148,7 @@ export function WarrantyCalendarWidget() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                  <h4 className="text-sm font-medium">Within 90 Days</h4>
+                  <h4 className="text-sm font-medium">Trong 90 ngày</h4>
                   <Badge variant="outline" className="border-yellow-500 text-yellow-500">
                     {expiringDevices.within90.length}
                   </Badge>

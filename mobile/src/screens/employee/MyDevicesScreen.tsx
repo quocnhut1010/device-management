@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Text, Card, ActivityIndicator } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../../services/api';
 import { DeviceListItem, DeviceQrScanResult, RootStackParamList } from '../../types';
+import Colors from '../../theme/colors';
 
 type MyDevicesNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -67,7 +69,7 @@ const MyDevicesScreen: React.FC = () => {
   if (loading && devices.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -75,7 +77,11 @@ const MyDevicesScreen: React.FC = () => {
   if (devices.length === 0) {
     return (
       <View style={styles.emptyContainer}>
+        <View style={styles.emptyIconContainer}>
+          <MaterialCommunityIcons name="devices" size={64} color={Colors.textTertiary} />
+        </View>
         <Text style={styles.emptyText}>Bạn chưa có thiết bị nào được cấp phát</Text>
+        <Text style={styles.emptySubtext}>Thiết bị được cấp phát sẽ hiển thị ở đây</Text>
       </View>
     );
   }
@@ -86,14 +92,37 @@ const MyDevicesScreen: React.FC = () => {
         data={devices}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Card style={styles.deviceCard} onPress={() => handleDevicePress(item)}>
-            <Card.Content>
-              <Text style={styles.deviceName}>{item.deviceName}</Text>
-              <Text style={styles.deviceCode}>Mã: {item.deviceCode}</Text>
+          <Card 
+            style={styles.deviceCard} 
+            onPress={() => handleDevicePress(item)}
+            mode="elevated"
+          >
+            <Card.Content style={styles.cardContent}>
+              <View style={styles.cardHeader}>
+                <View style={styles.deviceIconContainer}>
+                  <MaterialCommunityIcons 
+                    name="devices" 
+                    size={28} 
+                    color={Colors.primary} 
+                  />
+                </View>
+                <View style={styles.deviceTitleContainer}>
+                  <Text style={styles.deviceName}>{item.deviceName}</Text>
+                  <Text style={styles.deviceCode}>Mã: {item.deviceCode}</Text>
+                </View>
+              </View>
+              
               <View style={styles.deviceInfo}>
-                <Text style={styles.deviceModel}>
-                  {item.modelName || 'Chưa có model'}
-                </Text>
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons 
+                    name="package-variant" 
+                    size={16} 
+                    color={Colors.textSecondary} 
+                  />
+                  <Text style={styles.deviceModel}>
+                    {item.modelName || 'Chưa có model'}
+                  </Text>
+                </View>
                 <View
                   style={[
                     styles.statusBadge,
@@ -103,11 +132,20 @@ const MyDevicesScreen: React.FC = () => {
                   <Text style={styles.statusText}>{item.status}</Text>
                 </View>
               </View>
+              
               {item.departmentName && (
-                <Text style={styles.deviceDept}>
-                  Phòng ban: {item.departmentName}
-                </Text>
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons 
+                    name="office-building" 
+                    size={16} 
+                    color={Colors.textSecondary} 
+                  />
+                  <Text style={styles.deviceDept}>
+                    {item.departmentName}
+                  </Text>
+                </View>
               )}
+              
               {selectedDeviceId === item.id && (
                 <View style={styles.loadingOverlay}>
                   <ActivityIndicator animating size="small" color="#fff" />
@@ -126,85 +164,125 @@ const MyDevicesScreen: React.FC = () => {
 };
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Đang sử dụng':
-      return '#4caf50';
-    case 'Đang sửa':
-      return '#ff9800';
-    case 'Chờ thanh lý':
-      return '#f44336';
-    case 'Chưa cấp phát':
-      return '#2196f3';
-    default:
-      return '#757575';
-  }
+  return Colors.status[status as keyof typeof Colors.status] || Colors.textSecondary;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 32,
+    backgroundColor: Colors.background,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    elevation: 2,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   listContent: {
-    padding: 10,
+    padding: 16,
   },
   deviceCard: {
-    marginBottom: 10,
-    elevation: 2,
+    marginBottom: 16,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    backgroundColor: Colors.surface,
     overflow: 'hidden',
   },
+  cardContent: {
+    padding: 16,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  deviceIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  deviceTitleContainer: {
+    flex: 1,
+  },
   deviceName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 5,
+    color: Colors.text,
+    marginBottom: 4,
   },
   deviceCode: {
-    fontSize: 14,
-    color: '#757575',
-    marginBottom: 8,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   deviceInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
   },
   deviceModel: {
     fontSize: 14,
-    color: '#212121',
+    color: Colors.text,
     flex: 1,
   },
   statusBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   statusText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   deviceDept: {
     fontSize: 14,
-    color: '#757575',
-    marginTop: 5,
+    color: Colors.textSecondary,
+    marginTop: 4,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -212,15 +290,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
+    borderRadius: 16,
   },
   loadingText: {
-    marginTop: 6,
+    marginTop: 8,
     color: '#fff',
     fontWeight: '600',
+    fontSize: 14,
   },
 });
 

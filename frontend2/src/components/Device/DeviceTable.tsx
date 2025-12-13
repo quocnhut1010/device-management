@@ -15,7 +15,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Edit, Trash2, RotateCcw, Package, Eye } from 'lucide-react'
+import {
+  Edit,
+  Trash2,
+  RotateCcw,
+  Package,
+  Eye,
+  CheckCircle2,
+  Circle,
+  Wrench,
+  AlertTriangle,
+  XCircle,
+  Clock,
+  Ban,
+} from 'lucide-react'
 import type { DeviceDto } from '@/types'
 import { formatDateForTable } from '@/lib/dateUtils'
 
@@ -41,11 +54,54 @@ const getStatusBadgeVariant = (status?: string) => {
   if (!status) return 'outline'
   
   const statusLower = status.toLowerCase()
+  
+  // Tích cực - Đang sử dụng
   if (statusLower.includes('đang sử dụng')) return 'default'
+  
+  // Trung tính - Chưa cấp phát, Chờ thanh lý
   if (statusLower.includes('chưa cấp phát')) return 'secondary'
+  if (statusLower.includes('chờ thanh lý')) return 'secondary'
+  
+  // Cảnh báo - Đang sửa chữa, Bảo trì (sử dụng outline với màu vàng)
+  if (statusLower.includes('đang sửa chữa') || statusLower.includes('bảo trì')) {
+    return 'outline'
+  }
+  
+  // Vấn đề - Hỏng, Mất, Đã thanh lý
   if (statusLower.includes('hỏng') || statusLower.includes('mất')) return 'destructive'
-  if (statusLower.includes('thanh lý')) return 'destructive'
+  if (statusLower.includes('đã thanh lý')) return 'destructive'
+  
   return 'outline'
+}
+
+const getStatusIcon = (status?: string) => {
+  if (!status) return null
+  
+  const statusLower = status.toLowerCase()
+  
+  if (statusLower.includes('đang sử dụng')) return CheckCircle2
+  if (statusLower.includes('chưa cấp phát')) return Circle
+  if (statusLower.includes('đang sửa chữa')) return Wrench
+  if (statusLower.includes('bảo trì')) return Wrench
+  if (statusLower.includes('chờ thanh lý')) return Clock
+  if (statusLower.includes('hỏng')) return XCircle
+  if (statusLower.includes('mất')) return AlertTriangle
+  if (statusLower.includes('đã thanh lý')) return Ban
+  
+  return null
+}
+
+const getStatusBadgeClassName = (status?: string) => {
+  if (!status) return ''
+  
+  const statusLower = status.toLowerCase()
+  
+  // Cảnh báo - màu vàng
+  if (statusLower.includes('đang sửa chữa') || statusLower.includes('bảo trì')) {
+    return 'border-yellow-500 text-yellow-700 bg-yellow-50 dark:border-yellow-400 dark:text-yellow-300 dark:bg-yellow-950/20'
+  }
+  
+  return ''
 }
 
 export default function DeviceTable({
@@ -59,8 +115,18 @@ export default function DeviceTable({
   isLoading = false,
   pagination,
 }: DeviceTableProps) {
-  const activeDevices = data.filter((d) => !d.isDeleted)
-  const deletedDevices = data.filter((d) => d.isDeleted)
+  // Sort by createdAt descending (newest first)
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    // Descending order: newer dates first
+    return dateB - dateA
+  })
+
+  // When viewing deleted devices, data already contains only deleted devices
+  // So we don't need to filter, just use sortedData directly
+  const activeDevices = isDeletedView ? [] : sortedData.filter((d) => !d.isDeleted)
+  const deletedDevices = isDeletedView ? sortedData : sortedData.filter((d) => d.isDeleted)
 
   const renderRow = (row: DeviceDto) => (
     <TableRow
@@ -80,9 +146,26 @@ export default function DeviceTable({
       {isAdmin && <TableCell>{row.departmentName || '-'}</TableCell>}
       <TableCell>{row.currentUserName || '-'}</TableCell>
       <TableCell>
-        <Badge variant={getStatusBadgeVariant(row.status)}>
-          {row.status || '-'}
-        </Badge>
+        {row.status ? (
+          <Badge
+            variant={getStatusBadgeVariant(row.status)}
+            className={getStatusBadgeClassName(row.status)}
+          >
+            {(() => {
+              const Icon = getStatusIcon(row.status)
+              return Icon ? (
+                <span className="flex items-center gap-1.5">
+                  <Icon className="h-3 w-3" />
+                  {row.status}
+                </span>
+              ) : (
+                row.status
+              )
+            })()}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
       </TableCell>
       <TableCell>
         {row.warrantyExpiry
@@ -225,8 +308,8 @@ export default function DeviceTable({
         <TableBody>
           {isDeletedView ? (
             <>
-              {data.length > 0 ? (
-                data.map(renderRow)
+              {deletedDevices.length > 0 ? (
+                deletedDevices.map(renderRow)
               ) : (
                 <TableRow>
                   <TableCell

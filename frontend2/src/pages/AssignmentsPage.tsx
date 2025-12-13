@@ -142,7 +142,11 @@ export default function AssignmentsPage() {
     const returned = statsData.filter((a) => !!a.returnedDate).length
     const thisMonth = statsData.filter((a) => {
       if (!a.assignedDate) return false
-      const assignedDate = new Date(a.assignedDate)
+      // Parse date string safely to avoid timezone issues
+      // If date string is in format "YYYY-MM-DD", parse it as local date
+      const dateStr = a.assignedDate.split('T')[0] // Get date part only (YYYY-MM-DD)
+      const [year, month, day] = dateStr.split('-').map(Number)
+      const assignedDate = new Date(year, month - 1, day) // month is 0-indexed
       const now = new Date()
       return (
         assignedDate.getMonth() === now.getMonth() &&

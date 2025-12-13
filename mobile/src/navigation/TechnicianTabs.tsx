@@ -8,6 +8,7 @@ import RepairListScreen from '../screens/technician/RepairListScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import { TechnicianTabParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import Colors from '../theme/colors';
 
 const Tab = createBottomTabNavigator<TechnicianTabParamList>();
 
@@ -34,14 +35,37 @@ const TechnicianTabs: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#6200ee',
-        tabBarInactiveTintColor: '#757575',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
+          borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
         headerStyle: {
-          backgroundColor: '#6200ee',
+          backgroundColor: Colors.primary,
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontSize: 18,
         },
         unmountOnBlur: true,
         detachInactiveScreens: true,
@@ -61,6 +85,7 @@ const TechnicianTabs: React.FC = () => {
               iconColor="#fff"
               size={24}
               onPress={handleLogout}
+              style={{ marginRight: 4 }}
             />
           ),
         })}

@@ -1,12 +1,14 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Text, Button, ActivityIndicator } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Camera, CameraView, BarcodeScanningResult } from 'expo-camera';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../services/api';
 import { DeviceQrScanResult, RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import Colors from '../theme/colors';
 
 type QRScannerNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -144,7 +146,10 @@ const QRScannerScreen: React.FC = () => {
   if (hasPermission === null) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#6200ee" />
+        <View style={styles.iconContainer}>
+          <MaterialCommunityIcons name="camera" size={64} color={Colors.primary} />
+        </View>
+        <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
         <Text style={styles.message}>Đang yêu cầu quyền truy cập camera...</Text>
       </View>
     );
@@ -153,6 +158,9 @@ const QRScannerScreen: React.FC = () => {
   if (hasPermission === false) {
     return (
       <View style={styles.container}>
+        <View style={styles.iconContainer}>
+          <MaterialCommunityIcons name="camera-off" size={64} color={Colors.error} />
+        </View>
         <Text style={styles.errorText}>Không có quyền truy cập camera</Text>
         <Button
           mode="contained"
@@ -161,6 +169,7 @@ const QRScannerScreen: React.FC = () => {
             setHasPermission(status === 'granted');
           }}
           style={styles.button}
+          buttonColor={Colors.primary}
         >
           Cho phép camera
         </Button>
@@ -188,6 +197,9 @@ const QRScannerScreen: React.FC = () => {
               <Text style={styles.loadingText}>Đang xử lý...</Text>
             </View>
           )}
+          <View style={styles.scanGuide}>
+            <Text style={styles.scanGuideText}>Đưa mã QR vào khung</Text>
+          </View>
         </View>
       </View>
       {scanned && !loading && (
@@ -195,6 +207,7 @@ const QRScannerScreen: React.FC = () => {
           mode="contained"
           onPress={() => setScanned(false)}
           style={styles.scanAgainButton}
+          buttonColor={Colors.primary}
         >
           Quét lại
         </Button>
@@ -208,20 +221,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    elevation: 4,
+  },
+  loader: {
+    marginTop: 16,
   },
   message: {
     marginTop: 20,
     fontSize: 16,
-    color: '#757575',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
   errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.error,
+    marginBottom: 24,
     textAlign: 'center',
+    paddingHorizontal: 32,
   },
   button: {
     marginTop: 10,
+    borderRadius: 12,
+    paddingHorizontal: 24,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -229,29 +262,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanArea: {
-    width: 250,
-    height: 250,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#6200ee',
+    width: 280,
+    height: 280,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: Colors.primary,
     backgroundColor: 'transparent',
+    borderStyle: 'dashed',
+  },
+  scanGuide: {
+    position: 'absolute',
+    top: -40,
+    alignSelf: 'center',
+  },
+  scanGuideText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 24,
   },
   loadingText: {
     color: '#fff',
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
+    fontWeight: '600',
   },
   scanAgainButton: {
     position: 'absolute',
     bottom: 50,
     paddingHorizontal: 40,
+    borderRadius: 12,
   },
 });
 

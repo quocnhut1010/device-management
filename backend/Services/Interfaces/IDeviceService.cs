@@ -14,7 +14,7 @@ namespace backend.Services.Interfaces
         Task<bool> DeleteDeviceAsync(Guid id, Guid userId);
         
         // Additional methods needed by controller
-        Task<object> GetPagedDevicesAsync(int page, int pageSize, string? search, string? status, Guid? modelId);
+        Task<object> GetPagedDevicesAsync(int page, int pageSize, string? search, string? status, Guid? modelId, Guid? departmentId);
         Task<IEnumerable<DeviceDto>> GetDeletedDevicesAsync();
         Task<bool> RestoreDeviceAsync(Guid id);
         Task<IEnumerable<DeviceDto>> GetDevicesByManagedDepartmentAsync(Guid userId);

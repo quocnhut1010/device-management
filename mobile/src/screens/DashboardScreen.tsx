@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { Text, Card, ActivityIndicator } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import apiClient from '../services/api';
 import { DeviceListItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserId } from '../services/auth';
+import Colors from '../theme/colors';
 
 type UserRole = 'Admin' | 'Manager' | 'Technician' | 'Employee';
 
@@ -210,8 +212,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#4caf50' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
                 {adminStats.devicesInUse || 0}
               </Text>
               <Text style={styles.statLabel}>Đang sử dụng</Text>
@@ -219,8 +224,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#2196f3' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                <MaterialCommunityIcons name="package-variant" size={24} color={Colors.info} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.info }]}>
                 {adminStats.devicesAvailable || 0}
               </Text>
               <Text style={styles.statLabel}>Có sẵn</Text>
@@ -230,8 +238,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#ff9800' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.warning + '20' }]}>
+                <MaterialCommunityIcons name="wrench" size={24} color={Colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.warning }]}>
                 {adminStats.devicesRepairing || 0}
               </Text>
               <Text style={styles.statLabel}>Đang sửa</Text>
@@ -239,8 +250,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#f44336' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.error + '20' }]}>
+                <MaterialCommunityIcons name="clock-alert" size={24} color={Colors.error} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.error }]}>
                 {adminStats.devicesPendingLiquidation || 0}
               </Text>
               <Text style={styles.statLabel}>Chờ thanh lý</Text>
@@ -250,8 +264,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#9c27b0' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.secondary + '20' }]}>
+                <MaterialCommunityIcons name="alert-circle" size={24} color={Colors.secondary} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.secondary }]}>
                 {adminStats.openIncidents || 0}
               </Text>
               <Text style={styles.statLabel}>Sự cố mở</Text>
@@ -259,8 +276,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#00bcd4' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                <MaterialCommunityIcons name="tools" size={24} color={Colors.info} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.info }]}>
                 {adminStats.activeRepairs || 0}
               </Text>
               <Text style={styles.statLabel}>Sửa chữa đang thực hiện</Text>
@@ -276,16 +296,24 @@ const DashboardScreen: React.FC = () => {
     return (
       <>
         <Card style={styles.statCard}>
-          <Card.Content>
-            <Text style={styles.statNumber}>{managerStats.departmentDevices || 0}</Text>
+          <Card.Content style={styles.statCardContent}>
+            <View style={[styles.statIconContainer, { backgroundColor: Colors.primary + '20' }]}>
+              <MaterialCommunityIcons name="office-building" size={32} color={Colors.primary} />
+            </View>
+            <Text style={[styles.statNumber, { color: Colors.primary }]}>
+              {managerStats.departmentDevices || 0}
+            </Text>
             <Text style={styles.statLabel}>Thiết bị phòng ban</Text>
           </Card.Content>
         </Card>
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#4caf50' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
                 {managerStats.devicesInUse || 0}
               </Text>
               <Text style={styles.statLabel}>Đang sử dụng</Text>
@@ -293,8 +321,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#2196f3' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                <MaterialCommunityIcons name="package-variant" size={24} color={Colors.info} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.info }]}>
                 {managerStats.availableDevices || 0}
               </Text>
               <Text style={styles.statLabel}>Có sẵn</Text>
@@ -304,8 +335,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#ff9800' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.warning + '20' }]}>
+                <MaterialCommunityIcons name="wrench" size={24} color={Colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.warning }]}>
                 {managerStats.devicesRepairing || 0}
               </Text>
               <Text style={styles.statLabel}>Đang sửa</Text>
@@ -313,8 +347,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#9c27b0' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.secondary + '20' }]}>
+                <MaterialCommunityIcons name="alert-circle" size={24} color={Colors.secondary} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.secondary }]}>
                 {managerStats.openIncidents || 0}
               </Text>
               <Text style={styles.statLabel}>Sự cố mở</Text>
@@ -323,8 +360,11 @@ const DashboardScreen: React.FC = () => {
         </View>
 
         <Card style={styles.statCard}>
-          <Card.Content>
-            <Text style={[styles.statNumber, { color: '#00bcd4' }]}>
+          <Card.Content style={styles.statCardContent}>
+            <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+              <MaterialCommunityIcons name="tools" size={32} color={Colors.info} />
+            </View>
+            <Text style={[styles.statNumber, { color: Colors.info }]}>
               {managerStats.ongoingRepairs || 0}
             </Text>
             <Text style={styles.statLabel}>Sửa chữa đang thực hiện</Text>
@@ -340,8 +380,11 @@ const DashboardScreen: React.FC = () => {
       <>
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#ff9800' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.warning + '20' }]}>
+                <MaterialCommunityIcons name="clock-outline" size={24} color={Colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.warning }]}>
                 {techStats.repairsPending || 0}
               </Text>
               <Text style={styles.statLabel}>Chờ xử lý</Text>
@@ -349,8 +392,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#2196f3' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                <MaterialCommunityIcons name="wrench" size={24} color={Colors.info} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.info }]}>
                 {techStats.repairsInProgress || 0}
               </Text>
               <Text style={styles.statLabel}>Đang thực hiện</Text>
@@ -360,8 +406,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#9c27b0' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.secondary + '20' }]}>
+                <MaterialCommunityIcons name="clock-check" size={24} color={Colors.secondary} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.secondary }]}>
                 {techStats.repairsAwaitingApproval || 0}
               </Text>
               <Text style={styles.statLabel}>Chờ phê duyệt</Text>
@@ -369,8 +418,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#4caf50' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
                 {techStats.repairsCompletedThisWeek || 0}
               </Text>
               <Text style={styles.statLabel}>Hoàn thành tuần này</Text>
@@ -379,8 +431,11 @@ const DashboardScreen: React.FC = () => {
         </View>
 
         <Card style={styles.statCard}>
-          <Card.Content>
-            <Text style={[styles.statNumber, { color: '#00bcd4' }]}>
+          <Card.Content style={styles.statCardContent}>
+            <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+              <MaterialCommunityIcons name="timer" size={32} color={Colors.info} />
+            </View>
+            <Text style={[styles.statNumber, { color: Colors.info, fontSize: 24 }]}>
               {techStats.avgRepairTime || 'N/A'}
             </Text>
             <Text style={styles.statLabel}>Thời gian sửa trung bình</Text>
@@ -395,16 +450,24 @@ const DashboardScreen: React.FC = () => {
     return (
       <>
         <Card style={styles.statCard}>
-          <Card.Content>
-            <Text style={styles.statNumber}>{empStats.myDevices || 0}</Text>
+          <Card.Content style={styles.statCardContent}>
+            <View style={[styles.statIconContainer, { backgroundColor: Colors.primary + '20' }]}>
+              <MaterialCommunityIcons name="devices" size={32} color={Colors.primary} />
+            </View>
+            <Text style={[styles.statNumber, { color: Colors.primary }]}>
+              {empStats.myDevices || 0}
+            </Text>
             <Text style={styles.statLabel}>Thiết bị của tôi</Text>
           </Card.Content>
         </Card>
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#4caf50' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
                 {empStats.devicesActive || 0}
               </Text>
               <Text style={styles.statLabel}>Thiết bị đang hoạt động</Text>
@@ -412,8 +475,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#ff9800' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.warning + '20' }]}>
+                <MaterialCommunityIcons name="wrench" size={24} color={Colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.warning }]}>
                 {empStats.devicesRepairing || 0}
               </Text>
               <Text style={styles.statLabel}>Thiết bị đang sửa</Text>
@@ -423,8 +489,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#9c27b0' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.secondary + '20' }]}>
+                <MaterialCommunityIcons name="alert-circle" size={24} color={Colors.secondary} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.secondary }]}>
                 {empStats.myIncidentsOpen || 0}
               </Text>
               <Text style={styles.statLabel}>Sự cố mở</Text>
@@ -432,8 +501,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#f44336' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.error + '20' }]}>
+                <MaterialCommunityIcons name="clock-alert" size={24} color={Colors.error} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.error }]}>
                 {empStats.myIncidentsPending || 0}
               </Text>
               <Text style={styles.statLabel}>Sự cố chờ xử lý</Text>
@@ -443,8 +515,11 @@ const DashboardScreen: React.FC = () => {
 
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#00bcd4' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                <MaterialCommunityIcons name="alert" size={24} color={Colors.info} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.info }]}>
                 {empStats.activeIssues || 0}
               </Text>
               <Text style={styles.statLabel}>Vấn đề đang hoạt động</Text>
@@ -452,8 +527,11 @@ const DashboardScreen: React.FC = () => {
           </Card>
 
           <Card style={[styles.statCard, styles.statCardHalf]}>
-            <Card.Content>
-              <Text style={[styles.statNumber, { color: '#4caf50' }]}>
+            <Card.Content style={styles.statCardContent}>
+              <View style={[styles.statIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                <MaterialCommunityIcons name="check-all" size={24} color={Colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
                 {empStats.resolvedIncidents || 0}
               </Text>
               <Text style={styles.statLabel}>Sự cố đã giải quyết</Text>
@@ -527,24 +605,13 @@ const DashboardScreen: React.FC = () => {
 };
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Đang sử dụng':
-      return '#4caf50';
-    case 'Đang sửa':
-      return '#ff9800';
-    case 'Chờ thanh lý':
-      return '#f44336';
-    case 'Chưa cấp phát':
-      return '#2196f3';
-    default:
-      return '#757575';
-  }
+  return Colors.status[status as keyof typeof Colors.status] || Colors.textSecondary;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -552,63 +619,88 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsContainer: {
-    padding: 10,
+    padding: 16,
   },
   statsTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 15,
-    paddingHorizontal: 5,
+    color: Colors.text,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
   statCard: {
-    marginBottom: 10,
-    elevation: 2,
+    marginBottom: 12,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    backgroundColor: Colors.surface,
   },
   statCardHalf: {
     width: '48%',
+  },
+  statCardContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  statIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   statNumber: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: Colors.primary,
     textAlign: 'center',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 14,
+    color: Colors.textSecondary,
     textAlign: 'center',
-    marginTop: 5,
+    fontWeight: '500',
   },
   devicesContainer: {
-    padding: 10,
+    padding: 16,
     paddingBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 15,
-    paddingHorizontal: 5,
+    color: Colors.text,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   deviceCard: {
-    marginBottom: 10,
-    elevation: 2,
+    marginBottom: 12,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    backgroundColor: Colors.surface,
   },
   deviceName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 5,
+    color: Colors.text,
+    marginBottom: 6,
   },
   deviceCode: {
     fontSize: 14,
-    color: '#757575',
-    marginBottom: 8,
+    color: Colors.textSecondary,
+    marginBottom: 10,
   },
   deviceInfo: {
     flexDirection: 'row',
@@ -618,23 +710,23 @@ const styles = StyleSheet.create({
   },
   deviceModel: {
     fontSize: 14,
-    color: '#212121',
+    color: Colors.text,
     flex: 1,
   },
   statusBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   statusText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   deviceUser: {
     fontSize: 14,
-    color: '#757575',
-    marginTop: 5,
+    color: Colors.textSecondary,
+    marginTop: 6,
   },
 });
 

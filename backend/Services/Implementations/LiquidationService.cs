@@ -393,7 +393,7 @@ namespace backend.Services.Implementations
 
             foreach (var assignment in activeAssignments)
             {
-                assignment.ReturnedDate = DateTime.UtcNow;
+                assignment.ReturnedDate = DateTime.UtcNow.Date;
                 assignment.UpdatedAt = DateTime.UtcNow;
                 assignment.UpdatedBy = approvedBy;
             }

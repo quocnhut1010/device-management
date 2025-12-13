@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using AutoMapper;
@@ -28,6 +29,7 @@ public class AIChatService : IAIChatService
 - Ưu tiên sử dụng dữ liệu thực khi có thể.
 - Sử dụng tiếng Việt thân thiện, chuyên nghiệp.
 - Nếu không tìm thấy dữ liệu, giải thích rõ lý do và đề xuất hướng khác.";
+    private const int DefaultHistoryLimit = 10;
 
     public AIChatService(
         IAiChatRepository chatRepository,
@@ -47,7 +49,7 @@ public class AIChatService : IAIChatService
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _apiKey = configuration["GoogleAI:ApiKey"] ?? string.Empty;
-        _modelName = configuration["GoogleAI:Model"] ?? "gemini-2.0-flash-lite";
+        _modelName = configuration["GoogleAI:Model"] ?? "gemini-2.5-flash-lite";
     }
 
     public async Task<AiChatHistoryResponseDto?> GetSessionHistoryAsync(Guid userId, Guid sessionId)
@@ -352,13 +354,23 @@ public class AIChatService : IAIChatService
         // Xử lý intent kiểm tra tình trạng sửa chữa (chỉ cho admin)
         if (isAdmin && intentResult.Intent == ChatIntent.KiemTraTinhTrangSuaChua)
         {
-            return await HandleRepairStatusAsync(session.Id, message);
+            return await HandleDeviceDataQueryAsync(session.Id, message, preferRepairing: true);
         }
 
-        // Xử lý intent tra cứu thiết bị (chỉ cho admin)
+        // Xử lý intent tra cứu thiết bị (chỉ cho admin) - data-first
         if (isAdmin && intentResult.Intent == ChatIntent.TraCuuThietBi)
         {
-            return await HandleDeviceLookupAsync(session.Id, message);
+            return await HandleDeviceDataQueryAsync(session.Id, message, preferRepairing: false);
+        }
+
+        // Nếu câu hỏi có dấu hiệu tra cứu thiết bị nhưng intent chưa khớp, vẫn ưu tiên luồng data-first (admin)
+        if (isAdmin)
+        {
+            var detectedFilters = DetectDeviceQueryFilters(message);
+            if (detectedFilters.IsDataQuery)
+            {
+                return await HandleDeviceDataQueryAsync(session.Id, message, detectedFilters);
+            }
         }
 
         // Kiểm tra xem có phải yêu cầu xuất báo cáo không (sau khi đã loại trừ các intent trên) - chỉ cho admin
@@ -413,6 +425,105 @@ public class AIChatService : IAIChatService
         };
     }
 
+    private async Task<string> GenerateModelResponseWithContextAsync(
+        Guid sessionId,
+        string instruction,
+        object structuredContext,
+        int historyLimit = DefaultHistoryLimit)
+    {
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            _logger.LogWarning("Google AI API key is missing.");
+            return "Không tìm thấy API key Google AI. Vui lòng cấu hình trong hệ thống.";
+        }
+
+        try
+        {
+            var history = await _chatRepository.GetMessagesAsync(sessionId, historyLimit);
+            var trimmedHistory = history
+                .OrderBy(h => h.CreatedAt)
+                .TakeLast(Math.Max(2, historyLimit / 2))
+                .Select(m => new
+                {
+                    role = m.Role == "assistant" ? "model" : "user",
+                    parts = new[]
+                    {
+                        new { text = m.Content }
+                    }
+                })
+                .ToList();
+
+            // Bổ sung context đã lọc dữ liệu để LLM chỉ diễn đạt lại
+            trimmedHistory.Add(new
+            {
+                role = "user",
+                parts = new[]
+                {
+                    new
+                    {
+                        text = $"instruction: {instruction}\ncontext:\n{JsonSerializer.Serialize(structuredContext, JsonOptions)}"
+                    }
+                }
+            });
+
+            var requestPayload = new
+            {
+                systemInstruction = new
+                {
+                    role = "system",
+                    parts = new[]
+                    {
+                        new { text = SystemInstruction }
+                    }
+                },
+                contents = trimmedHistory,
+                generationConfig = new
+                {
+                    maxOutputTokens = 500,
+                    temperature = 0.3
+                }
+            };
+
+            var httpClient = _httpClientFactory.CreateClient();
+            var requestContent = new StringContent(JsonSerializer.Serialize(requestPayload, JsonOptions), Encoding.UTF8, "application/json");
+            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{_modelName}:generateContent?key={_apiKey}";
+
+            var response = await httpClient.PostAsync(endpoint, requestContent);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Google AI context request failed. Status: {Status} Body: {Body}", response.StatusCode, body);
+                return string.Empty;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var document = JsonDocument.Parse(json);
+
+            if (!document.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+            {
+                _logger.LogWarning("Google AI context response missing candidates. Payload: {Payload}", json);
+                return string.Empty;
+            }
+
+            var firstCandidate = candidates[0];
+            if (!firstCandidate.TryGetProperty("content", out var content) ||
+                !content.TryGetProperty("parts", out var parts) ||
+                parts.GetArrayLength() == 0)
+            {
+                _logger.LogWarning("Google AI context response missing content parts. Payload: {Payload}", json);
+                return string.Empty;
+            }
+
+            var text = parts[0].GetProperty("text").GetString() ?? string.Empty;
+            return SanitizeAsterisks(text);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception when calling Google AI with structured context.");
+            return string.Empty;
+        }
+    }
+
     private async Task<string> GenerateModelResponseAsync(Guid sessionId)
     {
         if (string.IsNullOrEmpty(_apiKey))
@@ -423,7 +534,7 @@ public class AIChatService : IAIChatService
 
         try
         {
-            var history = await _chatRepository.GetMessagesAsync(sessionId, 25);
+            var history = await _chatRepository.GetMessagesAsync(sessionId, DefaultHistoryLimit);
 
             var contents = history.Select(m => new
             {
@@ -615,6 +726,346 @@ public class AIChatService : IAIChatService
     }
 
     #endregion
+
+    private sealed class DeviceQueryFilters
+    {
+        public bool IsDataQuery { get; set; }
+        public string? DeviceCode { get; set; }
+        public string? Department { get; set; }
+        public string? Status { get; set; }
+        public string? DeviceType { get; set; }
+        public bool ExplicitListRequest { get; set; }
+    }
+
+    private DeviceQueryFilters DetectDeviceQueryFilters(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return new DeviceQueryFilters();
+        }
+
+        var normalized = NormalizeText(message);
+
+        var filters = new DeviceQueryFilters
+        {
+            DeviceCode = ExtractDeviceCode(message)
+        };
+
+        if (normalized.Contains("danh sach") || normalized.Contains("liet ke"))
+        {
+            filters.ExplicitListRequest = true;
+        }
+
+        // Status keywords
+        if (normalized.Contains("dang sua") || normalized.Contains("dang sua chua") || normalized.Contains("sua chua"))
+        {
+            filters.Status = DeviceStatus.Repairing;
+        }
+        else if (normalized.Contains("dang dung") || normalized.Contains("dang su dung") || normalized.Contains("in use"))
+        {
+            filters.Status = DeviceStatus.InUse;
+        }
+        else if (normalized.Contains("chua cap phat") || normalized.Contains("san sang") || normalized.Contains("available"))
+        {
+            filters.Status = DeviceStatus.Available;
+        }
+        else if (normalized.Contains("bao tri") || normalized.Contains("maintenance"))
+        {
+            filters.Status = DeviceStatus.Maintenance;
+        }
+        else if (normalized.Contains("hong") || normalized.Contains("broken"))
+        {
+            filters.Status = DeviceStatus.Broken;
+        }
+        else if (normalized.Contains("mat"))
+        {
+            filters.Status = DeviceStatus.Lost;
+        }
+        else if (normalized.Contains("cho thanh ly"))
+        {
+            filters.Status = DeviceStatus.PendingLiquidation;
+        }
+        else if (normalized.Contains("da thanh ly") || normalized.Contains("thanh li") || normalized.Contains("liquidated"))
+        {
+            filters.Status = DeviceStatus.Liquidated;
+        }
+
+        // Department extraction: lấy cụm sau từ khóa phòng/phòng ban
+        filters.Department = ExtractDepartment(normalized);
+
+        // Device type keywords
+        if (normalized.Contains("laptop"))
+        {
+            filters.DeviceType = "laptop";
+        }
+        else if (normalized.Contains("may tinh ban") || normalized.Contains("desktop") || normalized.Contains("pc"))
+        {
+            filters.DeviceType = "pc";
+        }
+        else if (normalized.Contains("may in") || normalized.Contains("printer"))
+        {
+            filters.DeviceType = "printer";
+        }
+        else if (normalized.Contains("may chu") || normalized.Contains("server"))
+        {
+            filters.DeviceType = "server";
+        }
+
+        bool mentionsDevices = normalized.Contains("thiet bi") || normalized.Contains("device") || normalized.Contains("ma dev");
+
+        filters.IsDataQuery =
+            filters.DeviceCode != null ||
+            !string.IsNullOrEmpty(filters.Status) ||
+            !string.IsNullOrEmpty(filters.Department) ||
+            !string.IsNullOrEmpty(filters.DeviceType) ||
+            filters.ExplicitListRequest ||
+            mentionsDevices;
+
+        return filters;
+    }
+
+    private static string? ExtractDepartment(string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        var markers = new[] { "phong ", "phong ban ", "bo phan " };
+        foreach (var marker in markers)
+        {
+            var idx = normalized.IndexOf(marker, StringComparison.Ordinal);
+            if (idx >= 0)
+            {
+                var start = idx + marker.Length;
+                var rest = normalized.Substring(start);
+                var stopChars = new[] { ".", ",", ";", "?", "!" };
+                var stopIndex = rest.Length;
+                foreach (var c in stopChars)
+                {
+                    var pos = rest.IndexOf(c);
+                    if (pos >= 0 && pos < stopIndex)
+                    {
+                        stopIndex = pos;
+                    }
+                }
+
+                var candidate = rest[..stopIndex].Trim();
+                if (!string.IsNullOrWhiteSpace(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<AiChatMessage> HandleDeviceDataQueryAsync(
+        Guid sessionId,
+        string message,
+        DeviceQueryFilters? filters = null,
+        bool preferRepairing = false)
+    {
+        filters ??= DetectDeviceQueryFilters(message);
+
+        if (preferRepairing && string.IsNullOrEmpty(filters.Status))
+        {
+            filters.Status = DeviceStatus.Repairing;
+        }
+
+        var devices = await _deviceService.GetAllDevicesAsync();
+
+        // Nếu có mã thiết bị cụ thể -> trả về chi tiết trước, không cần LLM
+        if (!string.IsNullOrWhiteSpace(filters.DeviceCode))
+        {
+            var device = devices.FirstOrDefault(d =>
+                !string.IsNullOrEmpty(d.DeviceCode) &&
+                string.Equals(d.DeviceCode, filters.DeviceCode, StringComparison.OrdinalIgnoreCase));
+
+            if (device == null)
+            {
+                return new AiChatMessage
+                {
+                    Id = Guid.NewGuid(),
+                    SessionId = sessionId,
+                    Role = "assistant",
+                    Content = $"Không tìm thấy thiết bị với mã {filters.DeviceCode} trong hệ thống.",
+                    CreatedAt = DateTime.UtcNow
+                };
+            }
+
+            var detailBuilder = BuildDeviceDetail(device);
+            return new AiChatMessage
+            {
+                Id = Guid.NewGuid(),
+                SessionId = sessionId,
+                Role = "assistant",
+                Content = detailBuilder.ToString(),
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        // Áp dụng các bộ lọc list
+        var filtered = devices.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(filters.Status))
+        {
+            filtered = filtered.Where(d => string.Equals(d.Status, filters.Status, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.Department))
+        {
+            filtered = filtered.Where(d =>
+                !string.IsNullOrWhiteSpace(d.DepartmentName) &&
+                ContainsNormalized(d.DepartmentName, filters.Department!));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.DeviceType))
+        {
+            filtered = filtered.Where(d =>
+                !string.IsNullOrWhiteSpace(d.DeviceTypeName) &&
+                ContainsNormalized(d.DeviceTypeName, filters.DeviceType!));
+        }
+
+        var filteredList = filtered.ToList();
+        _logger.LogInformation("AIChat data query filters: {@Filters} -> {Count} devices", new
+        {
+            filters.DeviceCode,
+            filters.Status,
+            filters.Department,
+            filters.DeviceType,
+            filters.ExplicitListRequest
+        }, filteredList.Count);
+
+        if (filteredList.Count == 0)
+        {
+            return new AiChatMessage
+            {
+                Id = Guid.NewGuid(),
+                SessionId = sessionId,
+                Role = "assistant",
+                Content = "Không tìm thấy dữ liệu phù hợp với yêu cầu. Vui lòng kiểm tra lại từ khóa hoặc cung cấp thêm thông tin.",
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        if (filteredList.Count == 1)
+        {
+            var detailBuilder = BuildDeviceDetail(filteredList[0]);
+            return new AiChatMessage
+            {
+                Id = Guid.NewGuid(),
+                SessionId = sessionId,
+                Role = "assistant",
+                Content = detailBuilder.ToString(),
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        var limited = filteredList.Take(20).ToList();
+        var tableText = FormatDevicesTable(limited, filteredList.Count);
+
+        // Tùy chọn diễn đạt bằng LLM nhưng ràng buộc context
+        var contextPayload = limited.Select(d => new
+        {
+            deviceCode = d.DeviceCode,
+            name = d.DeviceName,
+            dept = d.DepartmentName,
+            status = d.Status,
+            type = d.DeviceTypeName,
+            user = d.CurrentUserName
+        }).ToList();
+
+        var paraphrase = await GenerateModelResponseWithContextAsync(
+            sessionId,
+            "Chỉ trả lời dựa trên context. Nếu context trống hãy nói không tìm thấy dữ liệu phù hợp. Viết ngắn gọn tiếng Việt, không bịa, không suy đoán. Không dùng markdown hoặc dấu *.",
+            new { context = contextPayload, total = filteredList.Count });
+
+        var sanitizedParaphrase = string.IsNullOrWhiteSpace(paraphrase) ? string.Empty : SanitizeAsterisks(paraphrase);
+
+        var finalText = string.IsNullOrWhiteSpace(sanitizedParaphrase)
+            ? tableText
+            : $"{sanitizedParaphrase}\n\n{tableText}";
+
+        return new AiChatMessage
+        {
+            Id = Guid.NewGuid(),
+            SessionId = sessionId,
+            Role = "assistant",
+            Content = finalText,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static StringBuilder BuildDeviceDetail(DeviceDto device)
+    {
+        var builder = new StringBuilder();
+        var purchaseDateText = device.PurchaseDate.HasValue
+            ? device.PurchaseDate.Value.ToString("dd/MM/yyyy")
+            : "(chưa có)";
+        var warrantyText = device.WarrantyExpiry.HasValue
+            ? device.WarrantyExpiry.Value.ToString("dd/MM/yyyy")
+            : "(chưa có)";
+        builder.AppendLine($"Tôi đã tìm được thiết bị với mã {device.DeviceCode ?? "(không rõ)"}:");
+        builder.AppendLine();
+        builder.AppendLine("Thông tin chi tiết:");
+        builder.AppendLine($"- Tên thiết bị: {device.DeviceName}");
+        builder.AppendLine($"- Loại thiết bị: {device.DeviceTypeName}");
+        builder.AppendLine($"- Trạng thái: {device.Status}");
+        builder.AppendLine($"- Người dùng: {device.CurrentUserName}");
+        builder.AppendLine($"- Phòng ban: {device.DepartmentName}");
+        builder.AppendLine($"- Ngày mua: {purchaseDateText}");
+        builder.AppendLine($"- Hết bảo hành: {warrantyText}");
+        return builder;
+    }
+
+    private static string FormatDevicesTable(IEnumerable<DeviceDto> devices, int total)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Danh sách thiết bị (tối đa 20 kết quả) - tổng: {total}");
+        sb.AppendLine("Mã | Tên | Phòng ban | Trạng thái");
+        sb.AppendLine("-----------------------------------");
+        foreach (var d in devices)
+        {
+            sb.AppendLine($"{d.DeviceCode ?? "-"} | {d.DeviceName ?? "-"} | {d.DepartmentName ?? "-"} | {d.Status ?? "-"}");
+        }
+        return sb.ToString();
+    }
+
+    private static string NormalizeText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var normalized = text.ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        var chars = normalized
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            .ToArray();
+        return new string(chars);
+    }
+
+    private static bool ContainsNormalized(string source, string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(keyword))
+        {
+            return false;
+        }
+
+        return NormalizeText(source).Contains(NormalizeText(keyword));
+    }
+
+    private static string SanitizeAsterisks(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+        {
+            return string.Empty;
+        }
+
+        return input.Replace("*", string.Empty);
+    }
 
     private async Task<AiChatMessage> HandleDeviceLookupAsync(Guid sessionId, string message)
     {

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Repair, RootStackParamList, getRepairStatusColor, getRepairStatusText, RepairStatus } from '../../types';
 import repairService from '../../services/repair';
 import RejectRepairModal from '../../components/technician/RejectRepairModal';
 import { useAuth } from '../../contexts/AuthContext';
+import Colors from '../../theme/colors';
 
 type RepairListNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -89,7 +91,7 @@ const RepairListScreen: React.FC = () => {
   if (loading && repairs.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -97,6 +99,9 @@ const RepairListScreen: React.FC = () => {
   if (repairs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
+        <View style={styles.emptyIconContainer}>
+          <MaterialCommunityIcons name="tools" size={64} color={Colors.textTertiary} />
+        </View>
         <Text style={styles.emptyText}>Bạn chưa có lệnh sửa chữa nào</Text>
       </View>
     );
@@ -190,72 +195,95 @@ const formatDate = (dateString: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 32,
+    backgroundColor: Colors.background,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    elevation: 2,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
     textAlign: 'center',
   },
   listContent: {
-    padding: 10,
+    padding: 16,
   },
   repairCard: {
-    marginBottom: 10,
-    elevation: 2,
+    marginBottom: 16,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    backgroundColor: Colors.surface,
   },
   deviceName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#212121',
-    marginBottom: 5,
+    color: Colors.text,
+    marginBottom: 6,
   },
   deviceCode: {
     fontSize: 14,
-    color: '#757575',
-    marginBottom: 8,
+    color: Colors.textSecondary,
+    marginBottom: 10,
+    fontWeight: '500',
   },
   repairInfo: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   description: {
     fontSize: 14,
-    color: '#212121',
-    marginBottom: 8,
+    color: Colors.text,
+    marginBottom: 10,
+    lineHeight: 20,
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   actionButton: {
-    marginTop: 10,
+    marginTop: 12,
     alignSelf: 'flex-end',
+    borderRadius: 12,
   },
   rejectButton: {
-    marginTop: 10,
+    marginTop: 8,
+    borderRadius: 12,
   },
   statusText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   repairDate: {
-    fontSize: 14,
-    color: '#757575',
-    marginTop: 5,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 6,
   },
 });
 

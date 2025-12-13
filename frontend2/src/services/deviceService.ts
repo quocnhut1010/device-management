@@ -8,12 +8,14 @@ export const getPagedDevices = async ({
   search,
   status,
   modelId,
+  departmentId,
 }: {
   page: number
   pageSize: number
   search?: string
   status?: string
   modelId?: string
+  departmentId?: string
 }): Promise<PaginatedResult<DeviceDto>> => {
   const params: any = {
     page: page + 1, // Backend uses 1-based pagination
@@ -22,6 +24,7 @@ export const getPagedDevices = async ({
   if (search) params.search = search
   if (status) params.status = status
   if (modelId) params.modelId = modelId
+  if (departmentId) params.departmentId = departmentId
 
   const response = await api.get('/Device/paged', { params })
   

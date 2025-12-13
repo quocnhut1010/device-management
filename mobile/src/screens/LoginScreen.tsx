@@ -8,7 +8,9 @@ import {
   Alert,
 } from 'react-native';
 import { TextInput, Button, Text, ActivityIndicator } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import Colors from '../theme/colors';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -42,10 +44,21 @@ const LoginScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.gradientBackground} />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.logoContainer}>
+          <View style={styles.iconContainer}>
+            <MaterialCommunityIcons 
+              name="devices" 
+              size={64} 
+              color="#ffffff" 
+            />
+          </View>
           <Text style={styles.logoText}>Device Management</Text>
-          <Text style={styles.subtitleText}>Mobile App</Text>
+          <Text style={styles.subtitleText}>Hệ thống quản lý thiết bị</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -58,6 +71,9 @@ const LoginScreen: React.FC = () => {
             keyboardType="email-address"
             style={styles.input}
             disabled={loading}
+            left={<TextInput.Icon icon="email" />}
+            outlineColor={Colors.border}
+            activeOutlineColor={Colors.primary}
           />
 
           <TextInput
@@ -68,16 +84,24 @@ const LoginScreen: React.FC = () => {
             secureTextEntry
             style={styles.input}
             disabled={loading}
+            left={<TextInput.Icon icon="lock" />}
+            outlineColor={Colors.border}
+            activeOutlineColor={Colors.primary}
           />
 
           {loading ? (
-            <ActivityIndicator size="large" color="#6200ee" style={styles.loader} />
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loaderText}>Đang đăng nhập...</Text>
+            </View>
           ) : (
             <Button
               mode="contained"
               onPress={handleLogin}
               style={styles.button}
               contentStyle={styles.buttonContent}
+              buttonColor={Colors.primary}
+              textColor="#ffffff"
             >
               Đăng nhập
             </Button>
@@ -91,48 +115,74 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    position: 'relative',
+  },
+  gradientBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.primary,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   logoText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#ffffff',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitleText: {
-    fontSize: 18,
-    color: '#757575',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
   },
   formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    elevation: 3,
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   input: {
     marginBottom: 16,
+    backgroundColor: Colors.surface,
   },
   button: {
     marginTop: 8,
+    borderRadius: 12,
+    elevation: 2,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
-  loader: {
+  loaderContainer: {
     marginTop: 20,
+    alignItems: 'center',
+  },
+  loaderText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.textSecondary,
   },
 });
 

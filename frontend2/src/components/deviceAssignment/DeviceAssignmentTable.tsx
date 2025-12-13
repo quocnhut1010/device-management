@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Search, RotateCcw, Eye } from 'lucide-react'
-import { format } from 'date-fns'
+import { formatDateForTable } from '@/lib/dateUtils'
 import type { DeviceAssignmentDto } from '@/types'
 
 interface PaginationProps {
@@ -117,12 +117,12 @@ const DeviceAssignmentTable: React.FC<Props> = ({
                   <TableCell>{a.assignedToDepartmentName}</TableCell>
                   <TableCell>
                     {a.assignedDate
-                      ? format(new Date(a.assignedDate), 'MMM dd, yyyy')
+                      ? formatDateForTable(a.assignedDate)
                       : '-'}
                   </TableCell>
                   <TableCell>
                     {a.returnedDate
-                      ? format(new Date(a.returnedDate), 'MMM dd, yyyy')
+                      ? formatDateForTable(a.returnedDate)
                       : '-'}
                   </TableCell>
                   <TableCell>
