@@ -57,6 +57,9 @@ DeviceManagement/
 │   │   ├── AuthController.cs
 │   │   ├── DeviceController.cs
 │   │   ├── DeviceAssignmentController.cs
+│   │   ├── DeviceHistoryController.cs
+│   │   ├── DeviceModelsController.cs
+│   │   ├── DeviceTypesController.cs
 │   │   ├── IncidentReportController.cs
 │   │   ├── RepairController.cs
 │   │   ├── ReplacementController.cs
@@ -64,7 +67,12 @@ DeviceManagement/
 │   │   ├── DashboardController.cs
 │   │   ├── AIChatController.cs
 │   │   ├── AIReportController.cs
-│   │   └── ...
+│   │   ├── UsersController.cs
+│   │   ├── DepartmentsController.cs
+│   │   ├── SuppliersController.cs
+│   │   ├── NotificationController.cs
+│   │   ├── ReportExportController.cs
+│   │   └── DebugController.cs
 │   ├── Models/                 # Domain models
 │   │   ├── Entities/           # Database entities
 │   │   ├── DTOs/               # Data Transfer Objects
@@ -294,7 +302,7 @@ Tài khoản mẫu sẽ được tạo tự động khi database được seed. 
 
 ### Quản lý thiết bị
 - ✅ CRUD thiết bị với đầy đủ thông tin
-- ✅ Quản lý trạng thái thiết bị (Available, In Use, Repairing, Liquidated, etc.)
+- ✅ Quản lý trạng thái thiết bị (Chưa cấp phát, Đang sử dụng, Đang sửa chữa, Đã thanh lý, Bảo trì, Mất, Hỏng, Chờ thanh lý)
 - ✅ Upload hình ảnh thiết bị
 - ✅ Quản lý QR Code và Barcode
 - ✅ Tìm kiếm và lọc thiết bị
@@ -312,7 +320,7 @@ Tài khoản mẫu sẽ được tạo tự động khi database được seed. 
 ### Báo cáo sự cố
 - ✅ Tạo báo cáo sự cố thiết bị
 - ✅ Upload hình ảnh sự cố
-- ✅ Quản lý trạng thái sự cố (Pending, In Progress, Resolved, Rejected)
+- ✅ Quản lý trạng thái sự cố (Chờ duyệt, Đã tạo lệnh sửa, Đã từ chối, Đã đóng, Chờ thực hiện)
 - ✅ Phân loại mức độ nghiêm trọng (Severity)
 - ✅ Xem danh sách sự cố theo vai trò
 
@@ -321,7 +329,7 @@ Tài khoản mẫu sẽ được tạo tự động khi database được seed. 
 - ✅ Theo dõi SLA (Service Level Agreement)
 - ✅ Ước tính chi phí sửa chữa
 - ✅ Upload hình ảnh sửa chữa
-- ✅ Quản lý trạng thái sửa chữa
+- ✅ Quản lý trạng thái sửa chữa (Chờ thực hiện, Đang sửa, Chờ duyệt hoàn tất, Đã hoàn tất, Từ chối, Không cần sửa)
 - ✅ Phân công kỹ thuật viên
 - ✅ Lịch sử sửa chữa
 
@@ -406,7 +414,7 @@ Tài khoản mẫu sẽ được tạo tự động khi database được seed. 
 
 - JWT Authentication cho tất cả API endpoints
 - Phân quyền theo vai trò (Role-based Authorization)
-- Password hashing với BCrypt
+- Password hashing với ASP.NET Core Identity PasswordHasher (PBKDF2)
 - CORS configuration
 - Input validation với Data Annotations và Zod
 - SQL Injection protection với Entity Framework Core
