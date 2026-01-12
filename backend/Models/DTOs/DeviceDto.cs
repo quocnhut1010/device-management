@@ -12,6 +12,7 @@ namespace backend.Models.DTOs
         public string? SerialNumber { get; set; }
         public decimal? PurchasePrice { get; set; }
         public DateTime? PurchaseDate { get; set; }
+        public int? UsefulLifeYears { get; set; }  // Tuổi thọ hữu ích (số năm)
         public DateTime? WarrantyExpiry { get; set; }
         public string? WarrantyProvider { get; set; }
         public string? DeviceImageUrl { get; set; }

@@ -174,15 +174,24 @@ export const getAvailableTechnicians = () => api.get<TechnicianUser[]>(`${base}/
 export const getDeviceRepairHistory = (deviceId: string) =>
   api.get<Repair[]>(`${base}/device/${deviceId}/history`)
 
+export interface DepreciationInfo {
+  yearsUsed: number
+  usefulLifeYears?: number
+  depreciationRate: number  // 0.0 - 1.0
+  remainingValue: number
+}
+
 export interface DeviceRepairAnalysis {
   deviceId: string
   deviceName: string
-  deviceValue: number
+  deviceValue: number  // Giá mua ban đầu (PurchasePrice)
+  currentValue?: number  // Giá trị hiện tại sau khấu hao
   repairCount: number
   totalCost: number
   lastRepairDate?: string
   warnings: string[]
   suggestion?: string
+  depreciationInfo?: DepreciationInfo
 }
 
 export interface PagedRepairResponse {

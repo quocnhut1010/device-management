@@ -2,16 +2,21 @@ using backend.Data;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace backend.Services.Implementations;
 
 public class NotificationService : INotificationService
 {
     private readonly DeviceManagementDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
 
-    public NotificationService(DeviceManagementDbContext context)
+    public NotificationService(DeviceManagementDbContext context, IEmailService emailService, IConfiguration configuration)
     {
         _context = context;
+        _emailService = emailService;
+        _configuration = configuration;
     }
 
     public async Task<List<Notification>> GetUserNotificationsAsync(Guid userId, bool? isRead = null)
@@ -202,7 +207,47 @@ public class NotificationService : INotificationService
         var title = "Được giao lệnh sửa chữa mới";
         var content = $"Bạn có một lệnh sửa chữa mới được giao cho thiết bị {repair.Device?.DeviceCode}.";
 
+        // Create web notification
         await CreateNotificationAsync(technicianId, title, content);
+
+        // Send email notification (non-blocking, errors are logged but don't affect the flow)
+        try
+        {
+            var technician = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == technicianId);
+
+            if (technician != null && !string.IsNullOrWhiteSpace(technician.Email))
+            {
+                var deviceCode = repair.Device?.DeviceCode ?? "N/A";
+                var description = repair.Description;
+
+                var emailSent = await _emailService.SendRepairAssignmentEmailAsync(
+                    technician.Email,
+                    repairId,
+                    deviceCode,
+                    description
+                );
+
+                if (emailSent)
+                {
+                    Console.WriteLine($"[Notification Service] Email sent successfully to technician {technician.Email} for repair {repairId}");
+                }
+                else
+                {
+                    Console.WriteLine($"[Notification Service] Failed to send email to technician {technician.Email} for repair {repairId}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[Notification Service] Technician {technicianId} does not have a valid email address, skipping email notification");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't throw - web notification should still work
+            Console.WriteLine($"[Notification Service] Error sending email notification for repair {repairId}: {ex.Message}");
+            Console.WriteLine($"[Notification Service] Stack trace: {ex.StackTrace}");
+        }
     }
 
     public async Task NotifyDeviceAssignedAsync(Guid deviceAssignmentId)
@@ -214,8 +259,15 @@ public class NotificationService : INotificationService
 
         if (assignment == null || assignment.AssignedToUserId == null) return;
 
-        var title = "Được cấp phát thiết bị mới";
-        var content = $"Bạn vừa được cấp phát thiết bị mới: {assignment.Device?.DeviceName} ({assignment.Device?.DeviceCode}).";
+        var isPending = string.Equals(assignment.Status, "Pending", StringComparison.OrdinalIgnoreCase);
+
+        var title = isPending
+            ? "Yêu cầu xác nhận nhận thiết bị"
+            : "Được cấp phát thiết bị mới";
+
+        var content = isPending
+            ? $"Bạn có một yêu cầu nhận thiết bị: {assignment.Device?.DeviceName} ({assignment.Device?.DeviceCode}). Vui lòng vào hệ thống để chấp nhận hoặc từ chối."
+            : $"Bạn vừa được cấp phát thiết bị mới: {assignment.Device?.DeviceName} ({assignment.Device?.DeviceCode}).";
 
         await CreateNotificationAsync(assignment.AssignedToUserId.Value, title, content);
     }

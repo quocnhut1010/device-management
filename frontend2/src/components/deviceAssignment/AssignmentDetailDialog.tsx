@@ -25,7 +25,29 @@ export default function AssignmentDetailDialog({
 }: AssignmentDetailDialogProps) {
   if (!assignment) return null
 
-  const isActive = !assignment.returnedDate
+  const isActive = !assignment.returnedDate && assignment.status === 'Accepted'
+
+  const renderStatus = () => {
+    const status = assignment.status
+
+    if (status === 'Pending') {
+      return <Badge variant="outline">Chờ nhân viên xác nhận</Badge>
+    }
+
+    if (status === 'Rejected') {
+      return <Badge variant="destructive">Nhân viên đã từ chối</Badge>
+    }
+
+    if (status === 'Accepted') {
+      return <Badge variant="default">Đang hoạt động</Badge>
+    }
+
+    return (
+      <Badge variant={isActive ? 'default' : 'secondary'}>
+        {isActive ? 'Đang hoạt động' : 'Đã trả'}
+      </Badge>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -39,9 +61,7 @@ export default function AssignmentDetailDialog({
           {/* Status Badge */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Trạng thái:</span>
-            <Badge variant={isActive ? 'default' : 'secondary'}>
-              {isActive ? 'Đang hoạt động' : 'Đã trả'}
-            </Badge>
+            {renderStatus()}
           </div>
 
           <Separator />
@@ -97,6 +117,10 @@ export default function AssignmentDetailDialog({
                 <p className="font-medium">{assignment.assignedToDepartmentName || '-'}</p>
               </div>
               <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Người cấp phát</p>
+                <p className="font-medium">{assignment.assignedByUserName || '-'}</p>
+              </div>
+              <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Ngày phân công</p>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -114,6 +138,17 @@ export default function AssignmentDetailDialog({
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <p className="font-medium">
                       {formatDateOnly(assignment.returnedDate)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {assignment.userConfirmedAt && (
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Thời điểm xác nhận</p>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">
+                      {formatDateOnly(assignment.userConfirmedAt)}
                     </p>
                   </div>
                 </div>

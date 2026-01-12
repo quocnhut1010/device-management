@@ -138,8 +138,10 @@ export default function AssignmentsPage() {
   
   const statistics = useMemo(() => {
     const total = statsData.length
-    const active = statsData.filter((a) => !a.returnedDate).length
-    const returned = statsData.filter((a) => !!a.returnedDate).length
+    // Đang cấp phát: status = Accepted và chưa có returnedDate
+    const active = statsData.filter((a) => a.status === 'Accepted' && !a.returnedDate).length
+    // Đã thu hồi: status = Accepted và đã có returnedDate
+    const returned = statsData.filter((a) => a.status === 'Accepted' && !!a.returnedDate).length
     const thisMonth = statsData.filter((a) => {
       if (!a.assignedDate) return false
       // Parse date string safely to avoid timezone issues

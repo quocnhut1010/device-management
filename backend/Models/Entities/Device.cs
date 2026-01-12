@@ -20,6 +20,8 @@ public partial class Device
 
     public decimal? PurchasePrice { get; set; }
 
+    public int? UsefulLifeYears { get; set; }  // Tuổi thọ hữu ích (số năm) để tính khấu hao
+
     public string? SerialNumber { get; set; }
 
     public string? Status { get; set; }

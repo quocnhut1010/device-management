@@ -31,6 +31,7 @@ import DeviceTable from '@/components/Device/DeviceTable'
 import DeviceDetailDialog from '@/components/Device/DeviceDetailDialog'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 import ExportDialog from '@/components/reports/ExportDialog'
+import { PendingAssignmentsTable } from '@/components/employee/pending-assignments-table'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { DeviceDto, CreateDeviceDto, DeviceModelDto, DepartmentDto } from '@/types'
@@ -81,6 +82,7 @@ export default function DevicesPage() {
   const position = user?.position
   const isManager = position === 'Trưởng phòng'
   const isUser = user?.role.toLowerCase() === 'user' || user?.role.toLowerCase() === 'employee'
+  const isEmployee = user?.role.toLowerCase() === 'user' && position?.toLowerCase() === 'nhân viên'
 
   // Fetch device models and departments for filters
   useEffect(() => {
@@ -460,6 +462,9 @@ export default function DevicesPage() {
           </TabsList>
         </Tabs>
       )}
+
+      {/* Pending Assignments - Only for Employee */}
+      {isEmployee && <PendingAssignmentsTable />}
 
       {/* Filters */}
       <Card>

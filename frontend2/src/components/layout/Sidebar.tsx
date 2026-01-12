@@ -21,6 +21,7 @@ import {
   Bell,
   ChevronDown,
   ChevronRight,
+  Smartphone,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -127,6 +128,8 @@ export function Sidebar() {
 
     // Section 4: Vận hành & Lịch sử (Operations & History)
     const operationsItems: MenuItem[] = []
+
+    // My Devices (Employee only) - Thiết bị của tôi
 
     // Assignments (Admin only)
     if (isAdmin) {

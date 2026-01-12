@@ -263,16 +263,29 @@ export default function RepairDetailDialog({
                       <p className="font-medium">{analysis.deviceName}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Giá trị thiết bị</p>
+                      <p className="text-sm text-muted-foreground">Giá mua ban đầu</p>
                       <p className="font-medium">{formatCurrency(Number(analysis.deviceValue))}</p>
                     </div>
+                    {analysis.currentValue !== undefined && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Giá trị hiện tại (sau khấu hao)</p>
+                        <p className="font-medium text-primary">{formatCurrency(Number(analysis.currentValue))}</p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm text-muted-foreground">Tổng số lần sửa</p>
                       <p className="font-medium">{analysis.repairCount}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Tổng chi phí sửa</p>
-                      <p className="font-medium">{formatCurrency(Number(analysis.totalCost))}</p>
+                      <p className={cn(
+                        "font-medium",
+                        analysis.currentValue !== undefined && 
+                        analysis.totalCost > analysis.currentValue && 
+                        "text-destructive"
+                      )}>
+                        {formatCurrency(Number(analysis.totalCost))}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Lần sửa gần nhất</p>
@@ -280,8 +293,43 @@ export default function RepairDetailDialog({
                     </div>
                   </div>
 
+                  {analysis.depreciationInfo && (
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Coins className="h-4 w-4" />
+                        Thông tin khấu hao
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Số năm đã sử dụng</p>
+                          <p className="font-medium">{analysis.depreciationInfo.yearsUsed.toFixed(1)} năm</p>
+                        </div>
+                        {analysis.depreciationInfo.usefulLifeYears && (
+                          <div>
+                            <p className="text-muted-foreground">Tuổi thọ hữu ích</p>
+                            <p className="font-medium">{analysis.depreciationInfo.usefulLifeYears} năm</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-muted-foreground">Tỷ lệ khấu hao</p>
+                          <p className="font-medium">{(analysis.depreciationInfo.depreciationRate * 100).toFixed(1)}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Giá trị còn lại</p>
+                          <p className="font-medium">{formatCurrency(Number(analysis.depreciationInfo.remainingValue))}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {warnings.length > 0 ? (
-                    <div className="space-y-2 rounded-md bg-destructive/5 p-3">
+                    <div className={cn(
+                      "space-y-2 rounded-md p-3",
+                      analysis.currentValue !== undefined && 
+                      analysis.totalCost > analysis.currentValue 
+                        ? "bg-destructive/10 border border-destructive/20"
+                        : "bg-destructive/5"
+                    )}>
                       <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
                         <AlertTriangle className="h-4 w-4" />
                         Cảnh báo
@@ -299,7 +347,16 @@ export default function RepairDetailDialog({
                   )}
 
                   {analysis.suggestion && (
-                    <div className="rounded-md bg-muted/30 p-3 text-sm">
+                    <div className={cn(
+                      "rounded-md p-3 text-sm",
+                      analysis.currentValue !== undefined && 
+                      analysis.totalCost > analysis.currentValue 
+                        ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                        : analysis.currentValue !== undefined && 
+                          analysis.totalCost > analysis.currentValue * 0.5
+                        ? "bg-yellow-50 border border-yellow-200 text-yellow-900"
+                        : "bg-muted/30"
+                    )}>
                       <span className="font-medium">Khuyến nghị:</span> {analysis.suggestion}
                     </div>
                   )}

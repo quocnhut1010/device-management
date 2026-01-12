@@ -6,6 +6,7 @@ namespace backend.Models.DTOs
         public Guid? ModelId { get; set; }
         public Guid? SupplierId { get; set; }
         public decimal? PurchasePrice { get; set; }
+        public int? UsefulLifeYears { get; set; }  // Tuổi thọ hữu ích (số năm)
         public string? SerialNumber { get; set; }
         public string? Status { get; set; }
         public DateTime? PurchaseDate { get; set; }

@@ -264,6 +264,24 @@ namespace backend.Services.Implementations
             return (true, string.Empty);
         }
 
+        public async Task<bool> SendRepairAssignmentEmailAsync(string email, Guid repairId, string deviceCode, string? description)
+        {
+            // Validate email format
+            if (!IsValidEmail(email))
+            {
+                Console.WriteLine($"[Email Service] Invalid email format: {email}");
+                return false;
+            }
+
+            var baseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:5173";
+            var repairsUrl = $"{baseUrl}/repairs";
+            
+            var subject = $"Được giao lệnh sửa chữa mới - {deviceCode}";
+            var body = GenerateRepairAssignmentEmailBody(deviceCode, description, repairsUrl);
+            
+            return await SendEmailAsync(email, subject, body, true);
+        }
+
         private string GeneratePasswordResetEmailBody(string resetToken, string resetUrl)
         {
             return $@"
@@ -340,6 +358,111 @@ namespace backend.Services.Implementations
                 <li>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</li>
                 <li>Để bảo mật, vui lòng không chia sẻ link này với bất kỳ ai.</li>
             </ul>
+            <p>Trân trọng,<br>Đội ngũ Hệ thống Quản lý Thiết bị</p>
+        </div>
+        <div class='footer'>
+            <p>Email này được gửi tự động, vui lòng không trả lời email này.</p>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
+        private string GenerateRepairAssignmentEmailBody(string deviceCode, string? description, string repairsUrl)
+        {
+            var descriptionHtml = string.IsNullOrWhiteSpace(description) 
+                ? "<p><em>Không có mô tả chi tiết.</em></p>" 
+                : $"<p><strong>Mô tả:</strong> {System.Net.WebUtility.HtmlEncode(description)}</p>";
+
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        .header {{
+            background-color: #059669;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }}
+        .content {{
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+        }}
+        .button {{
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #059669;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }}
+        .info-box {{
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }}
+        .device-code {{
+            font-size: 18px;
+            font-weight: bold;
+            color: #059669;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            font-size: 12px;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Được giao lệnh sửa chữa mới</h1>
+        </div>
+        <div class='content'>
+            <p>Xin chào,</p>
+            <p>Bạn vừa được phân công một lệnh sửa chữa mới trong Hệ thống Quản lý Thiết bị.</p>
+            
+            <div class='info-box'>
+                <p><strong>Mã thiết bị:</strong> <span class='device-code'>{System.Net.WebUtility.HtmlEncode(deviceCode)}</span></p>
+                {descriptionHtml}
+            </div>
+
+            <p>Vui lòng click vào nút bên dưới để xem chi tiết và chấp nhận lệnh sửa chữa:</p>
+            <div style='text-align: center;'>
+                <a href='{repairsUrl}' class='button'>Xem và chấp nhận lệnh sửa chữa</a>
+            </div>
+            
+            <p>Hoặc truy cập trực tiếp vào trang quản lý sửa chữa:</p>
+            <div class='info-box' style='word-break: break-all;'>
+                {repairsUrl}
+            </div>
+
+            <p><strong>Lưu ý:</strong></p>
+            <ul>
+                <li>Vui lòng đăng nhập vào hệ thống để xem và chấp nhận lệnh sửa chữa.</li>
+                <li>Nếu bạn chưa đăng nhập, hệ thống sẽ yêu cầu bạn đăng nhập trước.</li>
+                <li>Sau khi chấp nhận, bạn có thể bắt đầu thực hiện sửa chữa.</li>
+            </ul>
+
             <p>Trân trọng,<br>Đội ngũ Hệ thống Quản lý Thiết bị</p>
         </div>
         <div class='footer'>

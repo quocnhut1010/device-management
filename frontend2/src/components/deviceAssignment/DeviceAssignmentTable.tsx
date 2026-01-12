@@ -42,7 +42,29 @@ const DeviceAssignmentTable: React.FC<Props> = ({
   statusValue = 'all',
   pagination,
 }) => {
-  const isActive = (assignment: DeviceAssignmentDto) => !assignment.returnedDate
+  const isActive = (assignment: DeviceAssignmentDto) =>
+    !assignment.returnedDate && assignment.status === 'Accepted'
+
+  const getStatusBadge = (assignment: DeviceAssignmentDto) => {
+    const status = assignment.status || (isActive(assignment) ? 'Accepted' : 'Returned')
+
+    switch (status) {
+      case 'Pending':
+        return <Badge variant="outline">Chờ xác nhận</Badge>
+      case 'Rejected':
+        return <Badge variant="destructive">Đã từ chối</Badge>
+      case 'Accepted':
+        // Accepted có thể đang cấp phát hoặc đã thu hồi
+        if (assignment.returnedDate) {
+          return <Badge variant="secondary">Đã thu hồi</Badge>
+        }
+        return <Badge variant="default">Đang cấp phát</Badge>
+      default:
+        return <Badge variant={isActive(assignment) ? 'default' : 'secondary'}>
+          {isActive(assignment) ? 'Đang cấp phát' : 'Đã thu hồi'}
+        </Badge>
+    }
+  }
 
   return (
     <Card>
@@ -89,6 +111,7 @@ const DeviceAssignmentTable: React.FC<Props> = ({
               <TableHead>Thiết bị</TableHead>
               <TableHead>Người được cấp phát</TableHead>
               <TableHead>Phòng ban</TableHead>
+              
               <TableHead>Ngày cấp phát</TableHead>
               <TableHead>Ngày thu hồi</TableHead>
               <TableHead>Trạng thái</TableHead>
@@ -115,6 +138,7 @@ const DeviceAssignmentTable: React.FC<Props> = ({
                   <TableCell className="font-medium">{a.deviceName}</TableCell>
                   <TableCell>{a.assignedToUserName}</TableCell>
                   <TableCell>{a.assignedToDepartmentName}</TableCell>
+                  
                   <TableCell>
                     {a.assignedDate
                       ? formatDateForTable(a.assignedDate)
@@ -125,11 +149,7 @@ const DeviceAssignmentTable: React.FC<Props> = ({
                       ? formatDateForTable(a.returnedDate)
                       : '-'}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={isActive(a) ? 'default' : 'secondary'}>
-                      {isActive(a) ? 'Đang cấp phát' : 'Đã thu hồi'}
-                    </Badge>
-                  </TableCell>
+                  <TableCell>{getStatusBadge(a)}</TableCell>
                   <TableCell className="max-w-xs truncate">{a.note || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

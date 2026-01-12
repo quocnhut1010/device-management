@@ -230,14 +230,6 @@ export default function UsersPage() {
           <p className="text-muted-foreground">Quản lý tài khoản và phân quyền người dùng</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Nhập
-          </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Xuất
-          </Button>
           <Button onClick={handleAdd}>
             <Plus className="h-4 w-4 mr-2" />
             Thêm người dùng

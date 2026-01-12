@@ -38,6 +38,14 @@ const deviceSchema = z.object({
     },
     z.number().min(0, 'Giá mua phải lớn hơn hoặc bằng 0').optional()
   ),
+  usefulLifeYears: z.preprocess(
+    (val) => {
+      if (val === '' || val === undefined || val === null) return undefined
+      const num = Number(val)
+      return isNaN(num) ? undefined : num
+    },
+    z.number().int('Tuổi thọ phải là số nguyên').min(1, 'Tuổi thọ phải lớn hơn 0').max(100, 'Tuổi thọ không được vượt quá 100 năm').optional()
+  ),
   serialNumber: z.string().optional().or(z.literal('')),
   status: z.string().optional().or(z.literal('')),
   purchaseDate: z.string().optional().or(z.literal('')),
@@ -95,6 +103,7 @@ export default function DeviceDialog({
       modelId: '',
       supplierId: '',
       purchasePrice: undefined,
+      usefulLifeYears: undefined,
       serialNumber: '',
       status: 'Chưa cấp phát',
       purchaseDate: '',
@@ -153,6 +162,9 @@ export default function DeviceDialog({
           purchasePrice: initialData.purchasePrice !== undefined && initialData.purchasePrice !== null 
             ? initialData.purchasePrice 
             : undefined,
+          usefulLifeYears: initialData.usefulLifeYears !== undefined && initialData.usefulLifeYears !== null 
+            ? initialData.usefulLifeYears 
+            : undefined,
           serialNumber: initialData.serialNumber || '',
           status: initialData.status || 'Chưa cấp phát',
           purchaseDate: initialData.purchaseDate
@@ -176,6 +188,7 @@ export default function DeviceDialog({
           modelId: '',
           supplierId: '',
           purchasePrice: undefined,
+          usefulLifeYears: undefined,
           serialNumber: '',
           status: 'Chưa cấp phát',
           purchaseDate: '',
@@ -247,6 +260,12 @@ export default function DeviceDialog({
           isFinite(data.purchasePrice) && 
           data.purchasePrice >= 0 && 
           { purchasePrice: data.purchasePrice }),
+      // Include usefulLifeYears if it's a valid number (including 0)
+      ...(typeof data.usefulLifeYears === 'number' && 
+          !isNaN(data.usefulLifeYears) && 
+          isFinite(data.usefulLifeYears) && 
+          data.usefulLifeYears > 0 && 
+          { usefulLifeYears: data.usefulLifeYears }),
       ...(toUndefined(data.serialNumber) && { serialNumber: toUndefined(data.serialNumber) }),
       ...(toUndefined(data.status) && { status: toUndefined(data.status) }),
       ...(toISOString(data.purchaseDate) && { purchaseDate: toISOString(data.purchaseDate) }),
@@ -351,6 +370,27 @@ export default function DeviceDialog({
                 )}
               </div>
 
+              <div className="grid gap-2">
+                <Label htmlFor="usefulLifeYears">Tuổi thọ hữu ích (năm)</Label>
+                <Input
+                  id="usefulLifeYears"
+                  type="number"
+                  placeholder="Ví dụ: 5"
+                  {...register('usefulLifeYears', { valueAsNumber: true })}
+                  disabled={isLoading}
+                />
+                {errors.usefulLifeYears && (
+                  <p className="text-sm text-destructive">
+                    {errors.usefulLifeYears.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Số năm dự kiến sử dụng thiết bị để tính khấu hao
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="serialNumber">Số Serial</Label>
                 <Input

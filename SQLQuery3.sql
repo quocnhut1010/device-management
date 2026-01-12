@@ -430,6 +430,38 @@ UPDATE DeviceHistories
 SET Action = N'Thay thế thiết bị'
 WHERE Action = 'Device Replaced';
 
+-- 1. Thêm cột Status (Pending/Accepted/Rejected) với default = 'Pending'
+ALTER TABLE [dbo].[DeviceAssignments]
+ADD [Status] NVARCHAR(50) NOT NULL 
+    CONSTRAINT DF_DeviceAssignments_Status DEFAULT ('Pending');
+GO
+
+-- 2. Thêm cột thời điểm và người xác nhận
+ALTER TABLE [dbo].[DeviceAssignments]
+ADD [UserConfirmedAt] DATETIME2 NULL,
+    [UserConfirmedBy] UNIQUEIDENTIFIER NULL;
+GO
+
+-- 3. Cập nhật dữ liệu cũ:
+--    - Tất cả assignment hiện có coi như đã được nhân viên xác nhận (Accepted)
+--    - Gán UserConfirmedAt ~ CreatedAt (nếu chưa có), UserConfirmedBy = AssignedToUserId
+UPDATE DA
+SET 
+    DA.Status = 'Accepted',
+    DA.UserConfirmedAt = ISNULL(DA.UserConfirmedAt, DA.CreatedAt),
+    DA.UserConfirmedBy = ISNULL(DA.UserConfirmedBy, DA.AssignedToUserId)
+FROM [dbo].[DeviceAssignments] AS DA;
+GO
+
+-- Thêm cột RejectionReason với độ dài tối đa 500 ký tự
+ALTER TABLE [dbo].[DeviceAssignments]
+ADD [RejectionReason] NVARCHAR(500) NULL;
+GO
+
+ALTER TABLE [dbo].[Devices]
+ADD [UsefulLifeYears] INT NULL;
+GO
+
 select * from DeviceQrTokens
 select * from Departments
 select * from Users

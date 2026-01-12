@@ -164,6 +164,7 @@ export interface DeviceDto {
   serialNumber?: string
   purchasePrice?: number
   purchaseDate?: string
+  usefulLifeYears?: number  // Tuổi thọ hữu ích (số năm)
   warrantyExpiry?: string
   warrantyProvider?: string
   deviceImageUrl?: string
@@ -188,6 +189,7 @@ export interface CreateDeviceDto {
   modelId?: string
   supplierId?: string
   purchasePrice?: number
+  usefulLifeYears?: number  // Tuổi thọ hữu ích (số năm)
   serialNumber?: string
   status?: string
   purchaseDate?: string
@@ -206,6 +208,7 @@ export interface UpdateDeviceDto {
   modelId?: string
   supplierId?: string
   purchasePrice?: number
+  usefulLifeYears?: number  // Tuổi thọ hữu ích (số năm)
   serialNumber?: string
   status?: string
   purchaseDate?: string

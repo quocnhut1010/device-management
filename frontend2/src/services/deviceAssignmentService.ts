@@ -46,6 +46,12 @@ export const revokeAssignment = (assignmentId: string) =>
 export const transferAssignment = (data: TransferDeviceAssignmentDto) => 
   api.post<DeviceAssignmentDto>('/DeviceAssignment/transfer', data)
 
+export const confirmAssignment = (id: string, action: 'accept' | 'reject', rejectionReason?: string) =>
+  api.post<DeviceAssignmentDto>(`/DeviceAssignment/${id}/confirm`, {
+    Action: action,
+    RejectionReason: rejectionReason || undefined,
+  })
+
 export const deviceAssignmentService = {
   getAssignments,
   getInUseAssignments,
@@ -53,5 +59,6 @@ export const deviceAssignmentService = {
   createAssignment,
   revokeAssignment,
   transferAssignment,
+  confirmAssignment,
 }
 

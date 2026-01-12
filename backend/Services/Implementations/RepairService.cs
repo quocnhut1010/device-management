@@ -14,11 +14,13 @@ namespace backend.Services.Implementations
     {
         private readonly DeviceManagementDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IDepreciationService _depreciationService;
 
-        public RepairService(DeviceManagementDbContext context, IMapper mapper)
+        public RepairService(DeviceManagementDbContext context, IMapper mapper, IDepreciationService depreciationService)
         {
             _context = context;
             _mapper = mapper;
+            _depreciationService = depreciationService;
         }
 
         private static RepairDto NormalizeRepairDates(RepairDto dto)
@@ -563,35 +565,83 @@ namespace backend.Services.Implementations
             if (device == null)
                 throw new Exception("Không tìm thấy thiết bị.");
 
+            var deviceValue = device.PurchasePrice ?? 0;
+            var totalCost = repairs.Sum(r => r.Cost ?? 0);
+            var repairCount = repairs.Count;
+
+            // Tính toán khấu hao
+            var depreciationInfo = _depreciationService.CalculateDepreciation(device);
+            var currentValue = depreciationInfo?.CurrentValue ?? deviceValue;  // Fallback về DeviceValue nếu không tính được khấu hao
+
             var analysis = new DeviceRepairAnalysisDto
             {
                 DeviceId = device.Id,
                 DeviceName = device.DeviceName ?? device.DeviceCode ?? "Thiết bị không xác định",
-                DeviceValue = device.PurchasePrice ?? 0,
-                RepairCount = repairs.Count,
-                TotalCost = repairs.Sum(r => r.Cost ?? 0),
+                DeviceValue = deviceValue,  // Giá mua ban đầu
+                CurrentValue = currentValue,  // Giá trị hiện tại sau khấu hao
+                RepairCount = repairCount,
+                TotalCost = totalCost,
                 LastRepairDate = repairs.FirstOrDefault()?.EndDate ?? repairs.FirstOrDefault()?.StartDate
             };
 
-            // ⚠️ Cảnh báo nghiệp vụ
-            if (analysis.RepairCount >= 3)
-                analysis.Warnings.Add($"Thiết bị đã được sửa {analysis.RepairCount} lần.");
+            // Thêm thông tin khấu hao vào DTO
+            if (depreciationInfo != null)
+            {
+                analysis.DepreciationInfo = new DepreciationInfoDto
+                {
+                    YearsUsed = depreciationInfo.YearsUsed,
+                    UsefulLifeYears = depreciationInfo.UsefulLifeYears,
+                    DepreciationRate = depreciationInfo.DepreciationRate,
+                    RemainingValue = depreciationInfo.RemainingValue
+                };
+            }
 
-            if (analysis.DeviceValue > 0 && analysis.TotalCost > analysis.DeviceValue * 0.5M)
-                analysis.Warnings.Add($"Tổng chi phí sửa ({analysis.TotalCost:N0}₫) vượt quá 50% giá trị thiết bị ({analysis.DeviceValue:N0}₫).");
+            // ⚠️ Cảnh báo nghiệp vụ
+            if (repairCount >= 3)
+                analysis.Warnings.Add($"Thiết bị đã được sửa {repairCount} lần.");
+
+            // So sánh với CurrentValue (sau khấu hao) thay vì DeviceValue
+            if (currentValue > 0)
+            {
+                if (totalCost > currentValue)
+                {
+                    analysis.Warnings.Add($"Chi phí sửa ({totalCost:N0}₫) vượt quá giá trị hiện tại ({currentValue:N0}₫). Không nên sửa.");
+                }
+                else if (totalCost > currentValue * 0.5M)
+                {
+                    analysis.Warnings.Add($"Chi phí sửa ({totalCost:N0}₫) đã vượt quá 50% giá trị hiện tại ({currentValue:N0}₫). Nên xem xét thay thế.");
+                }
+            }
+            else if (deviceValue > 0 && totalCost > deviceValue * 0.5M)
+            {
+                // Fallback: nếu không có CurrentValue, dùng DeviceValue
+                analysis.Warnings.Add($"Tổng chi phí sửa ({totalCost:N0}₫) vượt quá 50% giá trị thiết bị ({deviceValue:N0}₫).");
+            }
 
             if (analysis.LastRepairDate.HasValue && (DateTime.UtcNow - analysis.LastRepairDate.Value).TotalDays < 30)
                 analysis.Warnings.Add("Thiết bị vừa được sửa gần đây (<30 ngày).");
 
-            // ⚙️ Gợi ý hành động
+            // ⚙️ Gợi ý hành động dựa trên CurrentValue
             if (analysis.Warnings.Count == 0)
+            {
                 analysis.Suggestion = "Thiết bị hoạt động ổn định.";
-            else if (analysis.Warnings.Count == 1)
-                analysis.Suggestion = "Nên theo dõi thêm tình trạng thiết bị.";
-            else if (analysis.TotalCost > analysis.DeviceValue)
-                analysis.Suggestion = "Chi phí sửa vượt giá trị thiết bị. Nên thanh lý.";
+            }
+            else if (totalCost > currentValue && currentValue > 0)
+            {
+                analysis.Suggestion = "Chi phí sửa vượt quá giá trị hiện tại. Không nên sửa, nên xem xét thay thế hoặc thanh lý.";
+            }
+            else if (totalCost > currentValue * 0.5M && currentValue > 0)
+            {
+                analysis.Suggestion = "Chi phí sửa đã vượt quá 50% giá trị hiện tại. Nên xem xét thay thế thiết bị thay vì tiếp tục sửa chữa.";
+            }
+            else if (repairCount >= 3)
+            {
+                analysis.Suggestion = "Thiết bị đã được sửa nhiều lần. Nên theo dõi thêm tình trạng thiết bị.";
+            }
             else
-                analysis.Suggestion = "Nên xem xét thay thế hoặc thanh lý thiết bị.";
+            {
+                analysis.Suggestion = "Nên theo dõi thêm tình trạng thiết bị.";
+            }
 
             analysis.LastRepairDate = TimeZoneHelper.ConvertUtcToVietnam(analysis.LastRepairDate);
             return analysis;

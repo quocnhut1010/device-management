@@ -4,6 +4,7 @@ namespace backend.Services.Interfaces
     {
         Task<bool> SendPasswordResetEmailAsync(string email, string resetToken, string resetUrl);
         Task<bool> SendEmailAsync(string to, string subject, string body, bool isHtml = true);
+        Task<bool> SendRepairAssignmentEmailAsync(string email, Guid repairId, string deviceCode, string? description);
     }
 }
 

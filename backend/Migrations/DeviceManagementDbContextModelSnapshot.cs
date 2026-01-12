@@ -286,6 +286,13 @@ namespace backend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("ReturnRequestReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReturnRequestedAt")
+                        .HasColumnType("datetime");
+
                     b.Property<DateTime?>("ReturnedDate")
                         .HasColumnType("date");
 
@@ -533,6 +540,11 @@ namespace backend.Migrations
                     b.Property<Guid?>("ReportedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("Severity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(2);
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -620,11 +632,23 @@ namespace backend.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("ActualHours")
+                        .HasColumnType("decimal(5, 2)");
+
                     b.Property<Guid?>("AssignedToTechnicianId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("Cost")
                         .HasColumnType("decimal(18, 2)");
+
+                    b.Property<DateTime?>("CostApprovedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("CostApprovedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -634,6 +658,12 @@ namespace backend.Migrations
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime");
+
+                    b.Property<decimal?>("EstimatedCost")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<decimal?>("EstimatedHours")
+                        .HasColumnType("decimal(5, 2)");
 
                     b.Property<Guid?>("IncidentReportId")
                         .HasColumnType("uniqueidentifier");
@@ -670,6 +700,8 @@ namespace backend.Migrations
                         .HasName("PK__Repairs__3214EC077E3E8938");
 
                     b.HasIndex("AssignedToTechnicianId");
+
+                    b.HasIndex("CostApprovedBy");
 
                     b.HasIndex("DeviceId");
 
@@ -1183,6 +1215,11 @@ namespace backend.Migrations
                         .WithMany()
                         .HasForeignKey("AssignedToTechnicianId");
 
+                    b.HasOne("backend.Models.Entities.User", "CostApprovedByNavigation")
+                        .WithMany()
+                        .HasForeignKey("CostApprovedBy")
+                        .HasConstraintName("FK_Repairs_Users_CostApprovedBy");
+
                     b.HasOne("backend.Models.Entities.Device", "Device")
                         .WithMany("Repairs")
                         .HasForeignKey("DeviceId")
@@ -1199,6 +1236,8 @@ namespace backend.Migrations
                         .HasConstraintName("FK__Repairs__Rejecte__52593CB8");
 
                     b.Navigation("AssignedToTechnician");
+
+                    b.Navigation("CostApprovedByNavigation");
 
                     b.Navigation("Device");
 

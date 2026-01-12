@@ -19,6 +19,9 @@ namespace backend.Models.DTOs
         public DateTime AssignedDate { get; set; }
         public string? Note { get; set; }
 
+        // Trạng thái assignment: Pending / Accepted / Rejected
+        public string? Status { get; set; }
+
         public DateTime? ReturnedDate { get; set; }
 
         public Guid AssignedByUserId { get; set; }
@@ -33,5 +36,10 @@ namespace backend.Models.DTOs
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
         public Guid? DeletedBy { get; set; }
+
+        // Thông tin nhân viên xác nhận
+        public DateTime? UserConfirmedAt { get; set; }
+        public Guid? UserConfirmedBy { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

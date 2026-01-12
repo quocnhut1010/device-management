@@ -57,11 +57,17 @@ namespace backend.Controllers
                     {
                         if (status.ToLower() == "active")
                         {
-                            userTotal = allUserAssignments.Count(x => x.AssignedToUserId == currentUserId && x.ReturnedDate == null);
+                            userTotal = allUserAssignments.Count(x =>
+                                x.AssignedToUserId == currentUserId &&
+                                x.ReturnedDate == null &&
+                                x.Status == "Accepted");
                         }
                         else if (status.ToLower() == "returned")
                         {
-                            userTotal = allUserAssignments.Count(x => x.AssignedToUserId == currentUserId && x.ReturnedDate != null);
+                            userTotal = allUserAssignments.Count(x =>
+                                x.AssignedToUserId == currentUserId &&
+                                x.ReturnedDate != null &&
+                                x.Status == "Accepted");
                         }
                     }
                     
@@ -157,10 +163,12 @@ namespace backend.Controllers
                             .ThenInclude(m => m!.DeviceType)
                     .Include(da => da.AssignedToUser)
                     .Include(da => da.AssignedToDepartment)
-                    .Where(da => da.ReturnedDate == null // Chưa trả lại
-                                && da.Device!.Status == "Đang sử dụng"
-                                && da.IsDeleted != true
-                                && da.Device.IsDeleted != true)
+                    .Where(da =>
+                        da.ReturnedDate == null // Chưa trả lại
+                        && da.Status == "Accepted" // Chỉ tính những assignment đã được xác nhận
+                        && da.Device!.Status == "Đang sử dụng"
+                        && da.IsDeleted != true
+                        && da.Device.IsDeleted != true)
                     .Select(da => new 
                     {
                         Id = da.Id, // Assignment ID cho revoke/transfer
@@ -223,10 +231,10 @@ namespace backend.Controllers
                     Console.WriteLine("❌ Service returned null - BadRequest");
                     return BadRequest(new { message = "Assignment creation failed. Check device availability, user validity, and department." });
                 }
-                
-                // Send notification to user about device assignment
+
+                // Send notification to user about pending device assignment for confirmation
                 await _notificationService.NotifyDeviceAssignedAsync(result.Id);
-                
+
                 Console.WriteLine("✅ Assignment created successfully");
                 return Ok(result);
             }
@@ -270,6 +278,34 @@ namespace backend.Controllers
             var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var result = await _service.TransferAsync(id, dto, currentUserId);
             return result == null ? BadRequest() : Ok(result);
+        }
+
+        /// <summary>
+        /// Nhân viên xác nhận nhận thiết bị (accept hoặc reject).
+        /// </summary>
+        [HttpPost("{id}/confirm")]
+        [Authorize] // Bất kỳ user đăng nhập, sẽ kiểm tra chi tiết bên trong
+        public async Task<IActionResult> Confirm(Guid id, [FromBody] ConfirmAssignmentDto dto)
+        {
+            var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            try
+            {
+                var result = await _service.ConfirmAsync(id, currentUserId, dto.Action, dto.RejectionReason);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
         
         [HttpPost("transfer")]

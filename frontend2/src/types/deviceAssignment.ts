@@ -5,6 +5,7 @@ export interface DeviceAssignmentDto {
   deviceId: string
   deviceName: string
   deviceCode?: string
+  // Trạng thái phân công: Pending / Accepted / Rejected
   status?: string
   modelName?: string
   deviceTypeName?: string
@@ -15,6 +16,13 @@ export interface DeviceAssignmentDto {
   assignedDate?: string
   returnedDate?: string
   note?: string
+  // Người cấp phát
+  assignedByUserId?: string
+  assignedByUserName?: string
+  // Thông tin xác nhận của người nhận
+  userConfirmedAt?: string | null
+  userConfirmedBy?: string | null
+  rejectionReason?: string | null
 }
 
 export interface DeviceAssignmentFilters {
