@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers
 {
@@ -16,13 +18,16 @@ namespace backend.Controllers
     {
         private readonly IDeviceHistoryService _deviceHistoryService;
         private readonly ILogger<DeviceHistoryController> _logger;
+        private readonly DeviceManagementDbContext _context;
 
         public DeviceHistoryController(
             IDeviceHistoryService deviceHistoryService,
-            ILogger<DeviceHistoryController> logger)
+            ILogger<DeviceHistoryController> logger,
+            DeviceManagementDbContext context)
         {
             _deviceHistoryService = deviceHistoryService;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -45,6 +50,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessDeviceAsync(deviceId))
+                    return Forbid();
+
                 var filter = new DeviceHistoryFilterDto
                 {
                     DeviceId = deviceId,
@@ -88,6 +96,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessUserAsync(userId))
+                    return Forbid();
+
                 var filter = new DeviceHistoryFilterDto
                 {
                     UserId = userId,
@@ -162,7 +173,7 @@ namespace backend.Controllers
         /// Get all device history with filters
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<IEnumerable<DeviceHistoryDto>>> GetAllHistory(
@@ -179,6 +190,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!User.IsInRole("Admin"))
+                    return Forbid();
+
                 var filter = new DeviceHistoryFilterDto
                 {
                     DeviceId = deviceId,
@@ -218,6 +232,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessHistoryFilterAsync(deviceId, userId))
+                    return Forbid();
+
                 var filter = new DeviceHistoryFilterDto
                 {
                     DeviceId = deviceId,
@@ -250,6 +267,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessHistoryFilterAsync(deviceId, userId))
+                    return Forbid();
+
                 var stats = await _deviceHistoryService.GetHistoryStatsAsync(deviceId, userId, fromDate);
                 return Ok(stats);
             }
@@ -276,6 +296,9 @@ namespace backend.Controllers
                     return NotFound($"History record with ID {id} not found");
                 }
 
+                if (!await CanAccessDeviceAsync(history.DeviceId))
+                    return Forbid();
+
                 return Ok(history);
             }
             catch (Exception ex)
@@ -295,6 +318,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!User.IsInRole("Admin"))
+                    return Forbid();
+
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
                 {
@@ -327,6 +353,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!User.IsInRole("Admin"))
+                    return Forbid();
+
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
                 {
@@ -427,6 +456,91 @@ namespace backend.Controllers
                 _logger.LogError(ex, "Error cleaning up old history records");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error cleaning up history records");
             }
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
+
+        private async Task<bool> CanAccessHistoryFilterAsync(Guid? deviceId, Guid? userId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var hasAllowedFilter = false;
+
+            if (deviceId.HasValue)
+            {
+                if (!await CanAccessDeviceAsync(deviceId.Value))
+                    return false;
+
+                hasAllowedFilter = true;
+            }
+
+            if (userId.HasValue)
+            {
+                if (!await CanAccessUserAsync(userId.Value))
+                    return false;
+
+                hasAllowedFilter = true;
+            }
+
+            return hasAllowedFilter;
+        }
+
+        private async Task<bool> CanAccessUserAsync(Guid targetUserId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null) return false;
+            if (currentUserId.Value == targetUserId) return true;
+
+            var currentUser = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+
+            if (currentUser?.Position != "Trưởng phòng" || currentUser.DepartmentId == null)
+                return false;
+
+            return await _context.Users.AnyAsync(u =>
+                u.Id == targetUserId &&
+                u.DepartmentId == currentUser.DepartmentId);
+        }
+
+        private async Task<bool> CanAccessDeviceAsync(Guid deviceId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null) return false;
+
+            var currentUser = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
+
+            if (currentUser == null) return false;
+
+            if (currentUser.Position == "Kỹ thuật viên")
+            {
+                return await _context.Repairs.AnyAsync(r =>
+                    r.DeviceId == deviceId &&
+                    r.AssignedToTechnicianId == currentUserId.Value);
+            }
+
+            if (currentUser.Position == "Trưởng phòng" && currentUser.DepartmentId.HasValue)
+            {
+                return await _context.Devices.AnyAsync(d =>
+                    d.Id == deviceId &&
+                    d.CurrentDepartmentId == currentUser.DepartmentId.Value &&
+                    d.IsDeleted != true);
+            }
+
+            return await _context.Devices.AnyAsync(d =>
+                d.Id == deviceId &&
+                d.CurrentUserId == currentUserId.Value &&
+                d.IsDeleted != true);
         }
     }
 }
