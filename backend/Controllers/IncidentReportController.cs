@@ -4,6 +4,7 @@ using backend.Services;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace backend.Controllers
@@ -15,15 +16,18 @@ namespace backend.Controllers
         private readonly IIncidentReportService _incidentService;
         private readonly IAuthService _authService;
         private readonly INotificationService _notificationService;
+        private readonly backend.Data.DeviceManagementDbContext _context;
 
         public IncidentReportController(
             IIncidentReportService incidentService,
             IAuthService authService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            backend.Data.DeviceManagementDbContext context)
         {
             _incidentService = incidentService;
             _authService = authService;
             _notificationService = notificationService;
+            _context = context;
         }
 
         // [1] Nhân viên và Trưởng phòng tạo báo cáo
@@ -146,6 +150,7 @@ namespace backend.Controllers
         {
             var result = await _incidentService.GetByIdAsync(id);
             if (result == null) return NotFound();
+            if (!await CanAccessIncidentAsync(result)) return Forbid();
             return Ok(result);
         }
         [HttpPost("upload-incident-image")]
@@ -199,6 +204,39 @@ namespace backend.Controllers
         //     var result = await _incidentService.GetPagedReportsAsync(page, pageSize, search, status, userId);
         //     return Ok(result);
         // }
+
+        private async Task<bool> CanAccessIncidentAsync(IncidentReportDto report)
+        {
+            if (_authService.IsAdmin(User)) return true;
+
+            var userId = _authService.GetCurrentUserId(User);
+            if (userId == null) return false;
+
+            var position = _authService.GetCurrentUserPosition(User);
+            if (report.ReportedByUserId == userId.Value) return true;
+
+            if (position == "Kỹ thuật viên")
+            {
+                return await _context.Repairs.AnyAsync(r =>
+                    r.IncidentReportId == report.Id &&
+                    r.AssignedToTechnicianId == userId.Value);
+            }
+
+            if (position == "Trưởng phòng")
+            {
+                var manager = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId.Value);
+
+                if (manager?.DepartmentId == null) return false;
+
+                return await _context.Users.AnyAsync(u =>
+                    u.Id == report.ReportedByUserId &&
+                    u.DepartmentId == manager.DepartmentId);
+            }
+
+            return false;
+        }
 
     }
 }
