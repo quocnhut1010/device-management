@@ -435,8 +435,7 @@ namespace backend.Controllers
             var device = await _deviceService.GetDeviceByIdAsync(id, null, User.IsInRole("Admin"));
             if (device == null && !User.IsInRole("Admin"))
             {
-                // Non-admins must at least have access via other APIs; for simplicity return NotFound
-                // Admins still can retrieve
+                return Forbid();
             }
 
             var token = await _deviceService.GetActiveQrTokenAsync(id);
