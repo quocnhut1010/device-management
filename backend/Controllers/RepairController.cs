@@ -89,7 +89,12 @@ namespace backend.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _repairService.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
+            if (result == null) return NotFound();
+
+            if (!await CanAccessRepairAsync(result))
+                return Forbid();
+
+            return Ok(result);
         }
 
         // GET: api/repair/technicians - Lấy danh sách kỹ thuật viên để phân công
@@ -310,6 +315,14 @@ namespace backend.Controllers
             if (position != "Kỹ thuật viên") return Forbid();
             if (userId == null) return Unauthorized();
 
+            var repairExists = await _context.Repairs.AnyAsync(r => r.Id == repairId);
+            if (!repairExists) return NotFound();
+
+            var canUpload = await _context.Repairs.AnyAsync(r =>
+                r.Id == repairId &&
+                r.AssignedToTechnicianId == userId.Value);
+            if (!canUpload) return Forbid();
+
             if (files == null || files.Count == 0)
                 return BadRequest(new { message = "Không có file nào được chọn" });
 
@@ -360,6 +373,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessDeviceAsync(deviceId))
+                    return Forbid();
+
                 var result = await _repairService.GetRepairHistoryByDeviceAsync(deviceId);
                 return Ok(result);
             }
@@ -379,6 +395,9 @@ namespace backend.Controllers
         {
             try
             {
+                if (!await CanAccessDeviceAsync(deviceId))
+                    return Forbid();
+
                 var result = await _repairService.AnalyzeDeviceRepairHistoryAsync(deviceId);
                 return Ok(result);
             }
@@ -390,6 +409,59 @@ namespace backend.Controllers
                     error = ex.Message
                 });
             }
+        }
+
+        private async Task<bool> CanAccessRepairAsync(RepairDto repair)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var userId = GetUserId();
+            if (userId == null) return false;
+
+            var position = GetPosition();
+            if (position == "Kỹ thuật viên")
+            {
+                return await _context.Repairs.AnyAsync(r =>
+                    r.Id == repair.Id &&
+                    r.AssignedToTechnicianId == userId.Value);
+            }
+
+            return await CanAccessDeviceAsync(repair.DeviceId);
+        }
+
+        private async Task<bool> CanAccessDeviceAsync(Guid deviceId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var userId = GetUserId();
+            if (userId == null) return false;
+
+            var position = GetPosition();
+            if (position == "Kỹ thuật viên")
+            {
+                return await _context.Repairs.AnyAsync(r =>
+                    r.DeviceId == deviceId &&
+                    r.AssignedToTechnicianId == userId.Value);
+            }
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId.Value);
+
+            if (user == null) return false;
+
+            if (position == "Trưởng phòng" && user.DepartmentId.HasValue)
+            {
+                return await _context.Devices.AnyAsync(d =>
+                    d.Id == deviceId &&
+                    d.CurrentDepartmentId == user.DepartmentId.Value &&
+                    d.IsDeleted != true);
+            }
+
+            return await _context.Devices.AnyAsync(d =>
+                d.Id == deviceId &&
+                d.CurrentUserId == userId.Value &&
+                d.IsDeleted != true);
         }
 
     }
